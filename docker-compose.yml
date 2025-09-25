@@ -1,0 +1,106 @@
+# Docker Compose para Stegmaier Management System
+# Levanta Frontend + Backend + Base de Datos + Redis
+version: '3.8'
+
+services:
+  # ============================================================================
+  # CACHE - Redis
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: stegmaier-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass stegmaier_redis_2024
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - stegmaier-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ============================================================================
+  # FRONTEND - Next.js Application
+  # ============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: stegmaier-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+
+      # API Configuration - use localhost for browser access
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      # Feature Flags
+      NEXT_PUBLIC_SHOW_API_LOGS: false
+      NEXT_PUBLIC_ENABLE_ANALYTICS: true
+
+      # Security
+      NEXTAUTH_SECRET: stegmaier_nextauth_secret_2024
+      NEXTAUTH_URL: http://localhost:3000
+
+      # Monitoring
+      NEXT_PUBLIC_SENTRY_DSN: ${SENTRY_DSN:-}
+
+    ports:
+      - "3000:3000"
+    networks:
+      - stegmaier-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+
+# ============================================================================
+# VOLUMENES PERSISTENTES
+# ============================================================================
+volumes:
+  redis_data:
+    driver: local
+
+# ============================================================================
+# REDES
+# ============================================================================
+networks:
+  stegmaier-network:
+    external: true
+    name: sm-backend_stegmaier
+
+# ============================================================================
+# COMANDOS ÚTILES
+# ============================================================================
+#
+# Desarrollo (Frontend + Backend + DB):
+#   docker-compose up --build
+#
+# Solo servicios base (DB + Redis):
+#   docker-compose up postgres redis
+#
+# Producción completa con Nginx:
+#   docker-compose --profile production up --build -d
+#
+# Logs del backend:
+#   docker-compose logs -f backend
+#
+# Conectar a la base de datos:
+#   docker-compose exec postgres psql -U stegmaier_user -d stegmaier_management
+#
+# Backup de la base de datos:
+#   docker-compose exec postgres pg_dump -U stegmaier_user stegmaier_management > backup.sql
+#
+# Restaurar backup:
+#   docker-compose exec -T postgres psql -U stegmaier_user stegmaier_management < backup.sql
+#
+# ============================================================================

@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+.pnpm-store
+.npm
+
+# Build artifacts
+.next
+.swc
+build
+dist
+out
+coverage
+
+# Local config & metadata
+.env.local
+.env.*.local
+.envrc
+.git
+.gitignore
+.vscode
+.idea

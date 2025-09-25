@@ -46,28 +46,54 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
+  full_name: string
+  phone: string
   email: string
   password: string
-  firstName: string
-  lastName: string
-  companyName?: string
+  password_confirm: string
 }
 
 export interface AuthResponse {
-  token: string
-  refreshToken: string
   user: User
-  expiresAt: string
+  token: string
+}
+
+// Email verification
+export interface VerifyEmailData {
+  token: string
+}
+
+// Password recovery
+export interface ForgotPasswordData {
+  email: string
+}
+
+export interface ResetPasswordData {
+  token: string
+  new_password: string
+  password_confirm: string
+}
+
+// Profile update
+export interface UpdateProfileData {
+  full_name?: string
+  phone?: string
+}
+
+export interface ChangePasswordData {
+  current_password: string
+  new_password: string
+  password_confirm: string
 }
 
 export interface User extends BaseEntity {
   email: string
-  firstName: string
-  lastName: string
-  role: UserRole
-  isActive: boolean
-  lastLoginAt?: string
-  companyId?: string
+  full_name: string
+  phone?: string
+  email_verified: boolean
+  role: string
+  created_at: string
+  updated_at: string
 }
 
 export type UserRole = 'admin' | 'manager' | 'user' | 'viewer'

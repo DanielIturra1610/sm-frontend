@@ -11,10 +11,11 @@ const customJestConfig = {
   testEnvironment: 'jsdom',
 
   // Module paths for absolute imports
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^@/shared/(.*)$': '<rootDir>/src/shared/$1',
-    '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
+      '<rootDir>/__mocks__/fileMock.js',
   },
 
   // Test patterns
@@ -56,13 +57,6 @@ const customJestConfig = {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
 
-  // Handle static file imports
-  moduleNameMapping: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
-      '<rootDir>/__mocks__/fileMock.js',
-  },
 
   // Ignore patterns
   testPathIgnorePatterns: [

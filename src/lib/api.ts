@@ -11,6 +11,11 @@ import type {
   RegisterData,
   AuthResponse,
   User,
+  VerifyEmailData,
+  ForgotPasswordData,
+  ResetPasswordData,
+  UpdateProfileData,
+  ChangePasswordData,
 
   // Companies
   Company,
@@ -53,7 +58,7 @@ class ApiClient {
   /**
    * Get authentication token from storage
    */
-  private async getToken(): Promise<string | null> {
+  public async getToken(): Promise<string | null> {
     if (typeof window === 'undefined') return null
 
     // Check localStorage first
@@ -76,7 +81,7 @@ class ApiClient {
   /**
    * Remove authentication token from storage
    */
-  private async removeToken(): Promise<void> {
+  public async removeToken(): Promise<void> {
     if (typeof window === 'undefined') return
 
     localStorage.removeItem('auth-token')
@@ -251,7 +256,7 @@ class ApiClient {
      * User login
      */
     login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-      const response = await this.request<AuthResponse>('/auth/login', {
+      const response = await this.request<AuthResponse>('/users/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       })
@@ -268,7 +273,7 @@ class ApiClient {
      * User registration
      */
     register: async (data: RegisterData): Promise<AuthResponse> => {
-      const response = await this.request<AuthResponse>('/auth/register', {
+      const response = await this.request<AuthResponse>('/users/register', {
         method: 'POST',
         body: JSON.stringify(data),
       })
@@ -285,7 +290,7 @@ class ApiClient {
      * Refresh authentication token
      */
     refresh: async (): Promise<AuthResponse> => {
-      return this.request<AuthResponse>('/auth/refresh', {
+      return this.request<AuthResponse>('/users/refresh', {
         method: 'POST',
       })
     },
@@ -294,7 +299,7 @@ class ApiClient {
      * Get current user profile
      */
     profile: async (): Promise<User> => {
-      return this.request<User>('/auth/profile')
+      return this.request<User>('/users/profile')
     },
 
     /**
@@ -302,13 +307,63 @@ class ApiClient {
      */
     logout: async (): Promise<void> => {
       try {
-        await this.request<void>('/auth/logout', {
+        await this.request<void>('/users/logout', {
           method: 'POST',
         })
       } finally {
         // Always clear local token regardless of API response
         await this.removeToken()
       }
+    },
+
+    /**
+     * Verify email with token
+     */
+    verifyEmail: async (data: VerifyEmailData): Promise<void> => {
+      return this.request<void>('/users/verify-email', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    },
+
+    /**
+     * Request password reset
+     */
+    forgotPassword: async (data: ForgotPasswordData): Promise<void> => {
+      return this.request<void>('/users/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    },
+
+    /**
+     * Reset password with token
+     */
+    resetPassword: async (data: ResetPasswordData): Promise<void> => {
+      return this.request<void>('/users/reset-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    },
+
+    /**
+     * Update user profile
+     */
+    updateProfile: async (data: UpdateProfileData): Promise<User> => {
+      return this.request<User>('/users/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
+    },
+
+    /**
+     * Change password
+     */
+    changePassword: async (data: ChangePasswordData): Promise<void> => {
+      return this.request<void>('/users/change-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
     },
   }
 
