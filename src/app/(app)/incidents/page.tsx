@@ -50,17 +50,17 @@ import {
 const mockIncidents: Incident[] = [
   {
     id: "inc-001",
-    title: "Equipment Malfunction - Line 3",
-    description: "Production halt due to conveyor belt failure affecting main assembly line. Immediate attention required to prevent production delays.",
+    title: "Fallo de Equipo - Línea 3",
+    description: "Paro de producción debido a falla de cinta transportadora que afecta la línea de ensamblaje principal. Se requiere atención inmediata para prevenir retrasos en la producción.",
     severity: "critical",
     status: "investigating",
     type: "operational",
-    location: "Building A - Production Floor 3",
+    location: "Edificio A - Planta de Producción 3",
     reportedBy: "John Smith",
     reportedAt: "2024-01-15T10:30:00Z",
     assignedTo: "Mike Johnson",
     assignedAt: "2024-01-15T11:00:00Z",
-    tags: ["equipment", "production", "urgent"],
+    tags: ["equipo", "producción", "urgente"],
     attachments: [],
     companyId: "comp-001",
     workflowState: {
@@ -74,17 +74,17 @@ const mockIncidents: Incident[] = [
   },
   {
     id: "inc-002",
-    title: "Near Miss - Warehouse",
-    description: "Forklift operator reported near collision with pedestrian in warehouse zone B. Safety protocols need review.",
+    title: "Casi Accidente - Almacén",
+    description: "Operador de montacargas reportó colisión inminente con peatón en zona B del almacén. Se necesita revisar los protocolos de seguridad.",
     severity: "high",
     status: "in_progress",
     type: "safety",
-    location: "Warehouse Zone B",
+    location: "Zona B del Almacén",
     reportedBy: "Sarah Davis",
     reportedAt: "2024-01-14T14:22:00Z",
     assignedTo: "Anna Wilson",
     assignedAt: "2024-01-14T15:00:00Z",
-    tags: ["near-miss", "forklift", "safety"],
+    tags: ["casi-accidente", "montacargas", "seguridad"],
     attachments: [],
     companyId: "comp-001",
     workflowState: {
@@ -98,18 +98,18 @@ const mockIncidents: Incident[] = [
   },
   {
     id: "inc-003",
-    title: "Chemical Spill - Lab 2",
-    description: "Minor chemical spill in laboratory 2. Area has been contained and secured. Cleanup crew notified.",
+    title: "Derrame Químico - Lab 2",
+    description: "Derrame menor de producto químico en laboratorio 2. El área ha sido contenida y asegurada. Se ha notificado al equipo de limpieza.",
     severity: "medium",
     status: "resolved",
     type: "environmental",
-    location: "Laboratory 2 - Research Wing",
+    location: "Laboratorio 2 - Ala de Investigación",
     reportedBy: "Dr. Robert Chen",
     reportedAt: "2024-01-12T09:15:00Z",
-    assignedTo: "Environmental Team",
+    assignedTo: "Equipo Ambiental",
     assignedAt: "2024-01-12T09:30:00Z",
     resolvedAt: "2024-01-12T16:45:00Z",
-    tags: ["chemical", "lab", "environmental"],
+    tags: ["químico", "laboratorio", "ambiental"],
     attachments: [],
     companyId: "comp-001",
     workflowState: {
@@ -123,15 +123,15 @@ const mockIncidents: Incident[] = [
   },
   {
     id: "inc-004",
-    title: "Security Breach - Access Control",
-    description: "Unauthorized access attempt detected on server room door. Security footage being reviewed.",
+    title: "Brecha de Seguridad - Control de Acceso",
+    description: "Detectado intento de acceso no autorizado en la puerta de la sala de servidores. Se está revisando el video de seguridad.",
     severity: "high",
     status: "reported",
     type: "security",
-    location: "Server Room - IT Wing",
-    reportedBy: "Security System",
+    location: "Sala de Servidores - Ala de TI",
+    reportedBy: "Sistema de Seguridad",
     reportedAt: "2024-01-16T02:33:00Z",
-    tags: ["security", "access-control", "breach"],
+    tags: ["seguridad", "control-acceso", "brecha"],
     attachments: [],
     companyId: "comp-001",
     workflowState: {
@@ -145,17 +145,17 @@ const mockIncidents: Incident[] = [
   },
   {
     id: "inc-005",
-    title: "Quality Control Failure",
-    description: "Batch QC-2024-001 failed quality inspection. Products need to be quarantined and investigated.",
+    title: "Falla en Control de Calidad",
+    description: "El lote QC-2024-001 no pasó la inspección de calidad. Los productos deben ser aislados e investigados.",
     severity: "medium",
     status: "in_progress",
     type: "quality",
-    location: "Quality Control Department",
-    reportedBy: "QC Inspector",
+    location: "Departamento de Control de Calidad",
+    reportedBy: "Inspector de Calidad",
     reportedAt: "2024-01-13T11:20:00Z",
-    assignedTo: "Quality Manager",
+    assignedTo: "Jefe de Calidad",
     assignedAt: "2024-01-13T12:00:00Z",
-    tags: ["quality", "batch", "qc"],
+    tags: ["calidad", "lote", "cc"],
     attachments: [],
     companyId: "comp-001",
     workflowState: {
@@ -169,18 +169,18 @@ const mockIncidents: Incident[] = [
   },
   {
     id: "inc-006",
-    title: "Emergency Drill Issue",
-    description: "Exit route blocked during emergency drill. Emergency evacuation procedures need immediate review.",
+    title: "Problema con Simulacro de Emergencia",
+    description: "Ruta de salida bloqueada durante simulacro de emergencia. Los procedimientos de evacuación de emergencia necesitan revisión inmediata.",
     severity: "low",
     status: "closed",
     type: "safety",
-    location: "Building B - Emergency Exit 3",
-    reportedBy: "Safety Officer",
+    location: "Edificio B - Salida de Emergencia 3",
+    reportedBy: "Oficial de Seguridad",
     reportedAt: "2024-01-10T16:45:00Z",
-    assignedTo: "Facilities Manager",
+    assignedTo: "Jefe de Instalaciones",
     assignedAt: "2024-01-10T17:00:00Z",
     resolvedAt: "2024-01-11T09:30:00Z",
-    tags: ["emergency", "drill", "evacuation"],
+    tags: ["emergencia", "simulacro", "evacuación"],
     attachments: [],
     companyId: "comp-001",
     workflowState: {
@@ -274,25 +274,38 @@ export default function IncidentsPage() {
   }, [filters])
 
   const handleFiltersChange = React.useCallback((newFilters: IncidentListParams) => {
-    setFilters({ ...newFilters, page: 1 }) // Reset to first page when filters change
+    setFilters(prev => {
+      const updated = { ...newFilters, page: 1 }
+      // Only update if values actually changed
+      if (JSON.stringify(prev) === JSON.stringify(updated)) return prev
+      return updated
+    })
   }, [])
 
   const handlePaginationChange = React.useCallback((page: number, limit: number) => {
-    setFilters(prev => ({ ...prev, page, limit }))
+    setFilters(prev => {
+      // Only update if values actually changed
+      if (prev.page === page && prev.limit === limit) return prev
+      return { ...prev, page, limit }
+    })
   }, [])
 
   const handleRefresh = React.useCallback(() => {
-    fetchIncidents(filters)
-  }, [fetchIncidents, filters])
+    setFilters(prev => ({ ...prev })) // Trigger refetch by creating new reference
+  }, [])
 
   const resetFilters = React.useCallback(() => {
-    const defaultFilters: IncidentListParams = {
-      page: 1,
-      limit: 10,
-      sort: "reportedAt",
-      order: "desc"
-    }
-    setFilters(defaultFilters)
+    setFilters(prev => {
+      const defaultFilters: IncidentListParams = {
+        page: 1,
+        limit: 10,
+        sort: "reportedAt",
+        order: "desc"
+      }
+      // Only reset if current filters are different
+      if (JSON.stringify(prev) === JSON.stringify(defaultFilters)) return prev
+      return defaultFilters
+    })
   }, [])
 
   // Action handlers

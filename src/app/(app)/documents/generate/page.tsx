@@ -73,11 +73,11 @@ export default function GenerateDocumentPage() {
       }
 
       const newDocument = await generateDocument(requestData)
-      toast.success('Document generation started')
+      toast.success('Generación de documento iniciada')
       router.push(`/documents/${newDocument.id}`)
     } catch (error) {
       console.error('Error generating document:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to generate document')
+      toast.error(error instanceof Error ? error.message : 'Error al generar el documento')
     } finally {
       setIsSubmitting(false)
     }
@@ -94,21 +94,21 @@ export default function GenerateDocumentPage() {
             disabled={isSubmitting}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Generate Document</h1>
-            <p className="text-muted-foreground">Create safety documentation from templates</p>
+            <h1 className="text-3xl font-bold">Generar Documento</h1>
+            <p className="text-muted-foreground">Crear documentación de seguridad a partir de plantillas</p>
           </div>
         </div>
 
         {/* Info Card */}
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="text-blue-900">About Document Generation</CardTitle>
+            <CardTitle className="text-blue-900">Acerca de la Generación de Documentos</CardTitle>
             <CardDescription className="text-blue-700">
-              Select a document type and template to automatically generate professional safety
-              documentation. You can customize the content and export in various formats.
+              Seleccione un tipo de documento y una plantilla para generar automáticamente documentación
+              profesional de seguridad. Puede personalizar el contenido y exportar en varios formatos.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -116,8 +116,8 @@ export default function GenerateDocumentPage() {
         {/* Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Document Details</CardTitle>
-            <CardDescription>Configure your document generation settings</CardDescription>
+            <CardTitle>Detalles del Documento</CardTitle>
+            <CardDescription>Configure la configuración de generación de documentos</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -128,7 +128,7 @@ export default function GenerateDocumentPage() {
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Document Type *</FormLabel>
+                      <FormLabel>Tipo de Documento *</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -136,14 +136,14 @@ export default function GenerateDocumentPage() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select document type" />
+                            <SelectValue placeholder="Seleccionar tipo de documento" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="incident_report">Incident Report</SelectItem>
-                          <SelectItem value="analysis_report">Analysis Report</SelectItem>
-                          <SelectItem value="action_plan">Action Plan</SelectItem>
-                          <SelectItem value="compliance_report">Compliance Report</SelectItem>
+                          <SelectItem value="incident_report">Reporte de Incidente</SelectItem>
+                          <SelectItem value="analysis_report">Reporte de Análisis</SelectItem>
+                          <SelectItem value="action_plan">Plan de Acción</SelectItem>
+                          <SelectItem value="compliance_report">Reporte de Cumplimiento</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -157,10 +157,10 @@ export default function GenerateDocumentPage() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Document Title *</FormLabel>
+                      <FormLabel>Título del Documento *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Enter document title..."
+                          placeholder="Ingrese el título del documento..."
                           {...field}
                           disabled={isSubmitting}
                         />
@@ -176,7 +176,7 @@ export default function GenerateDocumentPage() {
                   name="templateId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Template *</FormLabel>
+                      <FormLabel>Plantilla *</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -184,26 +184,26 @@ export default function GenerateDocumentPage() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a template" />
+                            <SelectValue placeholder="Seleccionar una plantilla" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {filteredTemplates.length === 0 ? (
                             <SelectItem value="no-templates" disabled>
-                              No templates available
+                              No hay plantillas disponibles
                             </SelectItem>
                           ) : (
                             filteredTemplates.map((template) => (
                               <SelectItem key={template.id} value={template.id}>
                                 {template.name}
-                                {template.isDefault && ' (Default)'}
+                                {template.isDefault && ' (Por defecto)'}
                               </SelectItem>
                             ))
                           )}
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Choose a pre-configured template for your document
+                        Elija una plantilla preconfigurada para su documento
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -216,7 +216,7 @@ export default function GenerateDocumentPage() {
                   name="format"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Output Format</FormLabel>
+                      <FormLabel>Formato de Salida</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -224,7 +224,7 @@ export default function GenerateDocumentPage() {
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select format" />
+                            <SelectValue placeholder="Seleccionar formato" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -245,16 +245,16 @@ export default function GenerateDocumentPage() {
                     name="incidentId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Incident ID (Optional)</FormLabel>
+                        <FormLabel>ID del Incidente (Opcional)</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Link to incident..."
+                            placeholder="Enlace al incidente..."
                             {...field}
                             disabled={isSubmitting}
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          Reference an incident
+                          Referenciar un incidente
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -266,16 +266,16 @@ export default function GenerateDocumentPage() {
                     name="analysisId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Analysis ID (Optional)</FormLabel>
+                        <FormLabel>ID del Análisis (Opcional)</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Link to analysis..."
+                            placeholder="Enlace al análisis..."
                             {...field}
                             disabled={isSubmitting}
                           />
                         </FormControl>
                         <FormDescription className="text-xs">
-                          Reference an analysis
+                          Referenciar un análisis
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -293,12 +293,12 @@ export default function GenerateDocumentPage() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
+                        Generando...
                       </>
                     ) : (
                       <>
                         <FileText className="mr-2 h-4 w-4" />
-                        Generate Document
+                        Generar Documento
                       </>
                     )}
                   </Button>
@@ -308,7 +308,7 @@ export default function GenerateDocumentPage() {
                     onClick={() => router.push('/documents')}
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    Cancelar
                   </Button>
                 </div>
               </form>

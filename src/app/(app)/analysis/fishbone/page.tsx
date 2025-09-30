@@ -13,7 +13,7 @@ import Link from 'next/link'
 const mockAnalyses = [
   {
     id: '1',
-    problem: 'Production line quality issues',
+    problem: 'Problemas de calidad en la línea de producción',
     incidentId: 'inc-001',
     status: 'approved',
     createdBy: 'John Doe',
@@ -25,7 +25,7 @@ const mockAnalyses = [
   },
   {
     id: '2',
-    problem: 'Workplace accident in assembly area',
+    problem: 'Accidente laboral en área de ensamblaje',
     incidentId: 'inc-002',
     status: 'in_review',
     createdBy: 'Alice Johnson',
@@ -35,7 +35,7 @@ const mockAnalyses = [
   },
   {
     id: '3',
-    problem: 'Equipment failure analysis',
+    problem: 'Análisis de falla de equipo',
     incidentId: 'inc-003',
     status: 'draft',
     createdBy: 'Bob Wilson',
@@ -82,13 +82,13 @@ export default function FishboneListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Fishbone (Ishikawa) Analysis</h1>
-          <p className="text-muted-foreground">Cause-and-effect diagrams for root cause analysis</p>
+          <h1 className="text-3xl font-bold">Análisis de Espina de Pescado (Ishikawa)</h1>
+          <p className="text-muted-foreground">Diagramas de causa y efecto para análisis de causa raíz</p>
         </div>
         <Link href="/analysis/fishbone/create">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            New Analysis
+            Nuevo Análisis
           </Button>
         </Link>
       </div>
@@ -98,38 +98,37 @@ export default function FishboneListPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search analyses..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+              placeholder="Buscar análisis..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
             </div>
             <div className="flex gap-2">
               <Button
                 variant={statusFilter === 'all' ? 'primary' : 'outline'}
                 onClick={() => setStatusFilter('all')}
               >
-                All
+                Todos
               </Button>
               <Button
                 variant={statusFilter === 'draft' ? 'primary' : 'outline'}
                 onClick={() => setStatusFilter('draft')}
               >
-                Draft
+                Borrador
               </Button>
               <Button
                 variant={statusFilter === 'in_review' ? 'primary' : 'outline'}
                 onClick={() => setStatusFilter('in_review')}
               >
-                In Review
+                En Revisión
               </Button>
               <Button
                 variant={statusFilter === 'approved' ? 'primary' : 'outline'}
                 onClick={() => setStatusFilter('approved')}
               >
-                Approved
+                Aprobado
               </Button>
             </div>
           </div>
@@ -140,7 +139,7 @@ export default function FishboneListPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Analyses</CardTitle>
+            <CardTitle className="text-sm font-medium">Análisis Totales</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockAnalyses.length}</div>
@@ -148,7 +147,7 @@ export default function FishboneListPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">In Review</CardTitle>
+            <CardTitle className="text-sm font-medium">En Revisión</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
@@ -158,7 +157,7 @@ export default function FishboneListPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
+            <CardTitle className="text-sm font-medium">Aprobado</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -168,7 +167,7 @@ export default function FishboneListPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Draft</CardTitle>
+            <CardTitle className="text-sm font-medium">Borrador</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
@@ -184,17 +183,17 @@ export default function FishboneListPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">No analyses found</p>
+              <p className="text-lg font-medium mb-2">No se encontraron análisis</p>
               <p className="text-muted-foreground mb-4">
                 {searchQuery || statusFilter !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'Get started by creating your first fishbone analysis'}
+                  ? 'Intente ajustar sus filtros'
+                  : 'Comience creando su primer análisis de espina de pescado'}
               </p>
               {!searchQuery && statusFilter === 'all' && (
                 <Link href="/analysis/fishbone/create">
                   <Button>
                     <Plus className="mr-2 h-4 w-4" />
-                    Create Analysis
+                    Crear Análisis
                   </Button>
                 </Link>
               )}
@@ -221,26 +220,26 @@ export default function FishboneListPage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mt-4">
                       <div>
-                        <p className="font-medium text-foreground">Incident</p>
+                        <p className="font-medium text-foreground">Incidente</p>
                         <p>#{analysis.incidentId}</p>
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">Created By</p>
+                        <p className="font-medium text-foreground">Creado Por</p>
                         <p>{analysis.createdBy}</p>
                       </div>
                       <div>
-                        <p className="font-medium text-foreground">Created</p>
+                        <p className="font-medium text-foreground">Creado</p>
                         <p>{new Date(analysis.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                     {analysis.reviewedBy && (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground mt-2">
                         <div>
-                          <p className="font-medium text-foreground">Reviewed By</p>
+                          <p className="font-medium text-foreground">Revisado Por</p>
                           <p>{analysis.reviewedBy}</p>
                         </div>
                         <div>
-                          <p className="font-medium text-foreground">Reviewed</p>
+                          <p className="font-medium text-foreground">Revisado</p>
                           <p>{new Date(analysis.reviewedAt!).toLocaleDateString()}</p>
                         </div>
                       </div>

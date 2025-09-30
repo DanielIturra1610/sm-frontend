@@ -23,14 +23,14 @@ import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const fiveWhysSchema = z.object({
-  incidentId: z.string().min(1, 'Incident ID is required'),
-  problem: z.string().min(10, 'Problem statement must be at least 10 characters'),
+  incidentId: z.string().min(1, 'ID del incidente es requerido'),
+  problem: z.string().min(10, 'La descripción del problema debe tener al menos 10 caracteres'),
   whys: z.array(
     z.object({
-      question: z.string().min(5, 'Question must be at least 5 characters'),
-      answer: z.string().min(5, 'Answer must be at least 5 characters'),
+      question: z.string().min(5, 'La pregunta debe tener al menos 5 caracteres'),
+      answer: z.string().min(5, 'La respuesta debe tener al menos 5 caracteres'),
     })
-  ).min(1, 'At least one why is required').max(10, 'Maximum 10 whys allowed'),
+  ).min(1, 'Debe haber al menos un por qué').max(10, 'Máximo 10 porqués permitidos'),
 })
 
 type FiveWhysFormValues = z.infer<typeof fiveWhysSchema>
@@ -48,11 +48,11 @@ function CreateFiveWhysForm() {
       incidentId,
       problem: '',
       whys: [
-        { question: 'Why did this happen?', answer: '' },
-        { question: 'Why?', answer: '' },
-        { question: 'Why?', answer: '' },
-        { question: 'Why?', answer: '' },
-        { question: 'Why?', answer: '' },
+        { question: '¿Por qué sucedió esto?', answer: '' },
+        { question: '¿Por qué?', answer: '' },
+        { question: '¿Por qué?', answer: '' },
+        { question: '¿Por qué?', answer: '' },
+        { question: '¿Por qué?', answer: '' },
       ],
     },
   })
@@ -66,11 +66,11 @@ function CreateFiveWhysForm() {
     try {
       setIsSubmitting(true)
       const newAnalysis = await createAnalysis(data)
-      toast.success('Five Whys analysis created successfully')
+      toast.success('Análisis de 5 porqués creado exitosamente')
       router.push(`/analysis/five-whys/${newAnalysis.id}`)
     } catch (error) {
       console.error('Error creating analysis:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create analysis')
+      toast.error(error instanceof Error ? error.message : 'Error al crear el análisis')
     } finally {
       setIsSubmitting(false)
     }
@@ -87,21 +87,21 @@ function CreateFiveWhysForm() {
             disabled={isSubmitting}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Five Whys Analysis</h1>
-            <p className="text-muted-foreground">Identify root causes through iterative questioning</p>
+            <h1 className="text-3xl font-bold">Crear Análisis de 5 Porqués</h1>
+            <p className="text-muted-foreground">Identificar causas raíz a través de preguntas iterativas</p>
           </div>
         </div>
 
         {/* Info Card */}
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="text-blue-900">About Five Whys Analysis</CardTitle>
+            <CardTitle className="text-blue-900">Acerca del Análisis de 5 Porqués</CardTitle>
             <CardDescription className="text-blue-700">
-              The Five Whys technique helps identify the root cause of a problem by asking Why? repeatedly.
-              Each answer forms the basis of the next question, drilling down to the fundamental issue.
+              La técnica de los 5 Porqués ayuda a identificar la causa raíz de un problema haciendo la pregunta ¿Por qué? repetidamente.
+              Cada respuesta forma la base de la siguiente pregunta, profundizando hasta llegar al problema fundamental.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -109,9 +109,9 @@ function CreateFiveWhysForm() {
         {/* Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Analysis Details</CardTitle>
+            <CardTitle>Detalles del Análisis</CardTitle>
             <CardDescription>
-              Define the problem and ask why to uncover the root cause
+              Define el problema y pregunta por qué para descubrir la causa raíz
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -123,16 +123,16 @@ function CreateFiveWhysForm() {
                   name="incidentId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Incident ID *</FormLabel>
+                      <FormLabel>ID del Incidente *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="incident-id"
+                          placeholder="id-del-incidente"
                           {...field}
                           disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>
-                        The incident this analysis is related to
+                        El incidente al que está relacionado este análisis
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -145,17 +145,17 @@ function CreateFiveWhysForm() {
                   name="problem"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Problem Statement *</FormLabel>
+                      <FormLabel>Declaración del Problema *</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Clearly describe the problem you're analyzing..."
+                          placeholder="Describe claramente el problema que estás analizando..."
                           className="min-h-[100px]"
                           {...field}
                           disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>
-                        Be specific and objective about what went wrong
+                        Sé específico y objetivo sobre lo que salió mal
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -166,9 +166,9 @@ function CreateFiveWhysForm() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold">The Whys</h3>
+                      <h3 className="text-lg font-semibold">Los Porqués</h3>
                       <p className="text-sm text-muted-foreground">
-                        Ask why iteratively to dig deeper into the root cause
+                        Pregunta por qué iterativamente para profundizar en la causa raíz
                       </p>
                     </div>
                     {fields.length < 10 && (
@@ -176,11 +176,11 @@ function CreateFiveWhysForm() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => append({ question: 'Why?', answer: '' })}
+                        onClick={() => append({ question: '¿Por qué?', answer: '' })}
                         disabled={isSubmitting}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Add Why
+                        Agregar Porqué
                       </Button>
                     )}
                   </div>
@@ -189,7 +189,7 @@ function CreateFiveWhysForm() {
                     <Card key={field.id} className="border-2">
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">Why #{index + 1}</CardTitle>
+                          <CardTitle className="text-base">Por qué #{index + 1}</CardTitle>
                           {fields.length > 1 && (
                             <Button
                               type="button"
@@ -209,12 +209,12 @@ function CreateFiveWhysForm() {
                           name={`whys.${index}.question`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Question</FormLabel>
+                              <FormLabel>Pregunta</FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   disabled={isSubmitting}
-                                  placeholder="Why did this occur?"
+                                  placeholder="¿Por qué ocurrió esto?"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -226,12 +226,12 @@ function CreateFiveWhysForm() {
                           name={`whys.${index}.answer`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Answer</FormLabel>
+                              <FormLabel>Respuesta</FormLabel>
                               <FormControl>
                                 <Textarea
                                   {...field}
                                   disabled={isSubmitting}
-                                  placeholder="Provide a detailed answer..."
+                                  placeholder="Proporciona una respuesta detallada..."
                                   className="min-h-[80px]"
                                 />
                               </FormControl>
@@ -254,12 +254,12 @@ function CreateFiveWhysForm() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
+                        Creando...
                       </>
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Create Analysis
+                        Crear Análisis
                       </>
                     )}
                   </Button>
@@ -269,7 +269,7 @@ function CreateFiveWhysForm() {
                     onClick={() => router.push('/analysis/five-whys')}
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    Cancelar
                   </Button>
                 </div>
               </form>

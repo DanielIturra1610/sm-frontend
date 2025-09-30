@@ -32,16 +32,16 @@ export default function FiveWhysDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-600">
               <AlertCircle className="h-5 w-5" />
-              Error Loading Analysis
+              Error al Cargar el Análisis
             </CardTitle>
             <CardDescription>
-              {error?.message || 'Failed to load analysis details'}
+              {error?.message || 'Error al cargar los detalles del análisis'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => router.push('/analysis/five-whys')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Analyses
+              Volver a Análisis
             </Button>
           </CardContent>
         </Card>
@@ -66,17 +66,17 @@ export default function FiveWhysDetailPage() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => router.push('/analysis/five-whys')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Five Whys Analysis</h1>
-            <p className="text-muted-foreground">Analysis #{analysis.id.slice(0, 8)}</p>
+            <h1 className="text-3xl font-bold">Análisis de Cinco Porqués</h1>
+            <p className="text-muted-foreground">Análisis #{analysis.id.slice(0, 8)}</p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">
             <FileText className="mr-2 h-4 w-4" />
-            Generate Report
+            Generar Reporte
           </Button>
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function FiveWhysDetailPage() {
           {/* Problem Statement */}
           <Card className="border-2 border-blue-200 bg-blue-50">
             <CardHeader>
-              <CardTitle className="text-blue-900">Problem Statement</CardTitle>
+              <CardTitle className="text-blue-900">Declaración del Problema</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-blue-900 font-medium">{analysis.problem}</p>
@@ -107,7 +107,7 @@ export default function FiveWhysDetailPage() {
 
           {/* The Whys */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold">Analysis Chain</h2>
+            <h2 className="text-xl font-bold">Cadena de Análisis</h2>
             {analysis.whys.map((why, index) => (
               <div key={index} className="relative">
                 <Card className="border-2">
@@ -117,27 +117,27 @@ export default function FiveWhysDetailPage() {
                         <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold">
                           {index + 1}
                         </span>
-                        Why #{index + 1}
+                        Por qué #{index + 1}
                       </CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <p className="text-sm font-semibold text-muted-foreground mb-1">
-                        Question:
+                        Pregunta:
                       </p>
                       <p className="text-base">{why.question}</p>
                     </div>
                     <div className="pt-2 border-t">
                       <p className="text-sm font-semibold text-muted-foreground mb-1">
-                        Answer:
+                        Respuesta:
                       </p>
                       <p className="text-base font-medium">{why.answer}</p>
                     </div>
                     {why.evidence && why.evidence.length > 0 && (
                       <div className="pt-2 border-t">
                         <p className="text-sm font-semibold text-muted-foreground mb-2">
-                          Evidence:
+                          Evidencia:
                         </p>
                         <ul className="list-disc list-inside space-y-1">
                           {why.evidence.map((ev, idx) => (
@@ -162,7 +162,7 @@ export default function FiveWhysDetailPage() {
             <CardHeader>
               <CardTitle className="text-green-900 flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
-                Root Cause Identified
+                Causa Raíz Identificada
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -174,9 +174,9 @@ export default function FiveWhysDetailPage() {
           {analysis.actionItems && analysis.actionItems.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Action Items</CardTitle>
+                <CardTitle>Acciones</CardTitle>
                 <CardDescription>
-                  Corrective and preventive actions to address the root cause
+                  Acciones correctivas y preventivas para abordar la causa raíz
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -188,9 +188,9 @@ export default function FiveWhysDetailPage() {
                           <div className="flex-1">
                             <p className="font-medium mb-2">{item.description}</p>
                             <div className="flex gap-4 text-sm text-muted-foreground">
-                              <span>Assigned: {item.assignedTo}</span>
-                              <span>Due: {new Date(item.dueDate).toLocaleDateString()}</span>
-                              <span>Priority: {item.priority}</span>
+                              <span>Asignado: {item.assignedTo}</span>
+                              <span>Vencimiento: {new Date(item.dueDate).toLocaleDateString()}</span>
+                              <span>Prioridad: {item.priority}</span>
                             </div>
                           </div>
                           <Badge
@@ -213,15 +213,15 @@ export default function FiveWhysDetailPage() {
           {/* Timeline */}
           <Card>
             <CardHeader>
-              <CardTitle>Timeline</CardTitle>
+              <CardTitle>Cronología</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm font-medium">Created By</p>
+                <p className="text-sm font-medium">Creado Por</p>
                 <p className="text-sm text-muted-foreground">{analysis.createdBy}</p>
               </div>
               <div>
-                <p className="text-sm font-medium">Created At</p>
+                <p className="text-sm font-medium">Creado En</p>
                 <p className="text-sm text-muted-foreground">
                   {new Date(analysis.createdAt).toLocaleString()}
                 </p>
@@ -229,11 +229,11 @@ export default function FiveWhysDetailPage() {
               {analysis.reviewedBy && (
                 <>
                   <div>
-                    <p className="text-sm font-medium">Reviewed By</p>
+                    <p className="text-sm font-medium">Revisado Por</p>
                     <p className="text-sm text-muted-foreground">{analysis.reviewedBy}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Reviewed At</p>
+                    <p className="text-sm font-medium">Revisado En</p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(analysis.reviewedAt!).toLocaleString()}
                     </p>
@@ -246,12 +246,12 @@ export default function FiveWhysDetailPage() {
           {/* Related Incident */}
           <Card>
             <CardHeader>
-              <CardTitle>Related Incident</CardTitle>
+              <CardTitle>Incidente Relacionado</CardTitle>
             </CardHeader>
             <CardContent>
               <Link href={`/incidents/${analysis.incidentId}`}>
                 <Button variant="outline" className="w-full">
-                  View Incident #{analysis.incidentId.slice(0, 8)}
+                  Ver Incidente #{analysis.incidentId.slice(0, 8)}
                 </Button>
               </Link>
             </CardContent>

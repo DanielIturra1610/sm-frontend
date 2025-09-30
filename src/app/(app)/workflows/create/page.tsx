@@ -29,17 +29,17 @@ import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const workflowSchema = z.object({
-  name: z.string().min(5, 'Name must be at least 5 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
+  name: z.string().min(5, 'El nombre debe tener al menos 5 caracteres'),
+  description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),
   steps: z.array(
     z.object({
-      name: z.string().min(3, 'Step name must be at least 3 characters'),
-      description: z.string().min(5, 'Description must be at least 5 characters'),
+      name: z.string().min(3, 'El nombre del paso debe tener al menos 3 caracteres'),
+      description: z.string().min(5, 'La descripción debe tener al menos 5 caracteres'),
       type: z.enum(['approval', 'task', 'notification', 'automation']),
-      assignee: z.string().min(1, 'Assignee is required'),
+      assignee: z.string().min(1, 'Se requiere un responsable'),
       requiredApprovals: z.number().min(1).max(10),
     })
-  ).min(1, 'At least one step is required'),
+  ).min(1, 'Se requiere al menos un paso'),
 })
 
 type WorkflowFormValues = z.infer<typeof workflowSchema>
@@ -55,7 +55,7 @@ export default function CreateWorkflowPage() {
       description: '',
       steps: [
         {
-          name: 'Initial Review',
+          name: 'Revisión Inicial',
           description: '',
           type: 'approval',
           assignee: 'manager',
@@ -75,11 +75,11 @@ export default function CreateWorkflowPage() {
       setIsSubmitting(true)
       // Replace with actual API call: await createWorkflow(data)
       console.log('Creating workflow:', data)
-      toast.success('Workflow created successfully')
+      toast.success('Flujo de trabajo creado exitosamente')
       router.push('/workflows')
     } catch (error) {
       console.error('Error creating workflow:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create workflow')
+      toast.error(error instanceof Error ? error.message : 'Error al crear el flujo de trabajo')
     } finally {
       setIsSubmitting(false)
     }
@@ -96,22 +96,22 @@ export default function CreateWorkflowPage() {
             disabled={isSubmitting}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Workflow</h1>
-            <p className="text-muted-foreground">Define a new incident workflow process</p>
+            <h1 className="text-3xl font-bold">Crear Flujo de Trabajo</h1>
+            <p className="text-muted-foreground">Definir un nuevo proceso de flujo de trabajo de incidentes</p>
           </div>
         </div>
 
         {/* Info Card */}
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="text-blue-900">About Workflows</CardTitle>
+            <CardTitle className="text-blue-900">Acerca de los Flujos de Trabajo</CardTitle>
             <CardDescription className="text-blue-700">
-              Workflows automate incident management processes by defining a series of steps
-              that must be completed. Each step can require approvals, assign tasks, send
-              notifications, or trigger automations.
+              Los flujos de trabajo automatizan los procesos de gestión de incidentes definiendo una serie de pasos
+              que deben completarse. Cada paso puede requerir aprobaciones, asignar tareas, enviar
+              notificaciones o activar automatizaciones.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -119,7 +119,7 @@ export default function CreateWorkflowPage() {
         {/* Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Workflow Details</CardTitle>
+            <CardTitle>Detalles del Flujo de Trabajo</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -130,10 +130,10 @@ export default function CreateWorkflowPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Workflow Name *</FormLabel>
+                      <FormLabel>Nombre del Flujo de Trabajo *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="e.g., Standard Incident Investigation"
+                          placeholder="por ejemplo, Investigación Estándar de Incidentes"
                           {...field}
                           disabled={isSubmitting}
                         />
@@ -149,10 +149,10 @@ export default function CreateWorkflowPage() {
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description *</FormLabel>
+                      <FormLabel>Descripción *</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Describe the purpose and scope of this workflow..."
+                          placeholder="Describe el propósito y alcance de este flujo de trabajo..."
                           className="min-h-[100px]"
                           {...field}
                           disabled={isSubmitting}
@@ -167,9 +167,9 @@ export default function CreateWorkflowPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold">Workflow Steps</h3>
+                      <h3 className="text-lg font-semibold">Pasos del Flujo de Trabajo</h3>
                       <p className="text-sm text-muted-foreground">
-                        Define the steps in this workflow process
+                        Define los pasos en este proceso de flujo de trabajo
                       </p>
                     </div>
                     <Button
@@ -188,7 +188,7 @@ export default function CreateWorkflowPage() {
                       disabled={isSubmitting}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Step
+                      Añadir Paso
                     </Button>
                   </div>
 
@@ -196,7 +196,7 @@ export default function CreateWorkflowPage() {
                     <Card key={field.id} className="border-2">
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">Step {index + 1}</CardTitle>
+                          <CardTitle className="text-base">Paso {index + 1}</CardTitle>
                           {fields.length > 1 && (
                             <Button
                               type="button"
@@ -216,12 +216,12 @@ export default function CreateWorkflowPage() {
                           name={`steps.${index}.name`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Step Name</FormLabel>
+                              <FormLabel>Nombre del Paso</FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   disabled={isSubmitting}
-                                  placeholder="e.g., Manager Review"
+                                  placeholder="por ejemplo, Revisión del Gerente"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -234,12 +234,12 @@ export default function CreateWorkflowPage() {
                           name={`steps.${index}.description`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Description</FormLabel>
+                              <FormLabel>Descripción</FormLabel>
                               <FormControl>
                                 <Textarea
                                   {...field}
                                   disabled={isSubmitting}
-                                  placeholder="Describe what happens in this step..."
+                                  placeholder="Describe qué sucede en este paso..."
                                   className="min-h-[80px]"
                                 />
                               </FormControl>
@@ -254,7 +254,7 @@ export default function CreateWorkflowPage() {
                             name={`steps.${index}.type`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Type</FormLabel>
+                                <FormLabel>Tipo</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
                                   defaultValue={field.value}
@@ -262,14 +262,14 @@ export default function CreateWorkflowPage() {
                                 >
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select type" />
+                                      <SelectValue placeholder="Seleccionar tipo" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="approval">Approval</SelectItem>
-                                    <SelectItem value="task">Task</SelectItem>
-                                    <SelectItem value="notification">Notification</SelectItem>
-                                    <SelectItem value="automation">Automation</SelectItem>
+                                    <SelectItem value="approval">Aprobación</SelectItem>
+                                    <SelectItem value="task">Tarea</SelectItem>
+                                    <SelectItem value="notification">Notificación</SelectItem>
+                                    <SelectItem value="automation">Automatización</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -282,7 +282,7 @@ export default function CreateWorkflowPage() {
                             name={`steps.${index}.assignee`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Assignee</FormLabel>
+                                <FormLabel>Responsable</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
                                   defaultValue={field.value}
@@ -290,14 +290,14 @@ export default function CreateWorkflowPage() {
                                 >
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Select assignee" />
+                                      <SelectValue placeholder="Seleccionar responsable" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    <SelectItem value="reporter">Reporter</SelectItem>
-                                    <SelectItem value="manager">Manager</SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                    <SelectItem value="custom">Custom</SelectItem>
+                                    <SelectItem value="reporter">Reportero</SelectItem>
+                                    <SelectItem value="manager">Gerente</SelectItem>
+                                    <SelectItem value="admin">Administrador</SelectItem>
+                                    <SelectItem value="custom">Personalizado</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -310,7 +310,7 @@ export default function CreateWorkflowPage() {
                             name={`steps.${index}.requiredApprovals`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Required Approvals</FormLabel>
+                                <FormLabel>Aprobaciones Requeridas</FormLabel>
                                 <FormControl>
                                   <Input
                                     type="number"
@@ -341,12 +341,12 @@ export default function CreateWorkflowPage() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
+                        Creando...
                       </>
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Create Workflow
+                        Crear Flujo de Trabajo
                       </>
                     )}
                   </Button>
@@ -356,7 +356,7 @@ export default function CreateWorkflowPage() {
                     onClick={() => router.push('/workflows')}
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    Cancelar
                   </Button>
                 </div>
               </form>

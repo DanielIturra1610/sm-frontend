@@ -99,24 +99,24 @@ export default function DocumentsListPage() {
                 className="pl-10"
               />
             </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={typeFilter || 'all'} onValueChange={(value) => setTypeFilter(value === 'all' ? '' : value)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Tipo de Documento" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los Tipos</SelectItem>
+                <SelectItem value="all">Todos los Tipos</SelectItem>
                 <SelectItem value="incident_report">Reporte de Incidente</SelectItem>
                 <SelectItem value="analysis_report">Reporte de Análisis</SelectItem>
                 <SelectItem value="action_plan">Plan de Acción</SelectItem>
                 <SelectItem value="compliance_report">Reporte de Cumplimiento</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter || 'all'} onValueChange={(value) => setStatusFilter(value === 'all' ? '' : value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los Estados</SelectItem>
+                <SelectItem value="all">Todos los Estados</SelectItem>
                 <SelectItem value="generating">Generando</SelectItem>
                 <SelectItem value="ready">Listo</SelectItem>
                 <SelectItem value="approved">Aprobado</SelectItem>

@@ -61,16 +61,15 @@ export default function UserTasksPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => router.push('/workflows')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">My Tasks</h1>
-            <p className="text-muted-foreground">Tasks assigned to you</p>
+            <h1 className="text-3xl font-bold">Mis Tareas</h1>
+            <p className="text-muted-foreground">Tareas asignadas a usted</p>
           </div>
         </div>
       </div>
@@ -83,35 +82,34 @@ export default function UserTasksPage() {
               variant={filter === 'all' ? 'primary' : 'outline'}
               onClick={() => setFilter('all')}
             >
-              All ({tasks?.length || 0})
+              Todas ({tasks?.length || 0})
             </Button>
             <Button
               variant={filter === 'pending' ? 'primary' : 'outline'}
               onClick={() => setFilter('pending')}
             >
-              Pending ({tasks?.filter((t) => t.status === 'pending').length || 0})
+              Pendientes ({tasks?.filter((t) => t.status === 'pending').length || 0})
             </Button>
             <Button
               variant={filter === 'in_progress' ? 'primary' : 'outline'}
               onClick={() => setFilter('in_progress')}
             >
-              In Progress ({tasks?.filter((t) => t.status === 'in_progress').length || 0})
+              En Progreso ({tasks?.filter((t) => t.status === 'in_progress').length || 0})
             </Button>
             <Button
               variant={filter === 'overdue' ? 'primary' : 'outline'}
               onClick={() => setFilter('overdue')}
             >
-              Overdue ({tasks?.filter((t) => t.status === 'overdue').length || 0})
+              Atrasadas ({tasks?.filter((t) => t.status === 'overdue').length || 0})
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+            <CardTitle className="text-sm font-medium">Tareas Totales</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{tasks?.length || 0}</div>
@@ -119,7 +117,7 @@ export default function UserTasksPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
@@ -129,7 +127,7 @@ export default function UserTasksPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <CardTitle className="text-sm font-medium">En Progreso</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
@@ -139,7 +137,7 @@ export default function UserTasksPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+            <CardTitle className="text-sm font-medium">Atrasadas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
@@ -155,11 +153,11 @@ export default function UserTasksPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <ListTodo className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">No tasks found</p>
+              <p className="text-lg font-medium mb-2">No se encontraron tareas</p>
               <p className="text-muted-foreground">
                 {filter !== 'all'
-                  ? 'No tasks match your filter'
-                  : 'You have no tasks assigned at the moment'}
+                  ? 'No hay tareas que coincidan con su filtro'
+                  : 'No tiene tareas asignadas en este momento'}
               </p>
             </CardContent>
           </Card>
@@ -185,7 +183,7 @@ export default function UserTasksPage() {
                         variant="outline"
                         className={getPriorityColor(task.priority)}
                       >
-                        {task.priority} priority
+                        Prioridad {task.priority}
                       </Badge>
                     </div>
 
@@ -195,16 +193,16 @@ export default function UserTasksPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
-                        <p className="font-medium text-muted-foreground">Workflow Instance</p>
+                        <p className="font-medium text-muted-foreground">Instancia de Flujo de Trabajo</p>
                         <p>#{task.workflowInstanceId.slice(0, 8)}</p>
                       </div>
                       <div>
-                        <p className="font-medium text-muted-foreground">Assigned To</p>
+                        <p className="font-medium text-muted-foreground">Asignado a</p>
                         <p>{task.assignedTo}</p>
                       </div>
                       {task.dueDate && (
                         <div>
-                          <p className="font-medium text-muted-foreground">Due Date</p>
+                          <p className="font-medium text-muted-foreground">Fecha de Vencimiento</p>
                           <p className={
                             new Date(task.dueDate) < new Date()
                               ? 'text-red-600 font-medium'
@@ -227,7 +225,7 @@ export default function UserTasksPage() {
                         disabled={task.status === 'completed'}
                       >
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Complete Task
+                        Completar Tarea
                       </Button>
                       <Button
                         size="sm"
@@ -237,7 +235,7 @@ export default function UserTasksPage() {
                           router.push(`/workflows/${task.workflowInstanceId}`)
                         }}
                       >
-                        View Workflow
+                        Ver Flujo de Trabajo
                       </Button>
                     </div>
                   </div>

@@ -63,19 +63,19 @@ export default function ClientVerifyEmailPage() {
 
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <Button asChild className="w-full h-12 bg-stegmaier-blue hover:bg-stegmaier-blue-dark">
-                  <Link href="/">
+                <Link href="/" className="block">
+                  <Button className="w-full h-12 bg-stegmaier-blue hover:bg-stegmaier-blue-dark">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Volver al inicio
-                  </Link>
-                </Button>
-                
-                <Button variant="outline" asChild className="w-full h-12">
-                  <Link href="/login">
+                  </Button>
+                </Link>
+
+                <Link href="/login" className="block">
+                  <Button variant="outline" className="w-full h-12">
                     <Mail className="h-4 w-4 mr-2" />
                     Ir a iniciar sesión
-                  </Link>
-                </Button>
+                  </Button>
+                </Link>
               </div>
 
               {/* Help Link */}

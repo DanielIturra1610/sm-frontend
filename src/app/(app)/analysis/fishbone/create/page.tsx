@@ -23,29 +23,29 @@ import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const fishboneSchema = z.object({
-  incidentId: z.string().min(1, 'Incident ID is required'),
-  problem: z.string().min(10, 'Problem statement must be at least 10 characters'),
+  incidentId: z.string().min(1, 'ID del incidente es requerido'),
+  problem: z.string().min(10, 'La declaración del problema debe tener al menos 10 caracteres'),
   categories: z.array(
     z.object({
-      name: z.string().min(2, 'Category name must be at least 2 characters'),
+      name: z.string().min(2, 'El nombre de la categoría debe tener al menos 2 caracteres'),
       causes: z.array(
         z.object({
-          description: z.string().min(5, 'Cause description must be at least 5 characters'),
+          description: z.string().min(5, 'La descripción de la causa debe tener al menos 5 caracteres'),
         })
-      ).min(1, 'At least one cause is required'),
+      ).min(1, 'Se requiere al menos una causa'),
     })
-  ).min(1, 'At least one category is required'),
+  ).min(1, 'Se requiere al menos una categoría'),
 })
 
 type FishboneFormValues = z.infer<typeof fishboneSchema>
 
 const defaultCategories = [
-  { name: 'People', causes: [{ description: '' }] },
-  { name: 'Methods', causes: [{ description: '' }] },
-  { name: 'Machines', causes: [{ description: '' }] },
-  { name: 'Materials', causes: [{ description: '' }] },
-  { name: 'Measurements', causes: [{ description: '' }] },
-  { name: 'Environment', causes: [{ description: '' }] },
+  { name: 'Personas', causes: [{ description: '' }] },
+  { name: 'Métodos', causes: [{ description: '' }] },
+  { name: 'Máquinas', causes: [{ description: '' }] },
+  { name: 'Materiales', causes: [{ description: '' }] },
+  { name: 'Mediciones', causes: [{ description: '' }] },
+  { name: 'Entorno', causes: [{ description: '' }] },
 ]
 
 function CreateFishboneFormContent() {
@@ -68,11 +68,11 @@ function CreateFishboneFormContent() {
     try {
       setIsSubmitting(true)
       const newAnalysis = await createAnalysis(data)
-      toast.success('Fishbone analysis created successfully')
+      toast.success('Análisis de espina de pescado creado exitosamente')
       router.push(`/analysis/fishbone/${newAnalysis.id}`)
     } catch (error) {
       console.error('Error creating analysis:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create analysis')
+      toast.error(error instanceof Error ? error.message : 'Error al crear el análisis')
     } finally {
       setIsSubmitting(false)
     }
@@ -84,28 +84,28 @@ function CreateFishboneFormContent() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => router.push('/analysis/fishbone')} disabled={isSubmitting}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Fishbone Analysis</h1>
-            <p className="text-muted-foreground">Identify root causes using the Ishikawa diagram</p>
+            <h1 className="text-3xl font-bold">Crear Análisis de Espina de Pescado</h1>
+            <p className="text-muted-foreground">Identificar causas raíz usando el diagrama de Ishikawa</p>
           </div>
         </div>
 
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="text-blue-900">About Fishbone Diagram</CardTitle>
+            <CardTitle className="text-blue-900">Acerca del Diagrama de Espina de Pescado</CardTitle>
             <CardDescription className="text-blue-700">
-              The Fishbone (Ishikawa) diagram helps identify multiple potential causes of a problem
-              by organizing them into categories. Common categories include: People, Methods, Machines,
-              Materials, Measurements, and Environment (6M framework).
+              El diagrama de Espina de Pescado (Ishikawa) ayuda a identificar múltiples causas potenciales de un problema
+              organizándolas en categorías. Las categorías comunes incluyen: Personas, Métodos, Máquinas,
+              Materiales, Mediciones y Entorno (marco 6M).
             </CardDescription>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Analysis Details</CardTitle>
+            <CardTitle>Detalles del Análisis</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -115,9 +115,9 @@ function CreateFishboneFormContent() {
                   name="incidentId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Incident ID *</FormLabel>
+                      <FormLabel>ID del Incidente *</FormLabel>
                       <FormControl>
-                        <Input placeholder="incident-id" {...field} disabled={isSubmitting} />
+                        <Input placeholder="id-del-incidente" {...field} disabled={isSubmitting} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -129,17 +129,17 @@ function CreateFishboneFormContent() {
                   name="problem"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Problem Statement (Effect) *</FormLabel>
+                      <FormLabel>Declaración del Problema (Efecto) *</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Clearly describe the effect or problem..."
+                          placeholder="Describe claramente el efecto o problema..."
                           className="min-h-[100px]"
                           {...field}
                           disabled={isSubmitting}
                         />
                       </FormControl>
                       <FormDescription>
-                        This is the &quot;head&quot; of the fishbone - the effect you&apos;re analyzing
+                        Esta es la &quot;cabeza&quot; de la espina de pescado - el efecto que estás analizando
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -148,7 +148,7 @@ function CreateFishboneFormContent() {
 
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    <strong>Note:</strong> For this simplified version, edit categories directly in the form after creation.
+                    <strong>Nota:</strong> Para esta versión simplificada, edita las categorías directamente en el formulario después de la creación.
                   </p>
                 </div>
 
@@ -157,12 +157,12 @@ function CreateFishboneFormContent() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
+                        Creando...
                       </>
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Create Analysis
+                        Crear Análisis
                       </>
                     )}
                   </Button>
@@ -172,7 +172,7 @@ function CreateFishboneFormContent() {
                     onClick={() => router.push('/analysis/fishbone')}
                     disabled={isSubmitting}
                   >
-                    Cancel
+                    Cancelar
                   </Button>
                 </div>
               </form>

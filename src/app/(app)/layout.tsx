@@ -56,7 +56,7 @@ export default function AppLayout({
                   </div>
                   <Button onClick={logout} variant="outline" size="sm">
                     <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    Cerrar Sesión
                   </Button>
                 </div>
 
