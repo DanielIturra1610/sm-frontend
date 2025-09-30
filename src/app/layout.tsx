@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/shared/contexts/auth-context";
+import { TenantProvider } from "@/shared/contexts/tenant-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -16,8 +17,8 @@ const jetBrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Stegmaier Safety Management",
-  description: "Comprehensive industrial safety document management system",
+  title: "Gestión de Seguridad Stegmaier",
+  description: "Sistema integral de gestión de documentos de seguridad industrial",
 };
 
 export default function RootLayout({
@@ -26,12 +27,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body
         className={`${inter.variable} ${jetBrainsMono.variable} antialiased`}
       >
         <AuthProvider>
-          {children}
+          <TenantProvider>
+            {children}
+          </TenantProvider>
         </AuthProvider>
       </body>
     </html>

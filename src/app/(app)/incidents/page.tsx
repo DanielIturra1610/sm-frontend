@@ -270,7 +270,8 @@ export default function IncidentsPage() {
   // Load initial data
   React.useEffect(() => {
     fetchIncidents(filters)
-  }, [fetchIncidents, filters])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters])
 
   const handleFiltersChange = React.useCallback((newFilters: IncidentListParams) => {
     setFilters({ ...newFilters, page: 1 }) // Reset to first page when filters change
@@ -306,7 +307,7 @@ export default function IncidentsPage() {
   }, [])
 
   const handleDelete = React.useCallback(async (incident: Incident) => {
-    if (confirm(`Are you sure you want to delete incident "${incident.title}"?`)) {
+    if (confirm(`¿Estás seguro de que deseas eliminar el incidente "${incident.title}"?`)) {
       console.log("Delete incident:", incident.id)
       // TODO: Implement delete API call
       await fetchIncidents(filters)
@@ -317,7 +318,7 @@ export default function IncidentsPage() {
   const columns: ColumnDef<Incident>[] = [
     {
       accessorKey: "title",
-      header: "Incident",
+      header: "Incidente",
       cell: ({ row }) => {
         const incident = row.original
         return (
@@ -355,28 +356,28 @@ export default function IncidentsPage() {
     },
     {
       accessorKey: "type",
-      header: "Type",
+      header: "Tipo",
       cell: ({ row }) => (
         <IncidentTypeBadge type={row.getValue("type")} />
       ),
     },
     {
       accessorKey: "severity",
-      header: "Severity",
+      header: "Severidad",
       cell: ({ row }) => (
         <IncidentSeverityBadge severity={row.getValue("severity")} />
       ),
     },
     {
       accessorKey: "status",
-      header: "Status",
+      header: "Estado",
       cell: ({ row }) => (
         <IncidentStatusBadge status={row.getValue("status")} />
       ),
     },
     {
       accessorKey: "reportedBy",
-      header: "Reporter",
+      header: "Reportado por",
       cell: ({ row }) => {
         const incident = row.original
         return (
@@ -389,7 +390,7 @@ export default function IncidentsPage() {
             </div>
             <div className="flex items-center space-x-2 text-xs text-gray-500">
               <Clock className="h-3 w-3" />
-              <span>{formatDistanceToNow(new Date(incident.reportedAt))} ago</span>
+              <span>hace {formatDistanceToNow(new Date(incident.reportedAt))}</span>
             </div>
           </div>
         )
@@ -397,7 +398,7 @@ export default function IncidentsPage() {
     },
     {
       accessorKey: "assignedTo",
-      header: "Assigned To",
+      header: "Asignado a",
       cell: ({ row }) => {
         const assignedTo = row.getValue("assignedTo") as string | undefined
         return assignedTo ? (
@@ -406,13 +407,13 @@ export default function IncidentsPage() {
             <span className="text-sm text-gray-900">{assignedTo}</span>
           </div>
         ) : (
-          <span className="text-sm text-gray-500 italic">Unassigned</span>
+          <span className="text-sm text-gray-500 italic">Sin asignar</span>
         )
       },
     },
     {
       accessorKey: "reportedAt",
-      header: "Date",
+      header: "Fecha",
       cell: ({ row }) => {
         const date = new Date(row.getValue("reportedAt"))
         return (
@@ -429,7 +430,7 @@ export default function IncidentsPage() {
     },
     {
       id: "actions",
-      header: "Actions",
+      header: "Acciones",
       cell: ({ row }) => {
         const incident = row.original
 
@@ -437,19 +438,19 @@ export default function IncidentsPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
+                <span className="sr-only">Abrir menú</span>
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuLabel>Acciones</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleView(incident)}>
                 <Eye className="mr-2 h-4 w-4" />
-                View Details
+                Ver Detalles
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEdit(incident)}>
                 <Edit className="mr-2 h-4 w-4" />
-                Edit
+                Editar
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -457,7 +458,7 @@ export default function IncidentsPage() {
                 className="text-red-600"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -477,23 +478,23 @@ export default function IncidentsPage() {
                 <AlertTriangle className="h-5 w-5 text-stegmaier-blue" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Incident Management</h1>
-                <p className="text-sm text-gray-600">Track and manage safety incidents</p>
+                <h1 className="text-xl font-semibold text-gray-900">Gestión de Incidentes</h1>
+                <p className="text-sm text-gray-600">Rastrea y gestiona incidentes de seguridad</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3">
               <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
                 <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-                Refresh
+                Actualizar
               </Button>
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                Exportar
               </Button>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                New Incident
+                Nuevo Incidente
               </Button>
             </div>
           </div>
@@ -523,19 +524,19 @@ export default function IncidentsPage() {
               onPaginationChange={handlePaginationChange}
               onRefresh={handleRefresh}
               isLoading={isLoading}
-              title="Incidents"
-              description={`${pagination.total} total incidents`}
-              searchPlaceholder="Search incidents..."
+              title="Incidentes"
+              description={`${pagination.total} incidentes totales`}
+              searchPlaceholder="Buscar incidentes..."
               showSearch={false} // Using filter panel instead
               showColumnToggle={true}
               showPagination={true}
               showExport={false}
               showRefresh={false} // Using header refresh instead
-              emptyStateTitle="No incidents found"
-              emptyStateDescription="No incidents match your current filters. Try adjusting your search criteria."
+              emptyStateTitle="No se encontraron incidentes"
+              emptyStateDescription="No hay incidentes que coincidan con tus filtros actuales. Intenta ajustar tus criterios de búsqueda."
               emptyStateAction={
                 <Button variant="outline" onClick={resetFilters}>
-                  Clear Filters
+                  Limpiar Filtros
                 </Button>
               }
               className="w-full"

@@ -14,14 +14,14 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Eye, EyeOff, Shield, Users, BarChart3, CheckCircle, Loader2 } from 'lucide-react'
 
 const registerSchema = z.object({
-  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  full_name: z.string().min(2, 'El nombre completo debe tener al menos 2 caracteres'),
+  phone: z.string().min(10, 'El número de teléfono debe tener al menos 10 dígitos'),
+  email: z.string().email('Por favor, ingresa un email válido'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
   password_confirm: z.string(),
-  terms: z.boolean().refine(val => val === true, 'You must accept the terms and conditions')
+  terms: z.boolean().refine(val => val === true, 'Debes aceptar los términos y condiciones')
 }).refine(data => data.password === data.password_confirm, {
-  message: "Passwords don't match",
+  message: "Las contraseñas no coinciden",
   path: ["password_confirm"]
 })
 
@@ -54,10 +54,10 @@ export default function RegisterPage() {
     if (/[0-9]/.test(password)) score++
     if (/[^A-Za-z0-9]/.test(password)) score++
 
-    if (score <= 2) return { strength: 1, label: 'Weak' }
-    if (score <= 3) return { strength: 2, label: 'Fair' }
-    if (score <= 4) return { strength: 3, label: 'Good' }
-    return { strength: 4, label: 'Strong' }
+    if (score <= 2) return { strength: 1, label: 'Débil' }
+    if (score <= 3) return { strength: 2, label: 'Aceptable' }
+    if (score <= 4) return { strength: 3, label: 'Buena' }
+    return { strength: 4, label: 'Fuerte' }
   }
 
   const passwordStrength = getPasswordStrength(password || '')
@@ -68,13 +68,13 @@ export default function RegisterPage() {
       const { terms, ...registerData } = data
       await registerUser(registerData)
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'Registration failed. Please try again.')
+      setError(error instanceof Error ? error.message : 'Error en el registro. Por favor, inténtalo de nuevo.')
     }
   }
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Branding & Features */}
+      {/* Panel Izquierdo - Marca y Características */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-stegmaier-blue to-stegmaier-blue-dark relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative z-10 flex flex-col justify-center px-12 py-24 text-white">
@@ -83,11 +83,11 @@ export default function RegisterPage() {
           </div>
 
           <h1 className="text-4xl font-bold mb-6">
-            Join the Future of Industrial Safety
+            Únete al Futuro de la Seguridad Industrial
           </h1>
 
           <p className="text-xl mb-12 text-white/90">
-            Streamline your safety management with enterprise-grade tools designed for modern industrial environments.
+            Simplifica tu gestión de seguridad con herramientas empresariales diseñadas para entornos industriales modernos.
           </p>
 
           <div className="space-y-6">
@@ -96,8 +96,8 @@ export default function RegisterPage() {
                 <Shield className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">OSHA Compliance</h3>
-                <p className="text-white/80">Automated compliance tracking and reporting</p>
+                <h3 className="font-semibold mb-1">Cumplimiento OSHA</h3>
+                <p className="text-white/80">Seguimiento y reporte automático de cumplimiento</p>
               </div>
             </div>
 
@@ -106,8 +106,8 @@ export default function RegisterPage() {
                 <BarChart3 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Advanced Analytics</h3>
-                <p className="text-white/80">Real-time insights and predictive safety metrics</p>
+                <h3 className="font-semibold mb-1">Análisis Avanzado</h3>
+                <p className="text-white/80">Información en tiempo real y métricas predictivas de seguridad</p>
               </div>
             </div>
 
@@ -116,32 +116,32 @@ export default function RegisterPage() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Team Collaboration</h3>
-                <p className="text-white/80">Seamless workflow management across departments</p>
+                <h3 className="font-semibold mb-1">Colaboración en Equipo</h3>
+                <p className="text-white/80">Gestión de flujos de trabajo sin problemas entre departamentos</p>
               </div>
             </div>
           </div>
 
           <div className="mt-12 pt-8 border-t border-white/20">
             <p className="text-sm text-white/70">
-              Trusted by 500+ companies worldwide for their safety management needs
+              Confiado por más de 500 empresas en todo el mundo para sus necesidades de gestión de seguridad
             </p>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - Registration Form */}
+      {/* Panel Derecho - Formulario de Registro */}
       <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-12">
         <div className="w-full max-w-md mx-auto">
-          {/* Mobile Logo */}
+          {/* Logo Móvil */}
           <div className="lg:hidden mb-8 text-center">
             <Logo size="md" />
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Create your account</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Crea tu cuenta</h2>
             <p className="text-gray-600">
-              Get started with your safety management platform
+              Comienza con tu plataforma de gestión de seguridad
             </p>
           </div>
 
@@ -153,11 +153,11 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <Label htmlFor="full_name">Full Name</Label>
+              <Label htmlFor="full_name">Nombre Completo</Label>
               <Input
                 id="full_name"
                 {...register('full_name')}
-                placeholder="Enter your full name"
+                placeholder="Ingresa tu nombre completo"
                 className="mt-1"
                 aria-invalid={errors.full_name ? 'true' : 'false'}
               />
@@ -167,11 +167,11 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone">Número de Teléfono</Label>
               <Input
                 id="phone"
                 {...register('phone')}
-                placeholder="Enter your phone number"
+                placeholder="Ingresa tu número de teléfono"
                 className="mt-1"
                 aria-invalid={errors.phone ? 'true' : 'false'}
               />
@@ -181,12 +181,12 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Correo Electrónico</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
-                placeholder="Enter your email address"
+                placeholder="Ingresa tu correo electrónico"
                 className="mt-1"
                 aria-invalid={errors.email ? 'true' : 'false'}
               />
@@ -196,13 +196,13 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Contraseña</Label>
               <div className="relative mt-1">
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
-                  placeholder="Create a strong password"
+                  placeholder="Crea una contraseña segura"
                   className="pr-10"
                   aria-invalid={errors.password ? 'true' : 'false'}
                 />
@@ -248,13 +248,13 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="password_confirm">Confirm Password</Label>
+              <Label htmlFor="password_confirm">Confirmar Contraseña</Label>
               <div className="relative mt-1">
                 <Input
                   id="password_confirm"
                   type={showConfirmPassword ? 'text' : 'password'}
                   {...register('password_confirm')}
-                  placeholder="Confirm your password"
+                  placeholder="Confirma tu contraseña"
                   className="pr-10"
                   aria-invalid={errors.password_confirm ? 'true' : 'false'}
                 />
@@ -286,13 +286,13 @@ export default function RegisterPage() {
                 checked={!!watch('terms')}
               />
               <Label htmlFor="terms" className="text-sm font-normal">
-                I agree to the{' '}
+                Acepto los{' '}
                 <Link href="/terms" className="text-stegmaier-blue hover:underline">
-                  Terms and Conditions
+                  Términos y Condiciones
                 </Link>{' '}
-                and{' '}
+                y{' '}
                 <Link href="/privacy" className="text-stegmaier-blue hover:underline">
-                  Privacy Policy
+                  Política de Privacidad
                 </Link>
               </Label>
             </div>
@@ -308,19 +308,19 @@ export default function RegisterPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating account...
+                  Creando cuenta...
                 </>
               ) : (
-                'Create account'
+                'Crear cuenta'
               )}
             </Button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              Already have an account?{' '}
+              ¿Ya tienes una cuenta?{' '}
               <Link href="/login" className="text-stegmaier-blue hover:underline font-medium">
-                Sign in
+                Iniciar sesión
               </Link>
             </p>
           </div>
@@ -329,11 +329,11 @@ export default function RegisterPage() {
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
               <div className="flex items-center">
                 <CheckCircle className="w-4 h-4 mr-1 text-green-500" />
-                SSL Secured
+                SSL Seguro
               </div>
               <div className="flex items-center">
                 <Shield className="w-4 h-4 mr-1 text-blue-500" />
-                GDPR Compliant
+                Cumple con GDPR
               </div>
             </div>
           </div>

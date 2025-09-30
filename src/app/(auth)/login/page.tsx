@@ -14,8 +14,8 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Eye, EyeOff, Shield, TrendingUp, Users, FileText, Loader2, CheckCircle } from 'lucide-react'
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Por favor, ingresa un email válido'),
+  password: z.string().min(1, 'La contraseña es requerida'),
   remember: z.boolean().optional()
 })
 
@@ -42,13 +42,13 @@ export default function LoginPage() {
       const { remember, ...loginData } = data
       await login(loginData)
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'Login failed. Please check your credentials.')
+      setError(error instanceof Error ? error.message : 'Error al iniciar sesión. Por favor, verifica tus credenciales.')
     }
   }
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Branding & Features */}
+      {/* Panel Izquierdo - Marca y Características */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-stegmaier-blue to-stegmaier-blue-dark relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative z-10 flex flex-col justify-center px-12 py-24 text-white">
@@ -57,11 +57,11 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-4xl font-bold mb-6">
-            Welcome Back to Stegmaier Management
+            Bienvenido de nuevo a Stegmaier Management
           </h1>
 
           <p className="text-xl mb-12 text-white/90">
-            Continue managing your industrial safety operations with confidence and precision.
+            Continúa gestionando tus operaciones de seguridad industrial con confianza y precisión.
           </p>
 
           <div className="space-y-6">
@@ -70,8 +70,8 @@ export default function LoginPage() {
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Real-time Monitoring</h3>
-                <p className="text-white/80">Track safety metrics and incidents as they happen</p>
+                <h3 className="font-semibold mb-1">Monitoreo en Tiempo Real</h3>
+                <p className="text-white/80">Rastrea métricas de seguridad e incidentes según suceden</p>
               </div>
             </div>
 
@@ -80,8 +80,8 @@ export default function LoginPage() {
                 <FileText className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Compliance Reports</h3>
-                <p className="text-white/80">Generate OSHA and regulatory compliance documents</p>
+                <h3 className="font-semibold mb-1">Reportes de Cumplimiento</h3>
+                <p className="text-white/80">Genera documentos de cumplimiento OSHA y regulatorios</p>
               </div>
             </div>
 
@@ -90,8 +90,8 @@ export default function LoginPage() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Team Management</h3>
-                <p className="text-white/80">Coordinate safety efforts across your organization</p>
+                <h3 className="font-semibold mb-1">Gestión de Equipos</h3>
+                <p className="text-white/80">Coordina esfuerzos de seguridad en tu organización</p>
               </div>
             </div>
           </div>
@@ -100,33 +100,33 @@ export default function LoginPage() {
             <div className="grid grid-cols-3 gap-8 text-center">
               <div>
                 <div className="text-2xl font-bold">99.7%</div>
-                <div className="text-sm text-white/70">Uptime</div>
+                <div className="text-sm text-white/70">Disponibilidad</div>
               </div>
               <div>
                 <div className="text-2xl font-bold">500+</div>
-                <div className="text-sm text-white/70">Companies</div>
+                <div className="text-sm text-white/70">Empresas</div>
               </div>
               <div>
                 <div className="text-2xl font-bold">24/7</div>
-                <div className="text-sm text-white/70">Support</div>
+                <div className="text-sm text-white/70">Soporte</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Panel - Login Form */}
+      {/* Panel Derecho - Formulario de Login */}
       <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-16 py-12">
         <div className="w-full max-w-md mx-auto">
-          {/* Mobile Logo */}
+          {/* Logo Móvil */}
           <div className="lg:hidden mb-8 text-center">
             <Logo size="md" />
           </div>
 
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign in to your account</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Inicia sesión en tu cuenta</h2>
             <p className="text-gray-600">
-              Access your safety management dashboard
+              Accede a tu panel de gestión de seguridad
             </p>
           </div>
 
@@ -138,12 +138,12 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <Label htmlFor="email">Email Address</Label>
+              <Label htmlFor="email">Correo Electrónico</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
-                placeholder="Enter your email address"
+                placeholder="Ingresa tu correo electrónico"
                 className="mt-1"
                 aria-invalid={errors.email ? 'true' : 'false'}
               />
@@ -154,12 +154,12 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <Link
                   href="/forgot-password"
                   className="text-sm text-stegmaier-blue hover:underline"
                 >
-                  Forgot your password?
+                  ¿Olvidaste tu contraseña?
                 </Link>
               </div>
               <div className="relative mt-1">
@@ -167,7 +167,7 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
-                  placeholder="Enter your password"
+                  placeholder="Ingresa tu contraseña"
                   className="pr-10"
                   aria-invalid={errors.password ? 'true' : 'false'}
                 />
@@ -199,7 +199,7 @@ export default function LoginPage() {
                 checked={!!watch('remember')}
               />
               <Label htmlFor="remember" className="text-sm font-normal">
-                Remember me for 30 days
+                Recordarme por 30 días
               </Label>
             </div>
 
@@ -211,19 +211,19 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Signing in...
+                  Iniciando sesión...
                 </>
               ) : (
-                'Sign in'
+                'Iniciar sesión'
               )}
             </Button>
           </form>
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              Don&apos;t have an account?{' '}
+              ¿No tienes una cuenta?{' '}
               <Link href="/register" className="text-stegmaier-blue hover:underline font-medium">
-                Create one now
+                Crea una ahora
               </Link>
             </p>
           </div>
@@ -232,11 +232,11 @@ export default function LoginPage() {
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
               <div className="flex items-center">
                 <CheckCircle className="w-4 h-4 mr-1 text-green-500" />
-                SSL Secured
+                SSL Seguro
               </div>
               <div className="flex items-center">
                 <Shield className="w-4 h-4 mr-1 text-blue-500" />
-                SOC 2 Type II
+                SOC 2 Tipo II
               </div>
             </div>
           </div>

@@ -653,6 +653,201 @@ NEXT_PUBLIC_APP_NAME=Stegmaier Safety Management
 
 ---
 
+## 🚨 Reglas Críticas para Prevenir Errores Client-Side
+
+### 1. **Hidratación y SSR Safety**
+- **SIEMPRE** usar el patrón de "mounted state" en componentes client-side:
+```tsx
+const [mounted, setMounted] = useState(false)
+
+useEffect(() => {
+  setMounted(true)
+}, [])
+
+if (!mounted) {
+  return <LoadingComponent />
+}
+```
+
+### 2. **Validación de Props y Estados**
+- **NUNCA** asumir que las props existen sin validar:
+```tsx
+// ❌ INCORRECTO
+{company.name}
+{company.subscription.plan}
+
+// ✅ CORRECTO
+{company?.name || 'Nombre no disponible'}
+{company?.subscription?.plan || 'plan básico'}
+```
+
+### 3. **Arrays y Mapeo Seguro**
+- **SIEMPRE** validar arrays antes de mapear:
+```tsx
+// ❌ INCORRECTO
+{companies.map((company) => ...)}
+
+// ✅ CORRECTO
+{Array.isArray(companies) && companies.length > 0 && companies.map((company) => {
+  if (!company || !company.id) {
+    console.warn('Invalid company data:', company)
+    return null
+  }
+  return <Component key={company.id} />
+}).filter(Boolean)}
+```
+
+### 4. **Manejo de Funciones del Contexto**
+- **SIEMPRE** validar que las funciones del contexto existan antes de usarlas:
+```tsx
+// ❌ INCORRECTO
+await loadCompanies()
+
+// ✅ CORRECTO
+if (!loadCompanies) {
+  setError('Función no disponible')
+  return
+}
+await loadCompanies()
+```
+
+### 5. **useEffect Dependencies**
+- **SIEMPRE** incluir todas las dependencias necesarias y validar el estado:
+```tsx
+// ❌ INCORRECTO
+useEffect(() => {
+  loadCompanies()
+}, [])
+
+// ✅ CORRECTO
+useEffect(() => {
+  if (!mounted || isLoading || !user || !loadCompanies) {
+    return
+  }
+  loadCompanies().catch((err) => {
+    console.error('Error:', err)
+    setError('Error al cargar')
+  })
+}, [mounted, isLoading, user, loadCompanies])
+```
+
+### 6. **Error Boundaries y Logging**
+- **SIEMPRE** envolver operaciones async en try-catch con logging:
+```tsx
+// ✅ CORRECTO
+const handleAction = async () => {
+  try {
+    await operation()
+  } catch (error) {
+    console.error('Error en operación:', error)
+    setError('Mensaje descriptivo para el usuario')
+  }
+}
+```
+
+### 7. **Link y Button Components**
+- **NUNCA** anidar Link dentro de Button o viceversa sin usar `asChild` correctamente:
+```tsx
+// ❌ INCORRECTO (causa React.Children.only error)
+<Button asChild>
+  <Link href="/path">
+    <Icon />
+    Texto
+  </Link>
+</Button>
+
+// ✅ CORRECTO - Estructura simple
+<Link href="/path">
+  <Button className="w-full">
+    <Icon />
+    Texto
+  </Button>
+</Link>
+```
+
+### 8. **Validation Guards en Funciones**
+- **SIEMPRE** validar parámetros al inicio de funciones:
+```tsx
+const handleSelectTenant = async (companyId: string) => {
+  // Validation guards
+  if (!companyId || !selectTenant) {
+    setError('Datos inválidos')
+    return
+  }
+  // ... resto de la función
+}
+```
+
+### 9. **String Safety**
+- **SIEMPRE** validar strings antes de usar métodos:
+```tsx
+const capitalizeFirst = (str: string) => {
+  if (!str || typeof str !== 'string') return ''
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+```
+
+### 10. **Loading States**
+- **SIEMPRE** manejar estados de carga múltiples:
+```tsx
+// Para inicialización
+if (!mounted) return <InitialLoading />
+
+// Para operaciones específicas
+if (isLoadingCompanies) return <CompaniesLoading />
+
+// Para auth
+if (isLoading) return <AuthLoading />
+```
+
+## 📋 Checklist Pre-Commit
+
+Antes de hacer commit, verificar:
+
+- [ ] ¿Todos los arrays están validados con `Array.isArray()`?
+- [ ] ¿Todas las props opcionales usan optional chaining (`?.`)?
+- [ ] ¿Todas las funciones async tienen try-catch?
+- [ ] ¿Los componentes client-side usan el patrón mounted?
+- [ ] ¿Los useEffect tienen las dependencias correctas?
+- [ ] ¿Los Links y Buttons están estructurados correctamente?
+- [ ] ¿Las funciones validan sus parámetros?
+- [ ] ¿Los strings se validan antes de usar métodos?
+
+## 🔧 Build Testing
+
+Antes de cada deployment:
+
+```bash
+# Ejecutar build para detectar errores de SSR
+pnpm build
+
+# Verificar que no hay errores de prerendering
+# Revisar logs por "Error occurred prerendering page"
+```
+
+## 🐛 Debug Client-Side Errors
+
+Cuando aparezca "Application error: a client-side exception has occurred":
+
+1. **Abrir DevTools Console** y buscar el error específico
+2. **Verificar el stack trace** para identificar el componente problemático
+3. **Revisar cada uso de:**
+   - Optional chaining (`?.`)
+   - Array mapping con validación
+   - useEffect dependencies
+   - Funciones del contexto
+
+## 💡 Notas Adicionales
+
+- **Desarrollo local:** Usar `pnpm dev` en modo estricto para detectar problemas temprano
+- **Logs:** Mantener `console.error()` para errores importantes, `console.warn()` para advertencias
+- **Fallbacks:** Siempre proporcionar valores por defecto razonables
+- **Performance:** Los validation guards son más importantes que la optimización micro
+
+**Recuerda:** Es mejor tener código defensivo y verboso que errores en producción. Estas reglas deben seguirse religiosamente para mantener la estabilidad del frontend.
+
+---
+
 ## 🎯 Next Steps
 
 1. **Move agent file** to frontend directory

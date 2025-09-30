@@ -86,6 +86,13 @@ export interface ChangePasswordData {
   password_confirm: string
 }
 
+// User tenant status
+export interface UserTenantStatus {
+  user: User
+  has_tenant: boolean
+  needs_tenant: boolean
+}
+
 export interface User extends BaseEntity {
   email: string
   full_name: string
@@ -145,7 +152,20 @@ export interface Subscription {
 export interface CreateCompanyData {
   name: string
   domain: string
+  industry: string
+  size: 'small' | 'medium' | 'large' | 'enterprise'
+  country: string // ISO 2-character country code
+  description?: string
+  website?: string
+  phone?: string
+  address?: string
+  city?: string
   settings?: Partial<CompanySettings>
+}
+
+// Company invitation/join
+export interface JoinCompanyData {
+  invitationCode: string
 }
 
 // ============================================================================
@@ -358,3 +378,169 @@ export interface ApiResponse<T = unknown> {
 export type IncidentListResponse = PaginatedResponse<Incident>
 export type CompanyListResponse = PaginatedResponse<Company>
 export type DocumentListResponse = PaginatedResponse<Document>
+
+// ============================================================================
+// INCIDENT ANALYTICS TYPES
+// ============================================================================
+
+export interface IncidentStats {
+  total: number
+  bySeverity: Record<IncidentSeverity, number>
+  byStatus: Record<IncidentStatus, number>
+  byType: Record<IncidentType, number>
+  open: number
+  closed: number
+  avgResolutionTime: number
+  trends: IncidentTrend[]
+}
+
+export interface IncidentTrend {
+  date: string
+  count: number
+  severity: IncidentSeverity
+}
+
+export interface IncidentTrends {
+  data: IncidentTrend[]
+  period: string
+  startDate: string
+  endDate: string
+}
+
+export interface IncidentExportRequest {
+  format: 'csv' | 'pdf' | 'excel'
+  filters?: IncidentListParams
+  fields?: string[]
+}
+
+// ============================================================================
+// FISHBONE ANALYSIS TYPES
+// ============================================================================
+
+export interface FishboneCause {
+  category: string
+  description: string
+  evidence?: string[]
+}
+
+export interface AnalysisTemplate {
+  id: string
+  name: string
+  description: string
+  type: 'five_whys' | 'fishbone'
+  content: any
+  isDefault: boolean
+  companyId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AnalysisReport {
+  id: string
+  analysisId: string
+  format: 'pdf' | 'docx' | 'html'
+  content: string
+  downloadUrl: string
+  createdAt: string
+  createdBy: string
+}
+
+// ============================================================================
+// DOCUMENT TEMPLATES TYPES
+// ============================================================================
+
+export interface DocumentTemplate extends BaseEntity {
+  name: string
+  type: DocumentType
+  description: string
+  content: DocumentTemplateContent
+  variables: DocumentTemplateVariable[]
+  isActive: boolean
+  isDefault: boolean
+  companyId: string
+}
+
+export interface DocumentTemplateContent {
+  sections: DocumentSection[]
+  layout: 'formal' | 'simple' | 'technical'
+}
+
+export interface DocumentTemplateVariable {
+  key: string
+  label: string
+  type: 'text' | 'date' | 'number' | 'list' | 'boolean'
+  required: boolean
+  defaultValue?: any
+}
+
+// ============================================================================
+// WORKFLOW MANAGEMENT TYPES
+// ============================================================================
+
+export interface Workflow extends BaseEntity {
+  name: string
+  description: string
+  steps: WorkflowStep[]
+  triggers: WorkflowTrigger[]
+  companyId: string
+  isActive: boolean
+}
+
+export interface WorkflowStep {
+  id: string
+  name: string
+  description: string
+  type: 'approval' | 'task' | 'notification' | 'automation'
+  assignee: string | 'reporter' | 'manager' | 'custom'
+  requiredApprovals: number
+  permissions?: string[]
+}
+
+export interface WorkflowTrigger {
+  event: 'incident_created' | 'incident_submitted' | 'status_changed' | 'custom'
+  conditions: WorkflowCondition[]
+}
+
+export interface WorkflowCondition {
+  field: string
+  operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'not_contains'
+  value: any
+}
+
+export interface WorkflowInstance extends BaseEntity {
+  workflowId: string
+  entityId: string
+  entityType: 'incident' | 'analysis' | 'document'
+  currentStep: string
+  status: 'active' | 'completed' | 'cancelled'
+  steps: WorkflowInstanceStep[]
+  context: Record<string, any>
+}
+
+export interface WorkflowInstanceStep {
+  id: string
+  stepId: string
+  status: 'pending' | 'in_progress' | 'completed' | 'skipped'
+  assignedTo: string[]
+  completedAt?: string
+  completedBy?: string
+  output?: Record<string, any>
+}
+
+export interface WorkflowTask extends BaseEntity {
+  workflowInstanceId: string
+  stepId: string
+  name: string
+  description: string
+  assignedTo: string
+  status: 'pending' | 'in_progress' | 'completed' | 'overdue'
+  dueDate?: string
+  priority: 'low' | 'medium' | 'high'
+  inputs?: Record<string, any>
+  outputs?: Record<string, any>
+}
+
+export interface WorkflowTaskAssignment {
+  assignedTo: string
+  reason?: string
+}
