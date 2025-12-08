@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateIncident } from '@/shared/hooks/incident-hooks'
+import { useAttachmentMutations } from '@/shared/hooks/attachment-hooks'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import {
@@ -19,6 +20,7 @@ import {
 } from '@/shared/components/forms/form'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { PhotoUploader } from '@/shared/components/attachments/PhotoUploader'
 import {
   Select,
   SelectContent,
@@ -26,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, Camera, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 const incidentSchema = z.object({
@@ -48,6 +50,8 @@ export default function CreateIncidentPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { trigger: createIncident } = useCreateIncident()
+  const { uploadMultiple } = useAttachmentMutations()
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
 
   const form = useForm<IncidentFormValues>({
     resolver: zodResolver(incidentSchema),
@@ -79,7 +83,17 @@ export default function CreateIncidentPage() {
 
       const newIncident = await createIncident(incidentData, {})
 
-      toast.success('Incidente creado exitosamente')
+      // Upload photos if any
+      if (pendingFiles.length > 0) {
+        try {
+          await uploadMultiple(newIncident.id, pendingFiles)
+          toast.success('Incidente creado con ' + pendingFiles.length + ' foto(s)')
+        } catch (uploadError) {
+          toast.success('Incidente creado, pero hubo error al subir fotos')
+        }
+      } else {
+        toast.success('Incidente creado exitosamente')
+      }
       router.push(`/incidents/${newIncident.id}`)
     } catch (error) {
       console.error('Error creating incident:', error)
@@ -240,6 +254,7 @@ export default function CreateIncidentPage() {
                   )}
                 />
 
+{/* Photos */}                <div className="space-y-2">                  <FormLabel>Fotos (opcional)</FormLabel>                  <div className="border rounded-lg p-4">                    {pendingFiles.length === 0 ? (                      <PhotoUploader                        onUpload={async (files) => setPendingFiles(prev => [...prev, ...files])}                        disabled={isSubmitting}                        maxFiles={10}                        maxSizeMB={10}                      />                    ) : (                      <div className="space-y-3">                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">                          {pendingFiles.map((file, idx) => (                            <div key={idx} className="relative aspect-square rounded overflow-hidden border">                              <img                                src={URL.createObjectURL(file)}                                alt={file.name}                                className="w-full h-full object-cover"                              />                              <button                                type="button"                                onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white"                              >                                <X className="h-3 w-3" />                              </button>                            </div>                          ))}                        </div>                        <div className="flex items-center justify-between">                          <span className="text-sm text-muted-foreground">                            {pendingFiles.length} foto(s) seleccionadas                          </span>                          <Button                            type="button"                            variant="outline"                            size="sm"                            onClick={() => setPendingFiles([])}                          >                            Limpiar                          </Button>                        </div>                      </div>                    )}                  </div>                  <FormDescription>                    Agrega fotos del incidente (se subiran al crear)                  </FormDescription>                </div>
                 {/* Tags */}
                 <FormField
                   control={form.control}

@@ -79,7 +79,10 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-600">Enviar nuevo incidente de seguridad</p>
                 </InteractiveCard>
 
-                <InteractiveCard className="p-4 text-center hover:shadow-lg cursor-pointer">
+                <InteractiveCard
+                  className="p-4 text-center hover:shadow-lg cursor-pointer"
+                  onClick={() => window.location.href = '/reports'}
+                >
                   <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                     <FileText className="h-6 w-6 text-blue-600" />
                   </div>

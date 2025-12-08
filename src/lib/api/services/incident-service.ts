@@ -12,6 +12,8 @@ import type {
   IncidentStats,
   IncidentTrends,
   IncidentExportRequest,
+  PrefillData,
+  PrefillReportType,
 } from '@/shared/types/api';
 
 export class IncidentService extends BaseService {
@@ -119,5 +121,13 @@ export class IncidentService extends BaseService {
     }
 
     return response.blob();
+  }
+
+  /**
+   * Get prefill data from previous reports for an incident
+   * Used to pre-populate forms when creating new reports
+   */
+  async getPrefillData(incidentId: string, reportType: PrefillReportType): Promise<PrefillData> {
+    return this.request<PrefillData>(`/incidents/${incidentId}/prefill?type=${reportType}`);
   }
 }

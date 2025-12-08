@@ -10,7 +10,15 @@ import {
   IncidentService,
   AnalysisService,
   DocumentService,
-  WorkflowService
+  WorkflowService,
+  FlashReportService,
+  ImmediateActionsService,
+  RootCauseService,
+  ActionPlanService,
+  FinalReportService,
+  ZeroToleranceService,
+  SLAService,
+  AttachmentService,
 } from './services';
 
 class ModularApiClient {
@@ -22,6 +30,14 @@ class ModularApiClient {
   analysis: AnalysisService;
   documents: DocumentService;
   workflows: WorkflowService;
+  flashReport: FlashReportService;
+  immediateActions: ImmediateActionsService;
+  rootCause: RootCauseService;
+  actionPlan: ActionPlanService;
+  finalReport: FinalReportService;
+  zeroTolerance: ZeroToleranceService;
+  sla: SLAService;
+  attachments: AttachmentService;
 
   constructor() {
     const serviceConfig = {
@@ -35,6 +51,14 @@ class ModularApiClient {
     this.analysis = new AnalysisService(serviceConfig);
     this.documents = new DocumentService(serviceConfig);
     this.workflows = new WorkflowService(serviceConfig);
+    this.flashReport = new FlashReportService(serviceConfig);
+    this.immediateActions = new ImmediateActionsService(serviceConfig);
+    this.rootCause = new RootCauseService(serviceConfig);
+    this.actionPlan = new ActionPlanService(serviceConfig);
+    this.finalReport = new FinalReportService(serviceConfig);
+    this.zeroTolerance = new ZeroToleranceService(serviceConfig);
+    this.sla = new SLAService(serviceConfig);
+    this.attachments = new AttachmentService(serviceConfig);
   }
 
   /**
@@ -49,6 +73,20 @@ class ModularApiClient {
    */
   async removeToken(): Promise<void> {
     return this.auth.removeToken();
+  }
+
+  /**
+   * Update token in auth service
+   */
+  async updateToken(token: string): Promise<void> {
+    return this.auth.updateToken(token);
+  }
+
+  /**
+   * Set token in auth service (alias for updateToken)
+   */
+  async setToken(token: string): Promise<void> {
+    return this.auth.updateToken(token);
   }
 }
 

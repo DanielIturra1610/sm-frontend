@@ -1,20 +1,74 @@
 'use client'
 
+import { useState } from 'react'
+
 import { useParams, useRouter } from 'next/navigation'
 import { useIncident } from '@/shared/hooks/incident-hooks'
+import { useIncidentPhotoManager } from '@/shared/hooks/attachment-hooks'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { ArrowLeft, Edit, FileText, AlertCircle } from 'lucide-react'
+import { PhotoGallery } from '@/shared/components/attachments/PhotoGallery'
+import { PhotoUploader } from '@/shared/components/attachments/PhotoUploader'
+import { ArrowLeft, Edit, FileText, AlertCircle, Camera, Plus, ChevronUp } from 'lucide-react'
+import { toast } from 'sonner'
 import Link from 'next/link'
 
 export default function IncidentDetailPage() {
   const params = useParams()
   const router = useRouter()
   const incidentId = params?.id as string | null
+  const [showUploader, setShowUploader] = useState(false)
 
   const { data: incident, error, isLoading } = useIncident(incidentId)
+
+  const {
+    photos,
+    isLoading: photosLoading,
+    isMutating,
+    upload: uploadPhotos,
+    delete: deletePhoto,
+    updateCaption,
+    toggleFinalReport,
+  } = useIncidentPhotoManager(incidentId)
+
+  const handleUpload = async (files: File[]) => {
+    try {
+      await uploadPhotos(files)
+      toast.success('Fotos subidas exitosamente')
+      setShowUploader(false)
+    } catch (err) {
+      toast.error('Error al subir fotos')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deletePhoto(id)
+      toast.success('Foto eliminada')
+    } catch (err) {
+      toast.error('Error al eliminar foto')
+    }
+  }
+
+  const handleUpdateCaption = async (id: string, caption: string) => {
+    try {
+      await updateCaption(id, caption)
+      toast.success('Descripcion actualizada')
+    } catch (err) {
+      toast.error('Error al actualizar')
+    }
+  }
+
+  const handleToggleFinalReport = async (id: string, include: boolean) => {
+    try {
+      await toggleFinalReport(id, include)
+      toast.success(include ? 'Foto incluida en reporte' : 'Foto excluida del reporte')
+    } catch (err) {
+      toast.error('Error al actualizar')
+    }
+  }
 
   if (isLoading) {
     return (
@@ -133,38 +187,7 @@ export default function IncidentDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Attachments */}
-          {incident.attachments && incident.attachments.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Adjuntos</CardTitle>
-                <CardDescription>{incident.attachments.length} archivo(s)</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {incident.attachments.map((attachment) => (
-                    <div
-                      key={attachment.id}
-                      className="flex items-center justify-between p-2 border rounded-lg"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{attachment.filename}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(attachment.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          Ver
-                        </a>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
+{/* Photos Section */}          <Card>            <CardHeader>              <div className="flex items-center justify-between">                <div>                  <CardTitle className="flex items-center gap-2">                    <Camera className="h-5 w-5" />                    Fotos del Incidente                  </CardTitle>                  <CardDescription>                    {photos.length} foto(s) adjuntas                  </CardDescription>                </div>                <Button                  variant="outline"                  size="sm"                  onClick={() => setShowUploader(!showUploader)}                >                  {showUploader ? (                    <>                      <ChevronUp className="mr-2 h-4 w-4" />                      Cerrar                    </>                  ) : (                    <>                      <Plus className="mr-2 h-4 w-4" />                      Agregar Fotos                    </>                  )}                </Button>              </div>            </CardHeader>            <CardContent className="space-y-4">              {showUploader && (                <PhotoUploader                  onUpload={handleUpload}                  disabled={isMutating}                  maxFiles={10}                  maxSizeMB={10}                />              )}              <PhotoGallery                photos={photos}                loading={photosLoading}                onDelete={handleDelete}                onUpdateCaption={handleUpdateCaption}                onToggleFinalReport={handleToggleFinalReport}                showFinalReportToggle={true}              />            </CardContent>          </Card>
           {/* Tags */}
           {incident.tags && incident.tags.length > 0 && (
             <Card>

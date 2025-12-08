@@ -3,6 +3,7 @@
 import { useAuth } from '@/shared/contexts/auth-context'
 import { Sidebar } from '@/shared/components/layout/sidebar'
 import { Button } from '@/shared/components/ui/button'
+import { Toaster } from '@/shared/components/ui/toaster'
 import { LogOut, Bell, Settings, Search } from 'lucide-react'
 
 export default function AppLayout({
@@ -74,6 +75,7 @@ export default function AppLayout({
           {children}
         </main>
       </div>
+      <Toaster />
     </div>
   )
 }

@@ -544,3 +544,728 @@ export interface WorkflowTaskAssignment {
   assignedTo: string
   reason?: string
 }
+
+// ============================================================================
+// REPORT TYPES - Sprint 5
+// ============================================================================
+
+export type ReportStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'published' | 'closed'
+
+export type AnalysisMethodology = 'five_whys' | 'fishbone' | 'six_sigma' | 'fmea' | 'other'
+
+// PLGF (Potencial de Lesión Grave o Fatal) Classification
+export type PLGFLevel = 'potencial' | 'real' | 'fatal'
+
+// ============================================================================
+// FLASH REPORT TYPES
+// ============================================================================
+
+export interface FlashReport extends BaseEntity {
+  tenant_id: string
+  incident_id: string
+
+  // Información básica del evento
+  suceso?: string
+  tipo?: string
+  fecha?: string
+  hora?: string
+  lugar?: string
+  area_zona?: string
+  empresa?: string
+  supervisor?: string
+
+  // Descripción y análisis
+  descripcion?: string
+  acciones_inmediatas?: string
+  controles_inmediatos?: string
+  factores_riesgo?: string
+
+  // Identificadores
+  numero_prodity?: string
+  zonal?: string
+
+  // Clasificación del tipo de incidente/accidente
+  con_baja_il: boolean
+  sin_baja_il: boolean
+  incidente_industrial: boolean
+  incidente_laboral: boolean
+
+  // Clasificación PLGF (Potencial de Lesión Grave o Fatal)
+  es_plgf: boolean
+  nivel_plgf?: string // 'potencial' | 'real' | 'fatal'
+  justificacion_plgf?: string
+
+  // Workflow y estado
+  report_status: ReportStatus
+  submitted_at?: string
+  approved_at?: string
+  approved_by?: string
+
+  // SLA fields
+  sla_deadline?: string | null
+  sla_status?: string | null
+  sla_hours?: number
+
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateFlashReportData {
+  incident_id: string
+  suceso?: string
+  tipo?: string
+  fecha?: string
+  hora?: string
+  lugar?: string
+  area_zona?: string
+  empresa?: string
+  supervisor?: string
+  descripcion?: string
+  acciones_inmediatas?: string
+  controles_inmediatos?: string
+  factores_riesgo?: string
+  numero_prodity?: string
+  zonal?: string
+  con_baja_il?: boolean
+  sin_baja_il?: boolean
+  incidente_industrial?: boolean
+  incidente_laboral?: boolean
+  // PLGF Classification
+  es_plgf?: boolean
+  nivel_plgf?: string
+  justificacion_plgf?: string
+}
+
+export interface UpdateFlashReportData {
+  suceso?: string
+  tipo?: string
+  fecha?: string
+  hora?: string
+  lugar?: string
+  area_zona?: string
+  empresa?: string
+  supervisor?: string
+  descripcion?: string
+  acciones_inmediatas?: string
+  controles_inmediatos?: string
+  factores_riesgo?: string
+  numero_prodity?: string
+  zonal?: string
+  con_baja_il?: boolean
+  sin_baja_il?: boolean
+  incidente_industrial?: boolean
+  incidente_laboral?: boolean
+  // PLGF Classification
+  es_plgf?: boolean
+  nivel_plgf?: string
+  justificacion_plgf?: string
+}
+
+// ============================================================================
+// IMMEDIATE ACTIONS REPORT TYPES
+// ============================================================================
+
+export interface ImmediateActionItem {
+  id: string
+  report_id: string
+  numero: number
+  tarea: string
+  inicio?: string
+  fin?: string
+  responsable?: string
+  cliente?: string
+  avance_real: number
+  avance_programado: number
+  comentario?: string
+  tipo_acc_inc?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ImmediateActionsReport extends BaseEntity {
+  tenant_id: string
+  incident_id: string
+  fecha_inicio?: string
+  fecha_termino?: string
+  porcentaje_avance_plan: number
+  estatus_plan: number
+  items?: ImmediateActionItem[]
+  // PLGF Classification (inherited from Flash Report)
+  es_plgf: boolean
+  nivel_plgf?: string
+  report_status: ReportStatus
+  submitted_at?: string
+  approved_at?: string
+  approved_by?: string
+  // SLA fields
+  sla_deadline?: string | null
+  sla_status?: string | null
+  sla_hours?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateImmediateActionsReportData {
+  incident_id: string
+  fecha_inicio?: string
+  fecha_termino?: string
+  items?: CreateImmediateActionItemData[]
+}
+
+export interface CreateImmediateActionItemData {
+  numero: number
+  tarea: string
+  inicio?: string
+  fin?: string
+  responsable?: string
+  cliente?: string
+  avance_real?: number
+  avance_programado?: number
+  comentario?: string
+  tipo_acc_inc?: string
+}
+
+export interface UpdateImmediateActionsReportData {
+  fecha_inicio?: string
+  fecha_termino?: string
+}
+
+export interface UpdateImmediateActionItemData {
+  inicio?: string
+  fin?: string
+  responsable?: string
+  cliente?: string
+  avance_real?: number
+  avance_programado?: number
+  comentario?: string
+  tipo_acc_inc?: string
+}
+
+// ============================================================================
+// ROOT CAUSE REPORT TYPES
+// ============================================================================
+
+export interface WhyQuestion {
+  numero: number
+  pregunta: string
+  respuesta: string
+}
+
+export interface RootCauseAnalysisTable {
+  id: string
+  report_id: string
+  table_number: number
+  hecho_observacion: string
+  porques: WhyQuestion[]
+  accion_plan?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RootCauseReport extends BaseEntity {
+  tenant_id: string
+  incident_id: string
+  metodologia: AnalysisMethodology
+  analysis_tables?: RootCauseAnalysisTable[]
+  report_status: ReportStatus
+  submitted_at?: string
+  approved_at?: string
+  approved_by?: string
+  // SLA fields
+  sla_deadline?: string | null
+  sla_status?: string | null
+  sla_hours?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateRootCauseReportData {
+  incident_id: string
+  metodologia: AnalysisMethodology
+  analysis_tables?: CreateRootCauseAnalysisTableData[]
+}
+
+export interface CreateRootCauseAnalysisTableData {
+  table_number: number
+  hecho_observacion: string
+  porques?: WhyQuestion[]
+  accion_plan?: string
+}
+
+export interface UpdateRootCauseReportData {
+  metodologia?: AnalysisMethodology
+}
+
+export interface UpdateRootCauseAnalysisTableData {
+  hecho_observacion?: string
+  porques?: WhyQuestion[]
+  accion_plan?: string
+}
+
+// ============================================================================
+// ACTION PLAN REPORT TYPES
+// ============================================================================
+
+export type ActionPlanItemStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'delayed'
+
+export interface ActionPlanItem {
+  id: string
+  report_id: string
+  numero: number
+  tarea: string
+  subtarea?: string
+  inicio?: string
+  fin?: string
+  responsable?: string
+  cliente?: string
+  avance_real: number
+  avance_programado: number
+  comentario?: string
+  tipo_acc_inc?: string
+  estado: ActionPlanItemStatus
+  created_at: string
+  updated_at: string
+}
+
+export interface ActionPlanReport extends BaseEntity {
+  tenant_id: string
+  incident_id: string
+  fecha_inicio?: string
+  duracion_dias?: number
+  fecha_fin_estimada?: string
+  porcentaje_avance_plan: number
+  items?: ActionPlanItem[]
+  report_status: ReportStatus
+  submitted_at?: string
+  approved_at?: string
+  approved_by?: string
+  // SLA fields
+  sla_deadline?: string | null
+  sla_status?: string | null
+  sla_hours?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateActionPlanReportData {
+  incident_id: string
+  fecha_inicio?: string
+  duracion_dias?: number
+  items?: CreateActionPlanItemData[]
+}
+
+export interface CreateActionPlanItemData {
+  numero: number
+  tarea: string
+  subtarea?: string
+  inicio?: string
+  fin?: string
+  responsable?: string
+  cliente?: string
+  avance_real?: number
+  avance_programado?: number
+  comentario?: string
+  tipo_acc_inc?: string
+}
+
+export interface UpdateActionPlanReportData {
+  fecha_inicio?: string
+  duracion_dias?: number
+}
+
+export interface UpdateActionPlanItemData {
+  tarea?: string
+  subtarea?: string
+  inicio?: string
+  fin?: string
+  responsable?: string
+  cliente?: string
+  avance_real?: number
+  avance_programado?: number
+  comentario?: string
+  tipo_acc_inc?: string
+  estado?: ActionPlanItemStatus
+}
+
+// ============================================================================
+// FINAL REPORT TYPES
+// ============================================================================
+
+export interface CompanyData {
+  nombre?: string
+  direccion?: string
+  rut?: string
+  telefono?: string
+  email?: string
+  contacto?: string
+}
+
+export interface TipoAccidenteTabla {
+  con_baja_il: boolean
+  sin_baja_il: boolean
+  incidente_industrial: boolean
+  incidente_laboral: boolean
+  // PLGF Classification
+  es_plgf: boolean
+  nivel_plgf?: string
+}
+
+export interface PersonaInvolucrada {
+  nombre: string
+  cargo?: string
+  empresa?: string
+  tipo_lesion?: string
+  gravedad?: string
+  parte_cuerpo?: string
+  descripcion?: string
+}
+
+export interface EquipoDanado {
+  nombre: string
+  tipo?: string
+  marca?: string
+  modelo?: string
+  numero_serie?: string
+  tipo_dano?: string
+  descripcion?: string
+  costo_estimado?: number
+}
+
+export interface TerceroIdentificado {
+  nombre: string
+  empresa?: string
+  rol?: string
+  contacto?: string
+}
+
+export interface CausaRaizSummary {
+  problema: string
+  causa_raiz: string
+  accion_plan?: string
+  metodologia?: string
+}
+
+export interface CostoItem {
+  concepto: string
+  monto: number
+  moneda: string
+  descripcion?: string
+}
+
+export interface ImagenEvidencia {
+  url: string
+  descripcion?: string
+  fecha?: string
+}
+
+export interface ResponsableInvestigacion {
+  nombre: string
+  cargo?: string
+  firma?: string
+}
+
+export interface FinalReport extends BaseEntity {
+  tenant_id: string
+  incident_id: string
+  company_data: CompanyData
+  tipo_accidente_tabla: TipoAccidenteTabla
+  personas_involucradas?: PersonaInvolucrada[]
+  equipos_danados?: EquipoDanado[]
+  terceros_identificados?: TerceroIdentificado[]
+  detalles_accidente?: string
+  analisis_causas_raiz?: CausaRaizSummary[]
+  descripcion_detallada?: string
+  conclusiones?: string
+  lecciones_aprendidas?: string
+  acciones_inmediatas_resumen?: string
+  plan_accion_resumen?: string
+  costos_tabla?: CostoItem[]
+  imagenes_evidencia?: ImagenEvidencia[]
+  responsables_investigacion?: ResponsableInvestigacion[]
+  left_logo_url?: string
+  right_logo_url?: string
+  side_image_url?: string
+  report_status: ReportStatus
+  generated_at?: string
+  submitted_at?: string
+  approved_at?: string
+  approved_by?: string
+  // SLA fields
+  sla_deadline?: string | null
+  sla_status?: string | null
+  sla_hours?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateFinalReportData {
+  incident_id: string
+  company_data?: CompanyData
+  tipo_accidente_tabla?: TipoAccidenteTabla
+  personas_involucradas?: PersonaInvolucrada[]
+  equipos_danados?: EquipoDanado[]
+  terceros_identificados?: TerceroIdentificado[]
+  detalles_accidente?: string
+  analisis_causas_raiz?: CausaRaizSummary[]
+  descripcion_detallada?: string
+  conclusiones?: string
+  lecciones_aprendidas?: string
+  acciones_inmediatas_resumen?: string
+  plan_accion_resumen?: string
+  costos_tabla?: CostoItem[]
+  imagenes_evidencia?: ImagenEvidencia[]
+  responsables_investigacion?: ResponsableInvestigacion[]
+}
+
+export interface UpdateFinalReportData {
+  company_data?: CompanyData
+  tipo_accidente_tabla?: TipoAccidenteTabla
+  personas_involucradas?: PersonaInvolucrada[]
+  equipos_danados?: EquipoDanado[]
+  terceros_identificados?: TerceroIdentificado[]
+  detalles_accidente?: string
+  analisis_causas_raiz?: CausaRaizSummary[]
+  descripcion_detallada?: string
+  conclusiones?: string
+  lecciones_aprendidas?: string
+  acciones_inmediatas_resumen?: string
+  plan_accion_resumen?: string
+  costos_tabla?: CostoItem[]
+  imagenes_evidencia?: ImagenEvidencia[]
+  responsables_investigacion?: ResponsableInvestigacion[]
+}
+
+// ============================================================================
+// ZERO TOLERANCE REPORT TYPES
+// ============================================================================
+
+export type ZeroToleranceSeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export interface Fotografia {
+  url: string
+  descripcion?: string
+  fecha?: string
+}
+
+export interface PersonaInvolucradaZT {
+  nombre: string
+  cargo?: string
+  empresa?: string
+}
+
+export interface ZeroToleranceReport extends BaseEntity {
+  tenant_id: string
+  incident_id?: string
+  numero_documento: string
+  suceso?: string
+  tipo?: string
+  lugar?: string
+  fecha_hora?: string
+  area_zona?: string
+  empresa?: string
+  supervisor_cge?: string
+  descripcion?: string
+  numero_prodity?: string
+  fotografias?: Fotografia[]
+  severidad?: ZeroToleranceSeverity
+  acciones_tomadas?: string
+  personas_involucradas?: PersonaInvolucradaZT[]
+  report_status: ReportStatus
+  submitted_at?: string
+  approved_at?: string
+  approved_by?: string
+  closed_at?: string
+  created_at: string
+  updated_at: string
+  created_by?: string
+}
+
+export interface CreateZeroToleranceReportData {
+  incident_id?: string
+  numero_documento?: string
+  suceso?: string
+  tipo?: string
+  lugar?: string
+  fecha_hora?: string
+  area_zona?: string
+  empresa?: string
+  supervisor_cge?: string
+  descripcion?: string
+  numero_prodity?: string
+  fotografias?: Fotografia[]
+  severidad?: ZeroToleranceSeverity
+  acciones_tomadas?: string
+  personas_involucradas?: PersonaInvolucradaZT[]
+}
+
+export interface UpdateZeroToleranceReportData {
+  suceso?: string
+  tipo?: string
+  lugar?: string
+  fecha_hora?: string
+  area_zona?: string
+  empresa?: string
+  supervisor_cge?: string
+  descripcion?: string
+  numero_prodity?: string
+  fotografias?: Fotografia[]
+  severidad?: ZeroToleranceSeverity
+  acciones_tomadas?: string
+  personas_involucradas?: PersonaInvolucradaZT[]
+}
+
+// ============================================================================
+// REPORT LIST RESPONSES
+// ============================================================================
+
+export type FlashReportListResponse = PaginatedResponse<FlashReport>
+export type ImmediateActionsReportListResponse = PaginatedResponse<ImmediateActionsReport>
+export type RootCauseReportListResponse = PaginatedResponse<RootCauseReport>
+export type ActionPlanReportListResponse = PaginatedResponse<ActionPlanReport>
+export type FinalReportListResponse = PaginatedResponse<FinalReport>
+export type ZeroToleranceReportListResponse = PaginatedResponse<ZeroToleranceReport>
+
+// ============================================================================
+// PREFILL DATA TYPES (Data persistence between reports)
+// ============================================================================
+
+// Valid report types for prefill
+export type PrefillReportType =
+  | 'flash-report'
+  | 'immediate-actions'
+  | 'root-cause'
+  | 'action-plan'
+  | 'final-report'
+
+// Source reports info with IDs of reports used for prefill
+export interface SourceReportsInfo {
+  flash_report_id?: string
+  immediate_actions_id?: string
+  root_cause_id?: string
+  action_plan_id?: string
+}
+
+// Prefill data containing consolidated data from previous reports
+export interface PrefillData {
+  incident_id: string
+
+  // Basic incident data
+  suceso?: string
+  tipo?: string
+  fecha?: string
+  hora?: string
+  lugar?: string
+  area_zona?: string
+  empresa?: string
+  supervisor?: string
+  descripcion?: string
+
+  // Classification
+  con_baja_il: boolean
+  sin_baja_il: boolean
+  incidente_industrial: boolean
+  incidente_laboral: boolean
+  es_plgf: boolean
+  nivel_plgf?: string
+  justificacion_plgf?: string
+
+  // Identifiers
+  numero_prodity?: string
+  zonal?: string
+
+  // Persons involved
+  personas_involucradas?: PersonaInvolucrada[]
+
+  // Data from previous reports
+  acciones_inmediatas?: string
+  controles_inmediatos?: string
+  factores_riesgo?: string
+  causas_identificadas?: string
+
+  // Source reports metadata
+  source_reports: SourceReportsInfo
+}
+
+// ============================================================================
+// SLA (SERVICE LEVEL AGREEMENT) TYPES
+// ============================================================================
+
+export type SLAStatus = 'on_time' | 'at_risk' | 'overdue' | 'completed' | 'not_set'
+
+export type SLAReportType =
+  | 'flash_report'
+  | 'immediate_actions'
+  | 'root_cause'
+  | 'action_plan'
+  | 'final_report'
+
+export type SLASeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export interface SLAConfiguration {
+  id: string
+  tenant_id: string
+  report_type: SLAReportType
+  base_hours: number
+  severity_multipliers: SeverityMultipliers
+  plgf_multiplier: number
+  business_hours_only: boolean
+  work_start_hour: number
+  work_end_hour: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SeverityMultipliers {
+  low: number
+  medium: number
+  high: number
+  critical: number
+}
+
+export interface CreateSLAConfigurationData {
+  report_type: SLAReportType
+  base_hours: number
+  severity_multipliers?: SeverityMultipliers
+  plgf_multiplier?: number
+  business_hours_only?: boolean
+  work_start_hour?: number
+  work_end_hour?: number
+  is_active?: boolean
+}
+
+export interface UpdateSLAConfigurationData {
+  base_hours?: number
+  severity_multipliers?: SeverityMultipliers
+  plgf_multiplier?: number
+  business_hours_only?: boolean
+  work_start_hour?: number
+  work_end_hour?: number
+  is_active?: boolean
+}
+
+export interface CalculateSLAInput {
+  tenant_id: string
+  report_type: SLAReportType
+  incident_time: string
+  severity: SLASeverity
+  is_plgf?: boolean
+}
+
+export interface SLACalculationResult {
+  deadline: string
+  hours: number
+  status: SLAStatus
+  base_hours: number
+  applied_multiplier: number
+  is_business_hours: boolean
+}
+
+// SLA fields that can be added to any report
+export interface SLAFields {
+  sla_deadline?: string | null
+  sla_status?: string | null
+  sla_hours?: number
+}
+
+export type SLAConfigurationListResponse = SLAConfiguration[]

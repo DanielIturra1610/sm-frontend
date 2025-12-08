@@ -169,4 +169,13 @@ export class AuthService extends BaseService {
       sessionStorage.removeItem('auth-token')
     }
   }
+
+  /**
+   * Update token in storage
+   */
+  async updateToken(token: string): Promise<void> {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth-token', token)
+    }
+  }
 }

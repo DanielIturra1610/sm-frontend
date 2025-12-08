@@ -309,7 +309,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const selectTenant = async (companyId: string) => {
     setIsLoading(true)
     try {
-      await api.companies.selectTenant(companyId)
+      // Select tenant and get new token with tenant_id
+      const response = await api.companies.selectTenant(companyId)
+
+      // CRITICAL: Save the new JWT token that includes the tenant_id
+      if (response.token) {
+        await api.setToken(response.token)
+      }
 
       // Find and set the selected company immediately
       let selectedCompanyData = companies.find(c => c.id === companyId) || null

@@ -62,8 +62,8 @@ export class CompanyService extends BaseService {
   /**
    * Select tenant/company for current session
    */
-  async selectTenant(companyId: string): Promise<{ message: string; company: Company }> {
-    return this.request<{ message: string; company: Company }>(`/companies/${companyId}/select`, {
+  async selectTenant(companyId: string): Promise<{ message: string; tenant_id: string; token: string }> {
+    return this.request<{ message: string; tenant_id: string; token: string }>(`/companies/${companyId}/select`, {
       method: 'POST',
     })
   }

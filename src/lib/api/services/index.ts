@@ -10,3 +10,13 @@ export { IncidentService } from './incident-service';
 export { AnalysisService } from './analysis-service';
 export { DocumentService } from './document-service';
 export { WorkflowService } from './workflow-service';
+export {
+  FlashReportService,
+  ImmediateActionsService,
+  RootCauseService,
+  ActionPlanService,
+  FinalReportService,
+  ZeroToleranceService
+} from './report-service';
+export { SLAService } from './sla-service';
+export { AttachmentService } from './attachment-service';

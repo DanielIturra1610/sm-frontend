@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/shared/contexts/auth-context";
 import { TenantProvider } from "@/shared/contexts/tenant-context";
+import { QueryProvider } from "@/shared/contexts/query-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,11 +32,13 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetBrainsMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <TenantProvider>
-            {children}
-          </TenantProvider>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <TenantProvider>
+              {children}
+            </TenantProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

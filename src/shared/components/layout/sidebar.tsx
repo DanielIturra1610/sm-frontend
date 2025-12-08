@@ -17,6 +17,11 @@ import {
   ChevronRight,
   Menu,
   X,
+  ClipboardList,
+  ShieldAlert,
+  Target,
+  Search,
+  FileCheck,
 } from 'lucide-react'
 
 interface NavItem {
@@ -41,11 +46,24 @@ const navigation: NavItem[] = [
     ],
   },
   {
+    title: 'Reportes',
+    icon: ClipboardList,
+    children: [
+      { title: 'Todos los Reportes', href: '/reports', icon: ClipboardList },
+      { title: 'Flash Report', href: '/reports/flash', icon: FileText },
+      { title: 'Acciones Inmediatas', href: '/reports/immediate-actions', icon: ListTodo },
+      { title: 'Análisis Causa Raíz', href: '/reports/root-cause', icon: Search },
+      { title: 'Plan de Acción', href: '/reports/action-plan', icon: Target },
+      { title: 'Tolerancia Cero', href: '/reports/zero-tolerance', icon: ShieldAlert },
+      { title: 'Reporte Final', href: '/reports/final', icon: FileCheck },
+    ],
+  },
+  {
     title: 'Análisis',
     icon: BarChart3,
     children: [
-      { title: 'Cinco Porqués', href: '/analysis/five-whys', icon: BarChart3 },
-      { title: 'Crear Cinco Porqués', href: '/analysis/five-whys/create', icon: BarChart3 },
+      { title: 'Árbol Causal', href: '/causal-tree', icon: BarChart3 },
+      { title: 'Crear Árbol Causal', href: '/causal-tree/create', icon: BarChart3 },
       { title: 'Diagrama de Pescado', href: '/analysis/fishbone', icon: BarChart3 },
       { title: 'Crear Diagrama de Pescado', href: '/analysis/fishbone/create', icon: BarChart3 },
     ],
@@ -71,7 +89,7 @@ const navigation: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Incidentes', 'Análisis', 'Documentos', 'Flujos de Trabajo'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Incidentes', 'Reportes', 'Análisis', 'Documentos', 'Flujos de Trabajo'])
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const toggleExpanded = (title: string) => {

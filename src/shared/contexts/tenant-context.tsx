@@ -63,15 +63,20 @@ export function TenantProvider({ children }: TenantProviderProps) {
 
   const switchTenant = async (tenantId: string) => {
     try {
-      // Call the API to select the tenant
-      await api.companies.selectTenant(tenantId)
-      
+      // Call the API to select the tenant - backend will return new token with tenant_id
+      const response = await api.companies.selectTenant(tenantId)
+
+      // Update the token with the new one that includes tenant_id
+      if (response.token) {
+        await api.updateToken(response.token)
+      }
+
       // Update the current tenant in state
       const tenant = tenants.find(t => t.id === tenantId)
       if (tenant) {
         setCurrentTenant(tenant)
       }
-      
+
       // Reload tenants to get updated information
       await loadTenants()
     } catch (error) {
