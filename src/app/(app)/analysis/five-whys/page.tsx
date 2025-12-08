@@ -1,51 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Input } from '@/shared/components/ui/input'
-import { Plus, Search, Filter, FileText, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { Skeleton } from '@/shared/components/ui/skeleton'
+import { Plus, Search, Filter, FileText, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-
-// Mock data - replace with actual API call
-const mockAnalyses = [
-  {
-    id: '1',
-    problem: 'Equipment malfunction in production line',
-    incidentId: 'inc-001',
-    status: 'approved', 
-    createdBy: 'John Doe',
-    createdAt: '2024-01-15T10:30:00Z',
-    reviewedBy: 'Jane Smith',
-    reviewedAt: '2024-01-16T14:20:00Z',
-    whysCount: 5,
-  },
-  {
-    id: '2',
-    problem: 'Safety protocol violation',
-    incidentId: 'inc-002',
-    status: 'in_review',
-    createdBy: 'Alice Johnson',
-    createdAt: '2024-01-18T09:15:00Z',
-    whysCount: 4,
-  },
-  {
-    id: '3',
-    problem: 'Chemical spill in warehouse',
-    incidentId: 'inc-003',
-    status: 'draft',
-    createdBy: 'Bob Wilson',
-    createdAt: '2024-01-20T16:45:00Z',
-    whysCount: 3,
-  },
-]
+import { useFiveWhysAnalyses } from '@/shared/hooks/analysis-hooks'
 
 export default function FiveWhysListPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  // Fetch analyses from API (backend routes may not be active yet)
+  const { data: analyses, error, isLoading } = useFiveWhysAnalyses()
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -68,11 +40,86 @@ export default function FiveWhysListPage() {
     return <Icon className="h-4 w-4" />
   }
 
-  const filteredAnalyses = mockAnalyses.filter((analysis) => {
-    const matchesSearch = analysis.problem.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || analysis.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  // Filter analyses based on search and status
+  const filteredAnalyses = useMemo(() => {
+    if (!analyses) return []
+    return analyses.filter((analysis) => {
+      const problemText = analysis.problem || ''
+      const matchesSearch = problemText.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesStatus = statusFilter === 'all' || analysis.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [analyses, searchQuery, statusFilter])
+
+  // Stats calculation
+  const stats = useMemo(() => {
+    if (!analyses) return { total: 0, inReview: 0, approved: 0, draft: 0 }
+    return {
+      total: analyses.length,
+      inReview: analyses.filter((a) => a.status === 'in_review').length,
+      approved: analyses.filter((a) => a.status === 'approved').length,
+      draft: analyses.filter((a) => a.status === 'draft').length,
+    }
+  }, [analyses])
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-9 w-80 mb-2" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-3"><Skeleton className="h-4 w-24" /></CardHeader>
+              <CardContent><Skeleton className="h-8 w-12" /></CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-6 w-3/4 mb-4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Error state - show empty list message (backend routes may not be active)
+  if (error) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Análisis de 5 Por Qués</h1>
+            <p className="text-muted-foreground">Metodología para análisis de causa raíz</p>
+          </div>
+          <Link href="/analysis/five-whys/create">
+            <Button><Plus className="mr-2 h-4 w-4" />Nuevo Análisis</Button>
+          </Link>
+        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+            <p className="text-lg font-medium mb-2">API no disponible</p>
+            <p className="text-muted-foreground mb-4">
+              Los endpoints de 5 Por Qués aún no están habilitados en el backend.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -140,7 +187,7 @@ export default function FiveWhysListPage() {
             <CardTitle className="text-sm font-medium">Total de Análisis</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockAnalyses.length}</div>
+            <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         <Card>
@@ -148,9 +195,7 @@ export default function FiveWhysListPage() {
             <CardTitle className="text-sm font-medium">En Revisión</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {mockAnalyses.filter((a) => a.status === 'in_review').length}
-            </div>
+            <div className="text-2xl font-bold text-blue-600">{stats.inReview}</div>
           </CardContent>
         </Card>
         <Card>
@@ -158,9 +203,7 @@ export default function FiveWhysListPage() {
             <CardTitle className="text-sm font-medium">Aprobados</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {mockAnalyses.filter((a) => a.status === 'approved').length}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
           </CardContent>
         </Card>
         <Card>
@@ -168,9 +211,7 @@ export default function FiveWhysListPage() {
             <CardTitle className="text-sm font-medium">Borradores</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">
-              {mockAnalyses.filter((a) => a.status === 'draft').length}
-            </div>
+            <div className="text-2xl font-bold text-gray-600">{stats.draft}</div>
           </CardContent>
         </Card>
       </div>

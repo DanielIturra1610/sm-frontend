@@ -50,15 +50,6 @@ export abstract class BaseService {
         headers,
       });
 
-      // CRITICAL DEBUG: Log the actual status and headers
-      console.log('🚨 CRITICAL DEBUG - Response Status:', response.status);
-      console.log('🚨 CRITICAL DEBUG - Response OK:', response.ok);
-      console.log('🚨 CRITICAL DEBUG - Response Headers:', {
-        contentType: response.headers.get('content-type'),
-        contentLength: response.headers.get('content-length'),
-        server: response.headers.get('server'),
-        statusText: response.statusText,
-      });
 
       // Handle authentication errors immediately
       if (response.status === 401) {
@@ -73,7 +64,6 @@ export abstract class BaseService {
 
       try {
         rawText = await response.text();
-        console.log('🚨 CRITICAL DEBUG - Raw Response Text:', rawText.substring(0, 500));
 
         if (contentType?.includes('application/json') && rawText) {
           // Only parse if we actually have JSON
@@ -84,17 +74,11 @@ export abstract class BaseService {
         }
       } catch (parseError) {
         // If JSON parsing fails, treat as plain text
-        console.error('🚨 CRITICAL DEBUG - Failed to parse response:', parseError);
-        console.error('🚨 CRITICAL DEBUG - Raw text was:', rawText);
         responseData = { message: rawText || 'Failed to parse response' };
       }
 
       if (env.NEXT_PUBLIC_SHOW_API_LOGS) {
-        console.log(`🔌 API Response [${response.status}]:`, {
-          contentType,
-          data: responseData,
-          rawText: rawText.substring(0, 200) // Log first 200 chars
-        });
+        console.log(`🔌 API Response [${response.status}]:`, responseData);
       }
 
       // Handle successful responses
@@ -140,6 +124,68 @@ export abstract class BaseService {
       }
 
       // Re-throw API errors and other errors
+      throw error;
+    }
+  }
+
+  /**
+   * Special request method for file uploads (FormData)
+   * Does not set Content-Type header - browser will set it with boundary
+   */
+  protected async uploadRequest<T>(
+    endpoint: string,
+    formData: FormData
+  ): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = await this.getToken();
+
+    const headers: Record<string, string> = {};
+    // Don't set Content-Type for FormData - browser will set it with boundary
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (env.NEXT_PUBLIC_SHOW_API_LOGS) {
+      console.log(`🔌 API Upload Request [POST]:`, url);
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (response.status === 401) {
+        await this.redirectToLogin();
+        throw new StegmaierApiError(401, 'Unauthorized - redirecting to login');
+      }
+
+      const responseData = await response.json();
+
+      if (env.NEXT_PUBLIC_SHOW_API_LOGS) {
+        console.log(`🔌 API Upload Response [${response.status}]:`, responseData);
+      }
+
+      if (!response.ok) {
+        throw new StegmaierApiError(
+          response.status,
+          responseData.error || responseData.message || `Upload failed with status ${response.status}`
+        );
+      }
+
+      // Handle wrapped response
+      return (responseData && typeof responseData === 'object' && 'data' in responseData)
+        ? responseData.data as T
+        : responseData as T;
+    } catch (error) {
+      if (error instanceof StegmaierApiError) {
+        throw error;
+      }
+      if (error instanceof Error && error.name === 'TypeError') {
+        throw new StegmaierApiError(0, 'Network error', 'NETWORK_ERROR');
+      }
       throw error;
     }
   }

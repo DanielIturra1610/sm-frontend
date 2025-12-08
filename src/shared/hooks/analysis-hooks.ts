@@ -17,7 +17,45 @@ import type {
 } from '@/shared/types/api'
 
 // ============================================================================
-// ANALYSIS HOOKS
+// LIST HOOKS
+// ============================================================================
+
+/**
+ * List all Fishbone analyses
+ */
+export function useFishboneAnalyses(
+  params?: { status?: string; search?: string },
+  config?: SWRConfiguration
+) {
+  return useSWR<FishboneAnalysis[]>(
+    ['/analysis/fishbone', params],
+    () => api.analysis.listFishbone(params),
+    {
+      revalidateOnFocus: false,
+      ...config,
+    }
+  )
+}
+
+/**
+ * List all Five Whys analyses
+ */
+export function useFiveWhysAnalyses(
+  params?: { status?: string; search?: string },
+  config?: SWRConfiguration
+) {
+  return useSWR<FiveWhysAnalysis[]>(
+    ['/analysis/five-whys', params],
+    () => api.analysis.listFiveWhys(params),
+    {
+      revalidateOnFocus: false,
+      ...config,
+    }
+  )
+}
+
+// ============================================================================
+// DETAIL HOOKS
 // ============================================================================
 
 /**

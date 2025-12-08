@@ -1,54 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Input } from '@/shared/components/ui/input'
-import { Plus, Search, FileText, Clock, CheckCircle2, XCircle, TrendingUp } from 'lucide-react'
+import { Skeleton } from '@/shared/components/ui/skeleton'
+import { Plus, Search, FileText, Clock, CheckCircle2, XCircle, TrendingUp, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-
-// Mock data - replace with actual API call
-const mockAnalyses = [
-  {
-    id: '1',
-    problem: 'Problemas de calidad en la línea de producción',
-    incidentId: 'inc-001',
-    status: 'approved',
-    createdBy: 'John Doe',
-    createdAt: '2024-01-15T10:30:00Z',
-    reviewedBy: 'Jane Smith',
-    reviewedAt: '2024-01-16T14:20:00Z',
-    categoriesCount: 6,
-    totalCauses: 15,
-  },
-  {
-    id: '2',
-    problem: 'Accidente laboral en área de ensamblaje',
-    incidentId: 'inc-002',
-    status: 'in_review',
-    createdBy: 'Alice Johnson',
-    createdAt: '2024-01-18T09:15:00Z',
-    categoriesCount: 4,
-    totalCauses: 10,
-  },
-  {
-    id: '3',
-    problem: 'Análisis de falla de equipo',
-    incidentId: 'inc-003',
-    status: 'draft',
-    createdBy: 'Bob Wilson',
-    createdAt: '2024-01-20T16:45:00Z',
-    categoriesCount: 5,
-    totalCauses: 8,
-  },
-]
+import { useFishboneAnalyses } from '@/shared/hooks/analysis-hooks'
 
 export default function FishboneListPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  // Fetch analyses from API
+  const { data: analyses, error, isLoading } = useFishboneAnalyses()
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -71,11 +40,80 @@ export default function FishboneListPage() {
     return <Icon className="h-4 w-4" />
   }
 
-  const filteredAnalyses = mockAnalyses.filter((analysis) => {
-    const matchesSearch = analysis.problem.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || analysis.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+  // Filter analyses based on search and status
+  const filteredAnalyses = useMemo(() => {
+    if (!analyses) return []
+    return analyses.filter((analysis) => {
+      const problemText = analysis.problem || ''
+      const matchesSearch = problemText.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesStatus = statusFilter === 'all' || analysis.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+  }, [analyses, searchQuery, statusFilter])
+
+  // Stats calculation
+  const stats = useMemo(() => {
+    if (!analyses) return { total: 0, inReview: 0, approved: 0, draft: 0 }
+    return {
+      total: analyses.length,
+      inReview: analyses.filter((a) => a.status === 'in_review').length,
+      approved: analyses.filter((a) => a.status === 'approved').length,
+      draft: analyses.filter((a) => a.status === 'draft').length,
+    }
+  }, [analyses])
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-9 w-96 mb-2" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-12" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-6 w-3/4 mb-4" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+            <p className="text-lg font-medium mb-2">Error al cargar los análisis</p>
+            <p className="text-muted-foreground mb-4">{error.message}</p>
+            <Button onClick={() => window.location.reload()}>Reintentar</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -142,7 +180,7 @@ export default function FishboneListPage() {
             <CardTitle className="text-sm font-medium">Análisis Totales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockAnalyses.length}</div>
+            <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         <Card>
@@ -150,9 +188,7 @@ export default function FishboneListPage() {
             <CardTitle className="text-sm font-medium">En Revisión</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {mockAnalyses.filter((a) => a.status === 'in_review').length}
-            </div>
+            <div className="text-2xl font-bold text-blue-600">{stats.inReview}</div>
           </CardContent>
         </Card>
         <Card>
@@ -160,9 +196,7 @@ export default function FishboneListPage() {
             <CardTitle className="text-sm font-medium">Aprobado</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {mockAnalyses.filter((a) => a.status === 'approved').length}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
           </CardContent>
         </Card>
         <Card>
@@ -170,9 +204,7 @@ export default function FishboneListPage() {
             <CardTitle className="text-sm font-medium">Borrador</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">
-              {mockAnalyses.filter((a) => a.status === 'draft').length}
-            </div>
+            <div className="text-2xl font-bold text-gray-600">{stats.draft}</div>
           </CardContent>
         </Card>
       </div>
@@ -246,8 +278,12 @@ export default function FishboneListPage() {
                     )}
                   </div>
                   <div className="text-right space-y-1">
-                    <Badge variant="outline">{analysis.categoriesCount} Categories</Badge>
-                    <Badge variant="secondary">{analysis.totalCauses} Causes</Badge>
+                    <Badge variant="outline">
+                      {analysis.categories?.length || 0} Categorías
+                    </Badge>
+                    <Badge variant="secondary">
+                      {analysis.categories?.reduce((acc, cat) => acc + (cat.causes?.length || 0), 0) || 0} Causas
+                    </Badge>
                   </div>
                 </div>
               </CardContent>

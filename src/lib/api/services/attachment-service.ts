@@ -3,7 +3,6 @@
  */
 
 import { BaseService, ServiceConfig } from './base-service';
-import { env } from '@/lib/env';
 
 // ============================================================================
 // TYPES
@@ -206,52 +205,4 @@ export class AttachmentService extends BaseService {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  // ============================================================================
-  // PRIVATE HELPERS
-  // ============================================================================
-
-  /**
-   * Special request method for file uploads (FormData)
-   */
-  private async uploadRequest<T>(endpoint: string, formData: FormData): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = await this.getToken();
-
-    const headers: Record<string, string> = {};
-    // Don't set Content-Type for FormData - browser will set it with boundary
-
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    if (env.NEXT_PUBLIC_SHOW_API_LOGS) {
-      console.log(`🔌 API Upload Request [POST]:`, url);
-    }
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-
-    if (response.status === 401) {
-      await this.redirectToLogin();
-      throw new Error('Unauthorized - redirecting to login');
-    }
-
-    const responseData = await response.json();
-
-    if (env.NEXT_PUBLIC_SHOW_API_LOGS) {
-      console.log(`🔌 API Upload Response [${response.status}]:`, responseData);
-    }
-
-    if (!response.ok) {
-      throw new Error(responseData.error || `Upload failed with status ${response.status}`);
-    }
-
-    // Handle wrapped response
-    return (responseData && typeof responseData === 'object' && 'data' in responseData)
-      ? responseData.data as T
-      : responseData as T;
-  }
 }

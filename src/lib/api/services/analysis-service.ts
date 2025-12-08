@@ -15,6 +15,22 @@ import type {
 
 export class AnalysisService extends BaseService {
   /**
+   * List all Fishbone analyses
+   */
+  async listFishbone(params?: { status?: string; search?: string }): Promise<FishboneAnalysis[]> {
+    const query = this.toQueryString(params);
+    return this.request<FishboneAnalysis[]>(`/api/v1/analysis/fishbone${query}`);
+  }
+
+  /**
+   * List all Five Whys analyses
+   */
+  async listFiveWhys(params?: { status?: string; search?: string }): Promise<FiveWhysAnalysis[]> {
+    const query = this.toQueryString(params);
+    return this.request<FiveWhysAnalysis[]>(`/api/v1/analysis/five-whys${query}`);
+  }
+
+  /**
    * Create Five Whys analysis
    */
   async createFiveWhys(data: CreateFiveWhysData): Promise<FiveWhysAnalysis> {
