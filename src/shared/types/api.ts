@@ -103,7 +103,7 @@ export interface User extends BaseEntity {
   updated_at: string
 }
 
-export type UserRole = 'admin' | 'manager' | 'user' | 'viewer'
+export type UserRole = 'owner' | 'admin' | 'supervisor' | 'investigator' | 'operator' | 'viewer'
 
 // ============================================================================
 // MULTI-TENANT TYPES
