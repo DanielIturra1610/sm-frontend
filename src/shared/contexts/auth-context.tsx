@@ -20,7 +20,7 @@ import type { User, AuthResponse, Company, CreateCompanyData } from '@/shared/ty
   logout: () => Promise<void>
   refreshAuth: () => Promise<void>
   loadCompanies: () => Promise<void>
-  selectTenant: (companyId: string) => Promise<void>
+  selectTenant: (companyId: string, knownCompany?: Company) => Promise<void>
   createCompany: (data: CreateCompanyData) => Promise<void>
   joinCompany: (data: { invitationCode: string }) => Promise<void>
 }
@@ -162,7 +162,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Load user's companies only if we have a valid user
       let userCompanies: Company[] = []
       if (userProfile) {
-        userCompanies = await api.companies.list()
+        const fetchedCompanies = await api.companies.list()
+        // Ensure we always have an array, even if backend returns null
+        userCompanies = Array.isArray(fetchedCompanies) ? fetchedCompanies : []
         setCompanies(userCompanies)
       }
 
@@ -297,7 +299,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsLoadingCompanies(true)
     try {
       const userCompanies = await api.companies.list()
-      setCompanies(userCompanies)
+      // Ensure we always have an array, even if backend returns null
+      setCompanies(Array.isArray(userCompanies) ? userCompanies : [])
     } catch (error) {
       console.error('Failed to load companies:', error)
       setCompanies([])
@@ -306,26 +309,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  const selectTenant = async (companyId: string) => {
+  const selectTenant = async (companyId: string, knownCompany?: Company) => {
     setIsLoading(true)
     try {
       // Select tenant and get new token with tenant_id
       const response = await api.companies.selectTenant(companyId)
 
       // CRITICAL: Save the new JWT token that includes the tenant_id
-      if (response.token) {
+      if (response?.token) {
         await api.setToken(response.token)
       }
 
-      // Find and set the selected company immediately
-      let selectedCompanyData = companies.find(c => c.id === companyId) || null
+      // Use the known company if passed (avoids closure issues), otherwise find in state
+      let selectedCompanyData = knownCompany || companies.find(c => c.id === companyId) || null
+
       if (selectedCompanyData) {
         setSelectedCompany(selectedCompanyData)
       } else {
         // If company is not in local state, try to fetch it
         const freshCompanies = await api.companies.list()
-        setCompanies(freshCompanies)
-        selectedCompanyData = freshCompanies.find(c => c.id === companyId) || null
+        // Ensure we always have an array, even if backend returns null
+        const safeCompanies = Array.isArray(freshCompanies) ? freshCompanies : []
+        setCompanies(safeCompanies)
+        selectedCompanyData = safeCompanies.find(c => c.id === companyId) || null
         setSelectedCompany(selectedCompanyData)
       }
 
@@ -348,8 +354,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const newCompany = await api.companies.create(data)
       setCompanies(prev => [...prev, newCompany])
 
-      // Automatically select the new company
-      await selectTenant(newCompany.id)
+      // Automatically select the new company - pass company directly to avoid closure issues
+      await selectTenant(newCompany.id, newCompany)
     } catch (error) {
       setIsLoadingCompanies(false)
       console.error('Failed to create company:', error)

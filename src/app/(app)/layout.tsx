@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/shared/contexts/auth-context'
-import { Sidebar } from '@/shared/components/layout/sidebar'
+import { Sidebar } from '@/shared/components/layout/Sidebar'
 import { Button } from '@/shared/components/ui/button'
 import { Toaster } from '@/shared/components/ui/toaster'
 import { LogOut, Bell, Settings, Search } from 'lucide-react'
