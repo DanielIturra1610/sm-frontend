@@ -80,7 +80,7 @@ export default function CreateIncidentPage() {
         severity: data.severity,
         type: data.type,
         location: data.location,
-        date_time: data.date_time,
+        date_time: new Date(data.date_time).toISOString(),
         tags,
       }
 

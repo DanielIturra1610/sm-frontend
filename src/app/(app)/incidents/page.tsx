@@ -20,6 +20,8 @@ import {
   Tags
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
+import { es } from "date-fns/locale"
+import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/shared/components/ui/button"
@@ -45,166 +47,29 @@ import {
   IncidentListParams,
   PaginatedResponse
 } from "@/shared/types/api"
+import { useIncidents } from "@/shared/hooks/incident-hooks"
+import { toast } from "sonner"
 
-// Mock data for demonstration
-const mockIncidents: Incident[] = [
-  {
-    id: "inc-001",
-    title: "Fallo de Equipo - Línea 3",
-    description: "Paro de producción debido a falla de cinta transportadora que afecta la línea de ensamblaje principal. Se requiere atención inmediata para prevenir retrasos en la producción.",
-    severity: "critical",
-    status: "investigating",
-    type: "operational",
-    location: "Edificio A - Planta de Producción 3",
-    reportedBy: "John Smith",
-    reportedAt: "2024-01-15T10:30:00Z",
-    assignedTo: "Mike Johnson",
-    assignedAt: "2024-01-15T11:00:00Z",
-    tags: ["equipo", "producción", "urgente"],
-    attachments: [],
-    companyId: "comp-001",
-    workflowState: {
-      currentStep: "investigation",
-      availableActions: ["assign", "escalate"],
-      completedSteps: ["reported", "acknowledged"],
-      pendingApprovals: []
-    },
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T11:00:00Z"
-  },
-  {
-    id: "inc-002",
-    title: "Casi Accidente - Almacén",
-    description: "Operador de montacargas reportó colisión inminente con peatón en zona B del almacén. Se necesita revisar los protocolos de seguridad.",
-    severity: "high",
-    status: "in_progress",
-    type: "safety",
-    location: "Zona B del Almacén",
-    reportedBy: "Sarah Davis",
-    reportedAt: "2024-01-14T14:22:00Z",
-    assignedTo: "Anna Wilson",
-    assignedAt: "2024-01-14T15:00:00Z",
-    tags: ["casi-accidente", "montacargas", "seguridad"],
-    attachments: [],
-    companyId: "comp-001",
-    workflowState: {
-      currentStep: "action_plan",
-      availableActions: ["resolve", "escalate"],
-      completedSteps: ["reported", "acknowledged", "investigation"],
-      pendingApprovals: []
-    },
-    createdAt: "2024-01-14T14:22:00Z",
-    updatedAt: "2024-01-14T15:00:00Z"
-  },
-  {
-    id: "inc-003",
-    title: "Derrame Químico - Lab 2",
-    description: "Derrame menor de producto químico en laboratorio 2. El área ha sido contenida y asegurada. Se ha notificado al equipo de limpieza.",
-    severity: "medium",
-    status: "resolved",
-    type: "environmental",
-    location: "Laboratorio 2 - Ala de Investigación",
-    reportedBy: "Dr. Robert Chen",
-    reportedAt: "2024-01-12T09:15:00Z",
-    assignedTo: "Equipo Ambiental",
-    assignedAt: "2024-01-12T09:30:00Z",
-    resolvedAt: "2024-01-12T16:45:00Z",
-    tags: ["químico", "laboratorio", "ambiental"],
-    attachments: [],
-    companyId: "comp-001",
-    workflowState: {
-      currentStep: "resolved",
-      availableActions: ["close", "reopen"],
-      completedSteps: ["reported", "acknowledged", "investigation", "action_plan", "resolved"],
-      pendingApprovals: []
-    },
-    createdAt: "2024-01-12T09:15:00Z",
-    updatedAt: "2024-01-12T16:45:00Z"
-  },
-  {
-    id: "inc-004",
-    title: "Brecha de Seguridad - Control de Acceso",
-    description: "Detectado intento de acceso no autorizado en la puerta de la sala de servidores. Se está revisando el video de seguridad.",
-    severity: "high",
-    status: "reported",
-    type: "security",
-    location: "Sala de Servidores - Ala de TI",
-    reportedBy: "Sistema de Seguridad",
-    reportedAt: "2024-01-16T02:33:00Z",
-    tags: ["seguridad", "control-acceso", "brecha"],
-    attachments: [],
-    companyId: "comp-001",
-    workflowState: {
-      currentStep: "reported",
-      availableActions: ["acknowledge", "assign"],
-      completedSteps: ["reported"],
-      pendingApprovals: []
-    },
-    createdAt: "2024-01-16T02:33:00Z",
-    updatedAt: "2024-01-16T02:33:00Z"
-  },
-  {
-    id: "inc-005",
-    title: "Falla en Control de Calidad",
-    description: "El lote QC-2024-001 no pasó la inspección de calidad. Los productos deben ser aislados e investigados.",
-    severity: "medium",
-    status: "in_progress",
-    type: "quality",
-    location: "Departamento de Control de Calidad",
-    reportedBy: "Inspector de Calidad",
-    reportedAt: "2024-01-13T11:20:00Z",
-    assignedTo: "Jefe de Calidad",
-    assignedAt: "2024-01-13T12:00:00Z",
-    tags: ["calidad", "lote", "cc"],
-    attachments: [],
-    companyId: "comp-001",
-    workflowState: {
-      currentStep: "investigation",
-      availableActions: ["resolve", "escalate"],
-      completedSteps: ["reported", "acknowledged"],
-      pendingApprovals: []
-    },
-    createdAt: "2024-01-13T11:20:00Z",
-    updatedAt: "2024-01-13T12:00:00Z"
-  },
-  {
-    id: "inc-006",
-    title: "Problema con Simulacro de Emergencia",
-    description: "Ruta de salida bloqueada durante simulacro de emergencia. Los procedimientos de evacuación de emergencia necesitan revisión inmediata.",
-    severity: "low",
-    status: "closed",
-    type: "safety",
-    location: "Edificio B - Salida de Emergencia 3",
-    reportedBy: "Oficial de Seguridad",
-    reportedAt: "2024-01-10T16:45:00Z",
-    assignedTo: "Jefe de Instalaciones",
-    assignedAt: "2024-01-10T17:00:00Z",
-    resolvedAt: "2024-01-11T09:30:00Z",
-    tags: ["emergencia", "simulacro", "evacuación"],
-    attachments: [],
-    companyId: "comp-001",
-    workflowState: {
-      currentStep: "closed",
-      availableActions: ["reopen"],
-      completedSteps: ["reported", "acknowledged", "investigation", "action_plan", "resolved", "closed"],
-      pendingApprovals: []
-    },
-    createdAt: "2024-01-10T16:45:00Z",
-    updatedAt: "2024-01-11T10:00:00Z"
+
+// Transform API response to frontend Incident type
+function transformIncident(apiIncident: Record<string, unknown>): Incident {
+  return {
+    id: apiIncident.id as string,
+    title: apiIncident.title as string,
+    description: (apiIncident.description as string) || '',
+    status: apiIncident.status as string,
+    severity: apiIncident.severity as string,
+    type: (apiIncident.type as string) || 'incident',
+    location: (apiIncident.location as string) || '',
+    reportedBy: (apiIncident.reported_by as string) || (apiIncident.author_id as string) || 'Desconocido',
+    reportedAt: (apiIncident.date_time as string) || (apiIncident.created_at as string),
+    assignedTo: (apiIncident.assigned_to as string) || (apiIncident.assigned_to_id as string),
+    tags: (apiIncident.tags as string[]) || [],
   }
-]
-
-const mockPagination = {
-  page: 1,
-  limit: 10,
-  total: 6,
-  totalPages: 1
 }
 
 export default function IncidentsPage() {
-  const [incidents, setIncidents] = React.useState<Incident[]>(mockIncidents)
-  const [pagination, setPagination] = React.useState(mockPagination)
-  const [isLoading, setIsLoading] = React.useState(false)
+  const router = useRouter()
   const [showFilters, setShowFilters] = React.useState(false)
   const [filters, setFilters] = React.useState<IncidentListParams>({
     page: 1,
@@ -213,65 +78,42 @@ export default function IncidentsPage() {
     order: "desc"
   })
 
-  // Mock API calls
-  const fetchIncidents = React.useCallback(async (params: IncidentListParams) => {
-    setIsLoading(true)
+  // Use the real API hook
+  const { data: apiResponse, error, isLoading, mutate } = useIncidents(filters)
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+  // Transform API data to frontend format
+  const incidents = React.useMemo(() => {
+    if (!apiResponse) return []
+    const rawIncidents = (apiResponse as Record<string, unknown>).incidents as Record<string, unknown>[]
+      || (apiResponse as Record<string, unknown>).data as Record<string, unknown>[]
+      || []
+    return rawIncidents.map(transformIncident)
+  }, [apiResponse])
 
-    // Apply filters to mock data
-    let filteredIncidents = [...mockIncidents]
+  // Derive pagination from API response
+  const pagination = React.useMemo(() => {
+    if (!apiResponse) {
+      return { page: 1, limit: 10, total: 0, totalPages: 0 }
+    }
+    const resp = apiResponse as Record<string, unknown>
+    const total = (resp.total as number) || 0
+    const limit = (resp.limit as number) || filters.limit || 10
+    const offset = (resp.offset as number) || 0
+    const page = Math.floor(offset / limit) + 1
+    return {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  }, [apiResponse, filters.limit])
 
-    if (params.status) {
-      filteredIncidents = filteredIncidents.filter(incident => incident.status === params.status)
-    }
-    if (params.severity) {
-      filteredIncidents = filteredIncidents.filter(incident => incident.severity === params.severity)
-    }
-    if (params.type) {
-      filteredIncidents = filteredIncidents.filter(incident => incident.type === params.type)
-    }
-    if (params.assignedTo) {
-      filteredIncidents = filteredIncidents.filter(incident =>
-        incident.assignedTo?.toLowerCase().includes(params.assignedTo!.toLowerCase())
-      )
-    }
-    if (params.search) {
-      const searchTerm = params.search.toLowerCase()
-      filteredIncidents = filteredIncidents.filter(incident =>
-        incident.title.toLowerCase().includes(searchTerm) ||
-        incident.description.toLowerCase().includes(searchTerm) ||
-        incident.location.toLowerCase().includes(searchTerm) ||
-        incident.reportedBy.toLowerCase().includes(searchTerm)
-      )
-    }
-
-    // Apply sorting
-    if (params.sort) {
-      filteredIncidents.sort((a, b) => {
-        const aValue = a[params.sort as keyof Incident] as string
-        const bValue = b[params.sort as keyof Incident] as string
-        const comparison = aValue.localeCompare(bValue)
-        return params.order === "desc" ? -comparison : comparison
-      })
-    }
-
-    setIncidents(filteredIncidents)
-    setPagination({
-      page: params.page || 1,
-      limit: params.limit || 10,
-      total: filteredIncidents.length,
-      totalPages: Math.ceil(filteredIncidents.length / (params.limit || 10))
-    })
-    setIsLoading(false)
-  }, [])
-
-  // Load initial data
+  // Show error toast
   React.useEffect(() => {
-    fetchIncidents(filters)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters])
+    if (error) {
+      toast.error('Error al cargar incidentes: ' + (error.message || 'Error desconocido'))
+    }
+  }, [error])
 
   const handleFiltersChange = React.useCallback((newFilters: IncidentListParams) => {
     setFilters(prev => {
@@ -291,8 +133,8 @@ export default function IncidentsPage() {
   }, [])
 
   const handleRefresh = React.useCallback(() => {
-    setFilters(prev => ({ ...prev })) // Trigger refetch by creating new reference
-  }, [])
+    mutate()
+  }, [mutate])
 
   const resetFilters = React.useCallback(() => {
     setFilters(prev => {
@@ -310,22 +152,22 @@ export default function IncidentsPage() {
 
   // Action handlers
   const handleView = React.useCallback((incident: Incident) => {
-    console.log("View incident:", incident.id)
-    // TODO: Navigate to incident detail page
+    router.push(`/incidents/${incident.id}`)
+    
   }, [])
 
   const handleEdit = React.useCallback((incident: Incident) => {
-    console.log("Edit incident:", incident.id)
-    // TODO: Navigate to incident edit page
+    router.push(`/incidents/${incident.id}/edit`)
+    
   }, [])
 
   const handleDelete = React.useCallback(async (incident: Incident) => {
     if (confirm(`¿Estás seguro de que deseas eliminar el incidente "${incident.title}"?`)) {
       console.log("Delete incident:", incident.id)
-      // TODO: Implement delete API call
-      await fetchIncidents(filters)
+      
+      mutate()
     }
-  }, [fetchIncidents, filters])
+  }, [mutate])
 
   // Table columns definition
   const columns: ColumnDef<Incident>[] = [
@@ -505,7 +347,7 @@ export default function IncidentsPage() {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
-              <Button>
+              <Button onClick={() => router.push("/incidents/create")}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nuevo Incidente
               </Button>
