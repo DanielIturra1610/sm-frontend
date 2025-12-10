@@ -258,9 +258,77 @@ export default function CreateIncidentPage() {
                   )}
                 />
 
-{/* Date and Time */}                <FormField                  control={form.control}                  name="date_time"                  render={({ field }) => (                    <FormItem>                      <FormLabel>Fecha y Hora *</FormLabel>                      <FormControl>                        <Input                          type="datetime-local"                          {...field}                          disabled={isSubmitting}                        />                      </FormControl>                      <FormMessage />                    </FormItem>                  )}                />
-{/* Photos */}                <div className="space-y-2">                  <FormLabel>Fotos (opcional)</FormLabel>                  <div className="border rounded-lg p-4">                    {pendingFiles.length === 0 ? (                      <PhotoUploader                        onUpload={async (files) => setPendingFiles(prev => [...prev, ...files])}                        disabled={isSubmitting}                        maxFiles={10}                        maxSizeMB={10}                      />                    ) : (                      <div className="space-y-3">                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">                          {pendingFiles.map((file, idx) => (                            <div key={idx} className="relative aspect-square rounded overflow-hidden border">                              <img                                src={URL.createObjectURL(file)}                                alt={file.name}                                className="w-full h-full object-cover"                              />                              <button                                type="button"                                onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white"                              >                                <X className="h-3 w-3" />                              </button>                            </div>                          ))}                        </div>                        <div className="flex items-center justify-between">                          <span className="text-sm text-muted-foreground">                            {pendingFiles.length} foto(s) seleccionadas                          </span>                          <Button                            type="button"                            variant="outline"                            size="sm"                            onClick={() => setPendingFiles([])}                          >                            Limpiar                          </Button>                        </div>                      </div>                    )}                  </div>                  <FormDescription>                    Agrega fotos del incidente (se subiran al crear)                  </FormDescription>                </div>
-                {/* Tags */}
+                {/* Date and Time */}
+                <FormField
+                  control={form.control}
+                  name="date_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha y Hora *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          {...field}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Photos */}
+                <div className="space-y-2">
+                  <FormLabel>Fotos (opcional)</FormLabel>
+                  <div className="border rounded-lg p-4">
+                    {pendingFiles.length === 0 ? (
+                      <PhotoUploader
+                        onUpload={async (files) => setPendingFiles(prev => [...prev, ...files])}
+                        disabled={isSubmitting}
+                        maxFiles={10}
+                        maxSizeMB={10}
+                      />
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {pendingFiles.map((file, idx) => (
+                            <div key={idx} className="relative aspect-square rounded overflow-hidden border">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={file.name}
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}
+                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">
+                            {pendingFiles.length} foto(s) seleccionadas
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPendingFiles([])}
+                          >
+                            Limpiar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <FormDescription>
+                    Agrega fotos del incidente (se subiran al crear)
+                  </FormDescription>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="tags"
