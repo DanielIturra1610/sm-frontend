@@ -33,14 +33,15 @@ import { toast } from 'sonner'
 
 const incidentSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
-  description: z.string().min(20, 'La descripción debe tener al menos 20 caracteres'),
+  description: z.string().min(10, 'La descripción debe tener al menos 20 caracteres'),
   severity: z.enum(['low', 'medium', 'high', 'critical'], {
     required_error: 'Por favor selecciona un nivel de severidad',
   }),
-  type: z.enum(['safety', 'security', 'environmental', 'quality', 'operational'], {
+  type: z.enum(['accident', 'incident', 'near_miss', 'zero_tolerance', 'environmental', 'occupational'], {
     required_error: 'Por favor selecciona un tipo de incidente',
   }),
-  location: z.string().min(3, 'La ubicación debe tener al menos 3 caracteres'),
+  location: z.string().min(5, 'La ubicación debe tener al menos 3 caracteres'),
+  date_time: z.string().min(1, 'La fecha y hora son requeridas'),
   tags: z.string().optional(),
 })
 
@@ -60,6 +61,7 @@ export default function CreateIncidentPage() {
       description: '',
       location: '',
       tags: '',
+      date_time: '',
     },
   })
 
@@ -78,6 +80,7 @@ export default function CreateIncidentPage() {
         severity: data.severity,
         type: data.type,
         location: data.location,
+        date_time: data.date_time,
         tags,
       }
 
@@ -222,11 +225,12 @@ export default function CreateIncidentPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="safety">Seguridad</SelectItem>
-                            <SelectItem value="security">Protección</SelectItem>
+                            <SelectItem value="accident">Accidente</SelectItem>
+                            <SelectItem value="incident">Incidente</SelectItem>
+                            <SelectItem value="near_miss">Casi Accidente</SelectItem>
+                            <SelectItem value="zero_tolerance">Tolerancia Cero</SelectItem>
                             <SelectItem value="environmental">Ambiental</SelectItem>
-                            <SelectItem value="quality">Calidad</SelectItem>
-                            <SelectItem value="operational">Operacional</SelectItem>
+                            <SelectItem value="occupational">Laboral</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -254,6 +258,7 @@ export default function CreateIncidentPage() {
                   )}
                 />
 
+{/* Date and Time */}                <FormField                  control={form.control}                  name="date_time"                  render={({ field }) => (                    <FormItem>                      <FormLabel>Fecha y Hora *</FormLabel>                      <FormControl>                        <Input                          type="datetime-local"                          {...field}                          disabled={isSubmitting}                        />                      </FormControl>                      <FormMessage />                    </FormItem>                  )}                />
 {/* Photos */}                <div className="space-y-2">                  <FormLabel>Fotos (opcional)</FormLabel>                  <div className="border rounded-lg p-4">                    {pendingFiles.length === 0 ? (                      <PhotoUploader                        onUpload={async (files) => setPendingFiles(prev => [...prev, ...files])}                        disabled={isSubmitting}                        maxFiles={10}                        maxSizeMB={10}                      />                    ) : (                      <div className="space-y-3">                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">                          {pendingFiles.map((file, idx) => (                            <div key={idx} className="relative aspect-square rounded overflow-hidden border">                              <img                                src={URL.createObjectURL(file)}                                alt={file.name}                                className="w-full h-full object-cover"                              />                              <button                                type="button"                                onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white"                              >                                <X className="h-3 w-3" />                              </button>                            </div>                          ))}                        </div>                        <div className="flex items-center justify-between">                          <span className="text-sm text-muted-foreground">                            {pendingFiles.length} foto(s) seleccionadas                          </span>                          <Button                            type="button"                            variant="outline"                            size="sm"                            onClick={() => setPendingFiles([])}                          >                            Limpiar                          </Button>                        </div>                      </div>                    )}                  </div>                  <FormDescription>                    Agrega fotos del incidente (se subiran al crear)                  </FormDescription>                </div>
                 {/* Tags */}
                 <FormField
