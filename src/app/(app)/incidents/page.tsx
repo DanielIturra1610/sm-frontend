@@ -61,8 +61,8 @@ function transformIncident(apiIncident: Record<string, unknown>): Incident {
     severity: apiIncident.severity as string,
     type: (apiIncident.type as string) || 'incident',
     location: (apiIncident.location as string) || '',
-    reportedBy: (apiIncident.reported_by as string) || (apiIncident.author_id as string) || 'Desconocido',
-    reportedAt: (apiIncident.date_time as string) || (apiIncident.created_at as string),
+    reportedBy: (apiIncident.reported_by_name as string) || (apiIncident.reported_by as string) || (apiIncident.author_id as string) || 'Desconocido',
+    reportedAt: (apiIncident.date_time as string) || (apiIncident.created_at as string) || new Date().toISOString(),
     assignedTo: (apiIncident.assigned_to as string) || (apiIncident.assigned_to_id as string),
     tags: (apiIncident.tags as string[]) || [],
   }
