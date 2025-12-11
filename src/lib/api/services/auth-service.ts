@@ -95,13 +95,30 @@ export class AuthService extends BaseService {
   }
 
   /**
-   * Verify email with token
+   * Verify email with token (from email link)
    */
   async verifyEmail(data: VerifyEmailData): Promise<{ message: string }> {
     return this.request<{ message: string }>('/users/verify-email', {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  /**
+   * Verify email directly (MVP flow - no email required)
+   * Requires authentication token in header
+   */
+  async verifyEmailDirect(): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/auth/verify-email-direct', {
+      method: 'POST',
+    })
+
+    // Update token with new one that has email_verified=true
+    if (response.token && typeof window !== 'undefined') {
+      localStorage.setItem('auth-token', response.token)
+    }
+
+    return response
   }
 
   /**

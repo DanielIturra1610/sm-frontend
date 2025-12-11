@@ -410,17 +410,17 @@ export function PhotoGallery({
                   )}
 
                   {/* Download */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    asChild
-                    className="text-white/70 hover:text-white hover:bg-white/10"
-                  >
-                    <a href={currentPhoto.signed_url} download={currentPhoto.file_name}>
+                  {currentPhoto.signed_url && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-white/70 hover:text-white hover:bg-white/10"
+                      onClick={() => window.open(currentPhoto.signed_url, "_blank")}
+                    >
                       <Download className="h-4 w-4 mr-1" />
                       Descargar
-                    </a>
-                  </Button>
+                    </Button>
+                  )}
 
                   {/* Delete */}
                   {onDelete && (
