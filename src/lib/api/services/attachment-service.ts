@@ -91,42 +91,42 @@ export class AttachmentService extends BaseService {
       formData.append('report_type', params.report_type);
     }
 
-    return this.uploadRequest<EnhancedAttachment>('/api/v1/attachments', formData);
+    return this.uploadRequest<EnhancedAttachment>('/attachments', formData);
   }
 
   /**
    * Get attachment by ID
    */
   async getById(id: string): Promise<EnhancedAttachment> {
-    return this.request<EnhancedAttachment>(`/api/v1/attachments/${id}`);
+    return this.request<EnhancedAttachment>(`/attachments/${id}`);
   }
 
   /**
    * Get all attachments for an incident
    */
   async getByIncidentId(incidentId: string): Promise<EnhancedAttachment[]> {
-    return this.request<EnhancedAttachment[]>(`/api/v1/attachments/incident/${incidentId}`);
+    return this.request<EnhancedAttachment[]>(`/attachments/incident/${incidentId}`);
   }
 
   /**
    * Get only photo attachments for an incident
    */
   async getPhotosByIncidentId(incidentId: string): Promise<EnhancedAttachment[]> {
-    return this.request<EnhancedAttachment[]>(`/api/v1/attachments/incident/${incidentId}/photos`);
+    return this.request<EnhancedAttachment[]>(`/attachments/incident/${incidentId}/photos`);
   }
 
   /**
    * Get photos marked for final report inclusion
    */
   async getForFinalReport(incidentId: string): Promise<EnhancedAttachment[]> {
-    return this.request<EnhancedAttachment[]>(`/api/v1/attachments/incident/${incidentId}/final-report`);
+    return this.request<EnhancedAttachment[]>(`/attachments/incident/${incidentId}/final-report`);
   }
 
   /**
    * Update attachment metadata
    */
   async update(id: string, params: UpdateAttachmentParams): Promise<EnhancedAttachment> {
-    return this.request<EnhancedAttachment>(`/api/v1/attachments/${id}`, {
+    return this.request<EnhancedAttachment>(`/attachments/${id}`, {
       method: 'PUT',
       body: JSON.stringify(params),
     });
@@ -136,7 +136,7 @@ export class AttachmentService extends BaseService {
    * Reorder attachments for final report
    */
   async reorder(attachments: ReorderAttachmentParams[]): Promise<void> {
-    await this.request<{ status: string }>('/api/v1/attachments/reorder', {
+    await this.request<{ status: string }>('/attachments/reorder', {
       method: 'PUT',
       body: JSON.stringify({ attachments }),
     });
@@ -146,7 +146,7 @@ export class AttachmentService extends BaseService {
    * Delete an attachment
    */
   async delete(id: string): Promise<void> {
-    await this.request<{ status: string }>(`/api/v1/attachments/${id}`, {
+    await this.request<{ status: string }>(`/attachments/${id}`, {
       method: 'DELETE',
     });
   }
@@ -155,7 +155,7 @@ export class AttachmentService extends BaseService {
    * Get signed URL for direct download
    */
   async getSignedURL(id: string): Promise<SignedURLResponse> {
-    return this.request<SignedURLResponse>(`/api/v1/attachments/${id}/url`);
+    return this.request<SignedURLResponse>(`/attachments/${id}/url`);
   }
 
   /**

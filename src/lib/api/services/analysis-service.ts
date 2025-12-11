@@ -19,7 +19,7 @@ export class AnalysisService extends BaseService {
    */
   async listFishbone(params?: { status?: string; search?: string }): Promise<FishboneAnalysis[]> {
     const query = this.toQueryString(params);
-    return this.request<FishboneAnalysis[]>(`/api/v1/analysis/fishbone${query}`);
+    return this.request<FishboneAnalysis[]>(`/analysis/fishbone${query}`);
   }
 
   /**
@@ -27,7 +27,7 @@ export class AnalysisService extends BaseService {
    */
   async listFiveWhys(params?: { status?: string; search?: string }): Promise<FiveWhysAnalysis[]> {
     const query = this.toQueryString(params);
-    return this.request<FiveWhysAnalysis[]>(`/api/v1/analysis/five-whys${query}`);
+    return this.request<FiveWhysAnalysis[]>(`/analysis/five-whys${query}`);
   }
 
   /**
