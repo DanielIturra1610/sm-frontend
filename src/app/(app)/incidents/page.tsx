@@ -4,7 +4,6 @@ import * as React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import {
   AlertTriangle,
-  Calendar,
   Eye,
   Edit,
   Trash2,
@@ -16,11 +15,9 @@ import {
   Filter as FilterIcon,
   Download,
   RefreshCw,
-  Search,
   Tags
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
-import { es } from "date-fns/locale"
 import { useRouter } from "next/navigation"
 
 import { cn } from "@/lib/utils"
@@ -40,33 +37,12 @@ import {
   IncidentTypeBadge
 } from "@/shared/components/ui/status-badge"
 import { FilterPanel } from "./_components/filter-panel"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
-import { Separator } from "@/shared/components/ui/separator"
 import {
   Incident,
   IncidentListParams,
-  PaginatedResponse
 } from "@/shared/types/api"
 import { useIncidents } from "@/shared/hooks/incident-hooks"
 import { toast } from "sonner"
-
-
-// Transform API response to frontend Incident type
-function transformIncident(apiIncident: Record<string, unknown>): Incident {
-  return {
-    id: apiIncident.id as string,
-    title: apiIncident.title as string,
-    description: (apiIncident.description as string) || '',
-    status: apiIncident.status as string,
-    severity: apiIncident.severity as string,
-    type: (apiIncident.type as string) || 'incident',
-    location: (apiIncident.location as string) || '',
-    reportedBy: (apiIncident.reported_by_name as string) || (apiIncident.reported_by as string) || (apiIncident.author_id as string) || 'Desconocido',
-    reportedAt: (apiIncident.date_time as string) || (apiIncident.created_at as string) || new Date().toISOString(),
-    assignedTo: (apiIncident.assigned_to as string) || (apiIncident.assigned_to_id as string),
-    tags: (apiIncident.tags as string[]) || [],
-  }
-}
 
 export default function IncidentsPage() {
   const router = useRouter()
@@ -81,32 +57,21 @@ export default function IncidentsPage() {
   // Use the real API hook
   const { data: apiResponse, error, isLoading, mutate } = useIncidents(filters)
 
-  // Transform API data to frontend format
+  // Get incidents from API response - already transformed by incident-service
   const incidents = React.useMemo(() => {
     if (!apiResponse) return []
-    const rawIncidents = (apiResponse as Record<string, unknown>).incidents as Record<string, unknown>[]
-      || (apiResponse as Record<string, unknown>).data as Record<string, unknown>[]
-      || []
-    return rawIncidents.map(transformIncident)
+    // The incident-service already transforms the data, so we just need to extract it
+    // apiResponse has structure: { data: Incident[], pagination: {...} }
+    return apiResponse.data || []
   }, [apiResponse])
 
-  // Derive pagination from API response
+  // Get pagination from API response - already structured by incident-service
   const pagination = React.useMemo(() => {
-    if (!apiResponse) {
+    if (!apiResponse?.pagination) {
       return { page: 1, limit: 10, total: 0, totalPages: 0 }
     }
-    const resp = apiResponse as Record<string, unknown>
-    const total = (resp.total as number) || 0
-    const limit = (resp.limit as number) || filters.limit || 10
-    const offset = (resp.offset as number) || 0
-    const page = Math.floor(offset / limit) + 1
-    return {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit)
-    }
-  }, [apiResponse, filters.limit])
+    return apiResponse.pagination
+  }, [apiResponse])
 
   // Show error toast
   React.useEffect(() => {
