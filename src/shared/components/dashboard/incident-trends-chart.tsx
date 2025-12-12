@@ -2,32 +2,30 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Skeleton } from '@/shared/components/ui/skeleton'
+import { useIncidentTrends } from '@/shared/hooks/incident-hooks'
 
-interface IncidentTrendsChartProps {
-  data?: Array<{
-    month: string
-    incidents: number
-    resolved: number
-    open: number
-  }>
-}
+export function IncidentTrendsChart() {
+  const { data: trendsData, isLoading } = useIncidentTrends()
 
-const defaultData = [
-  { month: 'Ene', incidents: 45, resolved: 38, open: 7 },
-  { month: 'Feb', incidents: 52, resolved: 47, open: 5 },
-  { month: 'Mar', incidents: 41, resolved: 39, open: 2 },
-  { month: 'Abr', incidents: 38, resolved: 35, open: 3 },
-  { month: 'May', incidents: 47, resolved: 44, open: 3 },
-  { month: 'Jun', incidents: 55, resolved: 48, open: 7 },
-  { month: 'Jul', incidents: 49, resolved: 46, open: 3 },
-  { month: 'Ago', incidents: 43, resolved: 40, open: 3 },
-  { month: 'Sep', incidents: 51, resolved: 45, open: 6 },
-  { month: 'Oct', incidents: 48, resolved: 43, open: 5 },
-  { month: 'Nov', incidents: 42, resolved: 39, open: 3 },
-  { month: 'Dic', incidents: 39, resolved: 35, open: 4 },
-]
+  // Use API data or empty array
+  const data = trendsData?.trends ?? []
 
-export function IncidentTrendsChart({ data = defaultData }: IncidentTrendsChartProps) {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">
+            Tendencias de Incidentes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-80 w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>

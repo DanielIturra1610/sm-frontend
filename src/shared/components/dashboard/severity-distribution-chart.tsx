@@ -2,24 +2,63 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Skeleton } from '@/shared/components/ui/skeleton'
+import { useIncidentStats } from '@/shared/hooks/incident-hooks'
 
-interface SeverityDistributionChartProps {
-  data?: Array<{
-    name: string
-    value: number
-    color: string
-  }>
+// Severity labels and colors mapping
+const severityConfig: Record<string, { label: string; color: string }> = {
+  low: { label: 'Baja', color: 'hsl(var(--chart-2))' },
+  medium: { label: 'Media', color: 'hsl(var(--chart-3))' },
+  high: { label: 'Alta', color: 'hsl(var(--chart-4))' },
+  critical: { label: 'Crítica', color: 'hsl(var(--chart-5))' },
 }
 
-const defaultData = [
-  { name: 'Baja', value: 45, color: 'hsl(var(--chart-2))' },
-  { name: 'Media', value: 32, color: 'hsl(var(--chart-3))' },
-  { name: 'Alta', value: 18, color: 'hsl(var(--chart-4))' },
-  { name: 'Crítica', value: 5, color: 'hsl(var(--chart-5))' },
-]
+export function SeverityDistributionChart() {
+  const { data: stats, isLoading } = useIncidentStats()
 
-export function SeverityDistributionChart({ data = defaultData }: SeverityDistributionChartProps) {
+  // Transform API data to chart format
+  const data = stats?.severityDistribution
+    ? Object.entries(stats.severityDistribution).map(([severity, value]) => ({
+        name: severityConfig[severity]?.label || severity,
+        value: value,
+        color: severityConfig[severity]?.color || 'hsl(var(--chart-1))',
+      }))
+    : []
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">
+            Distribución por Severidad
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-80 w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   const total = data.reduce((sum, item) => sum + item.value, 0)
+
+  // Show empty state if no data
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">
+            Distribución por Severidad
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 flex items-center justify-center text-muted-foreground">
+            No hay datos disponibles
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>

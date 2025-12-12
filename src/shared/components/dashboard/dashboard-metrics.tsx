@@ -1,34 +1,36 @@
+'use client'
+
 import { AlertTriangle, Shield, Clock, TrendingUp } from 'lucide-react'
 import { KPICard } from './kpi-card'
+import { useIncidentStats } from '@/shared/hooks/incident-hooks'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 
-interface DashboardMetricsProps {
-  data?: {
-    totalIncidents: number
-    openIncidents: number
-    avgResolutionTime: number
-    riskScore: number
-    trends: {
-      incidents: { value: number; isPositive: boolean }
-      resolution: { value: number; isPositive: boolean }
-      risk: { value: number; isPositive: boolean }
-    }
+export function DashboardMetrics() {
+  const { data: stats, isLoading, error } = useIncidentStats()
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-32 w-full" />
+        ))}
+      </div>
+    )
   }
-}
 
-const defaultData = {
-  totalIncidents: 142,
-  openIncidents: 23,
-  avgResolutionTime: 3.2,
-  riskScore: 7.8,
-  trends: {
-    incidents: { value: 12, isPositive: false },
-    resolution: { value: 15, isPositive: true },
-    risk: { value: 8, isPositive: true },
-  },
-}
+  // Use API data or fallback values
+  const metrics = {
+    totalIncidents: stats?.totalIncidents ?? 0,
+    openIncidents: stats?.openIncidents ?? 0,
+    avgResolutionTime: stats?.avgResolutionTime ?? 0,
+    incidentTrend: stats?.incidentTrend ?? 0,
+    incidentTrendIsPositive: stats?.incidentTrendIsPositive ?? true,
+  }
 
-export function DashboardMetrics({ data = defaultData }: DashboardMetricsProps) {
-  const metrics = data
+  // Calculate a simple risk score based on open incidents ratio
+  const riskScore = metrics.totalIncidents > 0
+    ? Math.min(10, Math.round((metrics.openIncidents / Math.max(metrics.totalIncidents, 1)) * 10 * 2))
+    : 0
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -37,11 +39,11 @@ export function DashboardMetrics({ data = defaultData }: DashboardMetricsProps) 
         value={metrics.totalIncidents}
         description="Incidentes registrados este mes"
         icon={<AlertTriangle className="h-4 w-4" />}
-        trend={{
-          value: metrics.trends.incidents.value,
+        trend={metrics.incidentTrend !== 0 ? {
+          value: Math.abs(Math.round(metrics.incidentTrend)),
           label: "vs mes anterior",
-          isPositive: metrics.trends.incidents.isPositive,
-        }}
+          isPositive: metrics.incidentTrendIsPositive,
+        } : undefined}
         variant="info"
       />
 
@@ -50,33 +52,23 @@ export function DashboardMetrics({ data = defaultData }: DashboardMetricsProps) 
         value={metrics.openIncidents}
         description="Requieren atención inmediata"
         icon={<Clock className="h-4 w-4" />}
-        variant={metrics.openIncidents > 20 ? "warning" : "success"}
+        variant={metrics.openIncidents > 20 ? "warning" : metrics.openIncidents > 10 ? "info" : "success"}
       />
 
       <KPICard
         title="Tiempo Promedio Resolución"
-        value={`${metrics.avgResolutionTime}h`}
+        value={`${metrics.avgResolutionTime.toFixed(1)}h`}
         description="Tiempo promedio para resolver incidentes"
         icon={<TrendingUp className="h-4 w-4" />}
-        trend={{
-          value: metrics.trends.resolution.value,
-          label: "mejora vs anterior",
-          isPositive: metrics.trends.resolution.isPositive,
-        }}
-        variant="success"
+        variant={metrics.avgResolutionTime > 48 ? "warning" : "success"}
       />
 
       <KPICard
         title="Índice de Riesgo"
-        value={`${metrics.riskScore}/10`}
-        description="Evaluación general de seguridad"
+        value={`${riskScore}/10`}
+        description="Basado en incidentes abiertos"
         icon={<Shield className="h-4 w-4" />}
-        trend={{
-          value: metrics.trends.risk.value,
-          label: "mejora en seguridad",
-          isPositive: metrics.trends.risk.isPositive,
-        }}
-        variant={metrics.riskScore > 8 ? "error" : metrics.riskScore > 6 ? "warning" : "success"}
+        variant={riskScore > 7 ? "error" : riskScore > 4 ? "warning" : "success"}
       />
     </div>
   )

@@ -384,27 +384,26 @@ export type DocumentListResponse = PaginatedResponse<Document>
 // ============================================================================
 
 export interface IncidentStats {
-  total: number
-  bySeverity: Record<IncidentSeverity, number>
-  byStatus: Record<IncidentStatus, number>
-  byType: Record<IncidentType, number>
-  open: number
-  closed: number
+  totalIncidents: number
+  openIncidents: number
+  severityDistribution: Record<string, number>
+  statusDistribution: Record<string, number>
+  typeDistribution: Record<string, number>
   avgResolutionTime: number
-  trends: IncidentTrend[]
+  incidentTrend: number
+  incidentTrendIsPositive: boolean
 }
 
-export interface IncidentTrend {
-  date: string
-  count: number
-  severity: IncidentSeverity
+export interface IncidentTrendData {
+  month: string
+  incidents: number
+  resolved: number
+  open: number
 }
 
 export interface IncidentTrends {
-  data: IncidentTrend[]
-  period: string
-  startDate: string
-  endDate: string
+  trends: IncidentTrendData[]
+  months: number
 }
 
 export interface IncidentExportRequest {

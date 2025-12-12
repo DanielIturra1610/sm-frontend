@@ -68,28 +68,29 @@ const navigation: NavItem[] = [
       { title: 'Crear Diagrama de Pescado', href: '/analysis/fishbone/create', icon: BarChart3 },
     ],
   },
-  {
-    title: 'Documentos',
-    icon: FileText,
-    children: [
-      { title: 'Todos los Documentos', href: '/documents', icon: FileText },
-      { title: 'Generar Documento', href: '/documents/generate', icon: FileText },
-    ],
-  },
-  {
-    title: 'Flujos de Trabajo',
-    icon: GitBranch,
-    children: [
-      { title: 'Todos los Flujos', href: '/workflows', icon: GitBranch },
-      { title: 'Crear Flujo', href: '/workflows/create', icon: GitBranch },
-      { title: 'Mis Tareas', href: '/workflows/tasks', icon: ListTodo },
-    ],
-  },
+  // TODO: Habilitar cuando estén listos
+  // {
+  //   title: 'Documentos',
+  //   icon: FileText,
+  //   children: [
+  //     { title: 'Todos los Documentos', href: '/documents', icon: FileText },
+  //     { title: 'Generar Documento', href: '/documents/generate', icon: FileText },
+  //   ],
+  // },
+  // {
+  //   title: 'Flujos de Trabajo',
+  //   icon: GitBranch,
+  //   children: [
+  //     { title: 'Todos los Flujos', href: '/workflows', icon: GitBranch },
+  //     { title: 'Crear Flujo', href: '/workflows/create', icon: GitBranch },
+  //     { title: 'Mis Tareas', href: '/workflows/tasks', icon: ListTodo },
+  //   ],
+  // },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Incidentes', 'Reportes', 'Análisis', 'Documentos', 'Flujos de Trabajo'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Incidentes', 'Reportes', 'Análisis'])
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const toggleExpanded = (title: string) => {

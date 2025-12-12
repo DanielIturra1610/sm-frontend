@@ -145,7 +145,7 @@ export class IncidentService extends BaseService {
    * Get incident statistics
    */
   async getStats(): Promise<IncidentStats> {
-    return this.request<IncidentStats>('/incidents/stats');
+    return this.request<IncidentStats>('/incidents/statistics');
   }
 
   /**

@@ -5,7 +5,6 @@ import { ColumnDef } from "@tanstack/react-table"
 import {
   AlertTriangle,
   Eye,
-  Edit,
   Trash2,
   MapPin,
   User,
@@ -121,10 +120,6 @@ export default function IncidentsPage() {
     
   }, [])
 
-  const handleEdit = React.useCallback((incident: Incident) => {
-    router.push(`/incidents/${incident.id}/edit`)
-    
-  }, [])
 
   const handleDelete = React.useCallback(async (incident: Incident) => {
     if (confirm(`¿Estás seguro de que deseas eliminar el incidente "${incident.title}"?`)) {
@@ -267,10 +262,6 @@ export default function IncidentsPage() {
               <DropdownMenuItem onClick={() => handleView(incident)}>
                 <Eye className="mr-2 h-4 w-4" />
                 Ver Detalles
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleEdit(incident)}>
-                <Edit className="mr-2 h-4 w-4" />
-                Editar
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

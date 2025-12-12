@@ -143,7 +143,7 @@ export function useCompleteInvestigation(id: string) {
  */
 export function useIncidentStats(config?: SWRConfiguration) {
   return useSWR<IncidentStats>(
-    '/incidents/stats',
+    '/incidents/statistics',
     () => api.incident.getStats(),
     {
       revalidateOnFocus: false,

@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { PhotoGallery } from '@/shared/components/attachments/PhotoGallery'
 import { PhotoUploader } from '@/shared/components/attachments/PhotoUploader'
-import { ArrowLeft, Edit, FileText, AlertCircle, Camera, Plus, ChevronUp } from 'lucide-react'
+import { ArrowLeft, FileText, AlertCircle, Camera, Plus, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -139,13 +139,7 @@ export default function IncidentDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href={`/incidents/${incident.id}/edit`}>
-            <Button variant="outline">
-              <Edit className="mr-2 h-4 w-4" />
-              Editar
-            </Button>
-          </Link>
-          <Button>
+          <Button onClick={() => router.push(`/incidents/${incident.id}/report`)}>
             <FileText className="mr-2 h-4 w-4" />
             Generar Reporte
           </Button>
