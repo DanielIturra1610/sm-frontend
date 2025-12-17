@@ -13,6 +13,7 @@ import type {
   IncidentStats,
   IncidentTrends,
   IncidentExportRequest,
+  UpdateIncidentData,
 } from '@/shared/types/api'
 
 // ============================================================================
@@ -83,7 +84,7 @@ export function useUpdateIncident(id: string) {
   const { mutate: mutateIncident } = useIncident(id)
   const { mutate: mutateIncidents } = useIncidents()
 
-  return useSWRMutation(`/incidents/${id}`,
+  return useSWRMutation<Incident, Error, string, UpdateIncidentData>(`/incidents/${id}`,
     async (key, { arg }) => {
       const updatedIncident = await api.incident.update(id, arg)
 
