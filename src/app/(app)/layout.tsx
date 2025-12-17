@@ -4,7 +4,7 @@ import { useAuth } from '@/shared/contexts/auth-context'
 import { Sidebar } from '@/shared/components/layout/Sidebar'
 import { Button } from '@/shared/components/ui/button'
 import { Toaster } from '@/shared/components/ui/toaster'
-import { LogOut, Bell, Settings, Search } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 
 export default function AppLayout({
   children,
@@ -39,18 +39,7 @@ export default function AppLayout({
               </div>
 
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="hidden sm:flex">
-                  <Search className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
-                </Button>
-                <Button variant="ghost" size="icon" className="hidden sm:flex">
-                  <Settings className="h-5 w-5" />
-                </Button>
-
-                <div className="hidden sm:flex items-center gap-2 ml-2 pl-2 border-l border-gray-200">
+                <div className="hidden sm:flex items-center gap-2">
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">{user?.full_name}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
