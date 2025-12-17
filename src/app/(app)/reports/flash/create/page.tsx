@@ -5,12 +5,14 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useCreateFlashReport } from '@/shared/hooks/report-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
 import { flashReportSchema, type FlashReportFormData } from '@/lib/validations/report-schemas'
+import { getSucesoCategoryLabel, getSucesoTypeLabel } from '@/shared/constants/suceso-options'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
@@ -49,6 +51,31 @@ export default function CreateFlashReportPage() {
   const sin_baja_il = watch('sin_baja_il')
   const incidente_industrial = watch('incidente_industrial')
   const incidente_laboral = watch('incidente_laboral')
+
+  // Fetch incident details when incident is selected
+  const { data: selectedIncident } = useIncident(incident_id || '')
+
+  // Auto-fill form fields when incident is selected
+  useEffect(() => {
+    if (selectedIncident) {
+      // Auto-fill basic fields
+      setValue('suceso', selectedIncident.title || '')
+      setValue('tipo', selectedIncident.tipoSuceso ? getSucesoTypeLabel(selectedIncident.tipoSuceso) : '')
+      setValue('lugar', selectedIncident.location || '')
+      setValue('descripcion', selectedIncident.description || '')
+      
+      // Parse date and time from reportedAt
+      if (selectedIncident.reportedAt) {
+        const date = new Date(selectedIncident.reportedAt)
+        const dateStr = date.toISOString().split('T')[0]
+        const timeStr = date.toTimeString().slice(0, 5)
+        setValue('fecha', dateStr)
+        setValue('hora', timeStr)
+      }
+
+      toast.success('Campos rellenados automáticamente desde el suceso')
+    }
+  }, [selectedIncident, setValue])
 
   const onSubmit = async (data: FlashReportFormData) => {
     try {
