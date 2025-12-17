@@ -86,16 +86,16 @@ export default function IncidentDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-red-600">
               <AlertCircle className="h-5 w-5" />
-              Error al Cargar el Incidente
+              Error al Cargar el Suceso
             </CardTitle>
             <CardDescription>
-              {error?.message || 'Error al cargar los detalles del incidente'}
+              {error?.message || 'Error al cargar los detalles del suceso'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => router.push('/incidents')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver a Incidentes
+              Volver a Sucesos
             </Button>
           </CardContent>
         </Card>
@@ -135,7 +135,7 @@ export default function IncidentDetailPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{incident.title}</h1>
-            <p className="text-muted-foreground">Incidente #{incident.id.slice(0, 8)}</p>
+            <p className="text-muted-foreground">Suceso #{incident.id.slice(0, 8)}</p>
           </div>
         </div>
         <div className="flex gap-2">

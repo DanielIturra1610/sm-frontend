@@ -35,9 +35,9 @@ export function DashboardMetrics() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <KPICard
-        title="Total Incidentes"
+        title="Total Sucesos"
         value={metrics.totalIncidents}
-        description="Incidentes registrados este mes"
+        description="Pendientes de resolver este mes"
         icon={<AlertTriangle className="h-4 w-4" />}
         trend={metrics.incidentTrend !== 0 ? {
           value: Math.abs(Math.round(metrics.incidentTrend)),
@@ -48,7 +48,7 @@ export function DashboardMetrics() {
       />
 
       <KPICard
-        title="Incidentes Abiertos"
+        title="Sucesos Abiertos"
         value={metrics.openIncidents}
         description="Requieren atención inmediata"
         icon={<Clock className="h-4 w-4" />}
@@ -58,7 +58,7 @@ export function DashboardMetrics() {
       <KPICard
         title="Tiempo Promedio Resolución"
         value={`${metrics.avgResolutionTime.toFixed(1)}h`}
-        description="Tiempo promedio para resolver incidentes"
+        description="Tiempo promedio para resolver sucesos"
         icon={<TrendingUp className="h-4 w-4" />}
         variant={metrics.avgResolutionTime > 48 ? "warning" : "success"}
       />
@@ -66,7 +66,7 @@ export function DashboardMetrics() {
       <KPICard
         title="Índice de Riesgo"
         value={`${riskScore}/10`}
-        description="Basado en incidentes abiertos"
+        description="Basado en sucesos abiertos"
         icon={<Shield className="h-4 w-4" />}
         variant={riskScore > 7 ? "error" : riskScore > 4 ? "warning" : "success"}
       />
