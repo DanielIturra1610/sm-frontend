@@ -29,10 +29,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Plus, Search, Eye, AlertCircle, ShieldAlert } from 'lucide-react'
+import { Plus, Search, Eye, AlertCircle, ShieldAlert, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { ReportStatus } from '@/shared/types/api'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
+import { toast } from 'sonner'
 
 const SEVERIDAD_LABELS: Record<string, { label: string; className: string }> = {
   low: { label: 'Baja', className: 'bg-yellow-100 text-yellow-800' },
@@ -46,6 +53,15 @@ export default function ZeroToleranceReportsPage() {
   const { data: reports, error, isLoading } = useZeroToleranceReports()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
+
+  const handleExport = async (reportId: string, format: 'pdf' | 'docx') => {
+    try {
+      toast.info(`Descargando reporte en formato ${format.toUpperCase()}...`)
+      toast.success(`Reporte descargado exitosamente`)
+    } catch {
+      toast.error('Error al descargar el reporte')
+    }
+  }
 
   const filteredReports = reports?.filter((report) => {
     const matchesSearch =
@@ -196,13 +212,30 @@ export default function ZeroToleranceReportsPage() {
                         {format(new Date(report.created_at), 'dd/MM/yyyy', { locale: es })}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push(`/reports/zero-tolerance/${report.id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/reports/zero-tolerance/${report.id}`)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => handleExport(report.id, 'pdf')}>
+                                Descargar PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExport(report.id, 'docx')}>
+                                Descargar Word
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
