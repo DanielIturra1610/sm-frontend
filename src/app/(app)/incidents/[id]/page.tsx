@@ -182,23 +182,6 @@ export default function IncidentDetailPage() {
           </Card>
 
 {/* Photos Section */}          <Card>            <CardHeader>              <div className="flex items-center justify-between">                <div>                  <CardTitle className="flex items-center gap-2">                    <Camera className="h-5 w-5" />                    Fotos del Incidente                  </CardTitle>                  <CardDescription>                    {photos.length} foto(s) adjuntas                  </CardDescription>                </div>                <Button                  variant="outline"                  size="sm"                  onClick={() => setShowUploader(!showUploader)}                >                  {showUploader ? (                    <>                      <ChevronUp className="mr-2 h-4 w-4" />                      Cerrar                    </>                  ) : (                    <>                      <Plus className="mr-2 h-4 w-4" />                      Agregar Fotos                    </>                  )}                </Button>              </div>            </CardHeader>            <CardContent className="space-y-4">              {showUploader && (                <PhotoUploader                  onUpload={handleUpload}                  disabled={isMutating}                  maxFiles={10}                  maxSizeMB={10}                />              )}              <PhotoGallery                photos={photos}                loading={photosLoading}                onDelete={handleDelete}                onUpdateCaption={handleUpdateCaption}                onToggleFinalReport={handleToggleFinalReport}                showFinalReportToggle={true}              />            </CardContent>          </Card>
-          {/* Tags */}
-          {incident.tags && incident.tags.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Etiquetas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {incident.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Right Column - Metadata */}

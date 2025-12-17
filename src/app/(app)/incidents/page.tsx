@@ -13,8 +13,7 @@ import {
   Plus,
   Filter as FilterIcon,
   Download,
-  RefreshCw,
-  Tags
+  RefreshCw
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
 import { useRouter } from "next/navigation"
@@ -144,26 +143,6 @@ export default function IncidentsPage() {
               <MapPin className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{incident.location}</span>
             </div>
-            {incident.tags.length > 0 && (
-              <div className="flex items-center space-x-1">
-                <Tags className="h-3 w-3 text-gray-400" />
-                <div className="flex flex-wrap gap-1">
-                  {incident.tags.slice(0, 2).map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-block px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {incident.tags.length > 2 && (
-                    <span className="text-xs text-gray-400">
-                      +{incident.tags.length - 2}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         )
       },
