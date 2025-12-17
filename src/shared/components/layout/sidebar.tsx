@@ -38,11 +38,11 @@ const navigation: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Incidentes',
+    title: 'Sucesos',
     icon: AlertTriangle,
     children: [
-      { title: 'Todos los Incidentes', href: '/incidents', icon: AlertTriangle },
-      { title: 'Crear Incidente', href: '/incidents/create', icon: AlertTriangle },
+      { title: 'Todos los Sucesos', href: '/incidents', icon: AlertTriangle },
+      { title: 'Crear Suceso', href: '/incidents/create', icon: AlertTriangle },
     ],
   },
   {
@@ -52,20 +52,10 @@ const navigation: NavItem[] = [
       { title: 'Todos los Reportes', href: '/reports', icon: ClipboardList },
       { title: 'Flash Report', href: '/reports/flash', icon: FileText },
       { title: 'Acciones Inmediatas', href: '/reports/immediate-actions', icon: ListTodo },
-      { title: 'Análisis Causa Raíz', href: '/reports/root-cause', icon: Search },
+      { title: 'Análisis Causa Raíz', href: '/root-cause-analysis', icon: Search },
       { title: 'Plan de Acción', href: '/reports/action-plan', icon: Target },
       { title: 'Tolerancia Cero', href: '/reports/zero-tolerance', icon: ShieldAlert },
       { title: 'Reporte Final', href: '/reports/final', icon: FileCheck },
-    ],
-  },
-  {
-    title: 'Análisis',
-    icon: BarChart3,
-    children: [
-      { title: 'Árbol Causal', href: '/causal-tree', icon: BarChart3 },
-      { title: 'Crear Árbol Causal', href: '/causal-tree/create', icon: BarChart3 },
-      { title: 'Diagrama de Pescado', href: '/analysis/fishbone', icon: BarChart3 },
-      { title: 'Crear Diagrama de Pescado', href: '/analysis/fishbone/create', icon: BarChart3 },
     ],
   },
   // TODO: Habilitar cuando estén listos
@@ -90,7 +80,7 @@ const navigation: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Incidentes', 'Reportes', 'Análisis'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Sucesos', 'Reportes', 'Análisis'])
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const toggleExpanded = (title: string) => {
