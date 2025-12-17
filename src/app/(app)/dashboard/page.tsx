@@ -62,17 +62,19 @@ export default function DashboardPage() {
                   <div className="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                     <AlertTriangle className="h-5 w-5 text-red-600" />
                   </div>
-                  <h3 className="font-medium text-sm">Reportar Incidente</h3>
+                  <h3 className="font-medium text-sm">Reportar Suceso</h3>
+                  <p className="text-xs text-gray-500 mt-1">Registro inicial</p>
                 </InteractiveCard>
 
                 <InteractiveCard
                   className="p-4 text-center hover:shadow-lg cursor-pointer"
-                  onClick={() => router.push('/reports')}
+                  onClick={() => router.push('/reports/flash/create')}
                 >
                   <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                     <FileText className="h-5 w-5 text-blue-600" />
                   </div>
-                  <h3 className="font-medium text-sm">Ver Reportes</h3>
+                  <h3 className="font-medium text-sm">Flash Report</h3>
+                  <p className="text-xs text-gray-500 mt-1">Reporte 24h</p>
                 </InteractiveCard>
 
                 <InteractiveCard
@@ -82,7 +84,8 @@ export default function DashboardPage() {
                   <div className="h-10 w-10 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                     <BarChart3 className="h-5 w-5 text-yellow-600" />
                   </div>
-                  <h3 className="font-medium text-sm">Ver Incidentes</h3>
+                  <h3 className="font-medium text-sm">Ver Sucesos</h3>
+                  <p className="text-xs text-gray-500 mt-1">Todos los registros</p>
                 </InteractiveCard>
 
                 <InteractiveCard
