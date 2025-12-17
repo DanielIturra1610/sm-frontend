@@ -40,7 +40,6 @@ const incidentSchema = z.object({
     required_error: 'Por favor selecciona un tipo de incidente',
   }),
   location: z.string().min(5, 'La ubicación debe tener al menos 3 caracteres'),
-  tags: z.string().optional(),
 })
 
 type IncidentFormValues = z.infer<typeof incidentSchema>
@@ -60,7 +59,6 @@ export default function EditIncidentPage() {
       title: '',
       description: '',
       location: '',
-      tags: '',
     },
   })
 
@@ -73,7 +71,6 @@ export default function EditIncidentPage() {
         severity: incident.severity || 'low',
         type: incident.type || 'safety',
         location: incident.location || '',
-        tags: incident.tags ? incident.tags.join(', ') : '',
       })
     }
   }, [incident, form])
@@ -82,16 +79,10 @@ export default function EditIncidentPage() {
     try {
       setIsSubmitting(true)
 
-      // Parse tags from comma-separated string
-      const tags = data.tags
-        ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
-        : []
-
       const incidentData = {
         title: data.title,
         description: data.description,
         severity: data.severity,
-        tags,
       }
 
       await updateIncident(incidentData)
@@ -281,28 +272,6 @@ export default function EditIncidentPage() {
                           disabled={isSubmitting}
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Tags */}
-                <FormField
-                  control={form.control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Etiquetas</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="etiqueta1, etiqueta2, etiqueta3"
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Etiquetas separadas por comas para categorizar este incidente
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

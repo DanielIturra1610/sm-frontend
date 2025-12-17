@@ -42,7 +42,6 @@ const incidentSchema = z.object({
   }),
   location: z.string().min(5, 'La ubicación debe tener al menos 3 caracteres'),
   date_time: z.string().min(1, 'La fecha y hora son requeridas'),
-  tags: z.string().optional(),
 })
 
 type IncidentFormValues = z.infer<typeof incidentSchema>
@@ -56,23 +55,11 @@ export default function CreateIncidentPage() {
 
   const form = useForm<IncidentFormValues>({
     resolver: zodResolver(incidentSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      location: '',
-      tags: '',
-      date_time: '',
-    },
   })
 
   const onSubmit = async (data: IncidentFormValues) => {
     try {
       setIsSubmitting(true)
-
-      // Parse tags from comma-separated string
-      const tags = data.tags
-        ? data.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
-        : []
 
       const incidentData = {
         title: data.title,
@@ -80,7 +67,6 @@ export default function CreateIncidentPage() {
         severity: data.severity,
         type: data.type,
         location: data.location,
-        tags,
       }
 
       const newIncident = await createIncident(incidentData)
@@ -326,27 +312,6 @@ export default function CreateIncidentPage() {
                     Agrega fotos del incidente (se subiran al crear)
                   </FormDescription>
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Etiquetas</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="etiqueta1, etiqueta2, etiqueta3"
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Etiquetas separadas por comas para categorizar este incidente
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 {/* Actions */}
                 <div className="flex gap-4 pt-4">
