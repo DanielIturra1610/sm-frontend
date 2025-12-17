@@ -118,4 +118,20 @@ export class CompanyService extends BaseService {
       method: 'DELETE',
     })
   }
+
+  /**
+   * Validate company name or RUT (check if already exists)
+   */
+  async validate(params: { name?: string; rut?: string }): Promise<{ name_exists: boolean; rut_exists: boolean }> {
+    const queryParams = new URLSearchParams()
+    if (params.name) queryParams.append('name', params.name)
+    if (params.rut) queryParams.append('rut', params.rut)
+    
+    return this.request<{ name_exists: boolean; rut_exists: boolean }>(
+      `/companies/validate?${queryParams.toString()}`,
+      {
+        method: 'GET',
+      }
+    )
+  }
 }

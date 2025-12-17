@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api'
 
-interface ValidationResult {
-  name_exists: boolean
-  rut_exists: boolean
-}
-
 interface UseCompanyValidationReturn {
   validateName: (name: string) => void
   validateRUT: (rut: string) => void
@@ -27,9 +22,7 @@ export function useCompanyValidation(): UseCompanyValidationReturn {
 
     setIsValidating(true)
     try {
-      const response = await api.get<ValidationResult>('/companies/validate', {
-        params: { name: name.trim() }
-      })
+      const response = await api.companies.validate({ name: name.trim() })
       setNameExists(response.name_exists)
     } catch (error) {
       console.error('Error validating company name:', error)
@@ -47,9 +40,7 @@ export function useCompanyValidation(): UseCompanyValidationReturn {
 
     setIsValidating(true)
     try {
-      const response = await api.get<ValidationResult>('/companies/validate', {
-        params: { rut: rut.trim() }
-      })
+      const response = await api.companies.validate({ rut: rut.trim() })
       setRutExists(response.rut_exists)
     } catch (error) {
       console.error('Error validating company RUT:', error)
