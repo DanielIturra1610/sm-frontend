@@ -499,7 +499,7 @@ export interface AnalysisTemplate {
   name: string
   description: string
   type: 'five_whys' | 'fishbone'
-  content: any
+  content: Record<string, unknown>
   isDefault: boolean
   companyId: string
   createdAt: string
@@ -541,7 +541,7 @@ export interface DocumentTemplateVariable {
   label: string
   type: 'text' | 'date' | 'number' | 'list' | 'boolean'
   required: boolean
-  defaultValue?: any
+  defaultValue?: string | number | boolean | string[]
 }
 
 // ============================================================================
@@ -575,7 +575,7 @@ export interface WorkflowTrigger {
 export interface WorkflowCondition {
   field: string
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'not_contains'
-  value: any
+  value: string | number | boolean
 }
 
 export interface WorkflowInstance extends BaseEntity {
@@ -585,7 +585,7 @@ export interface WorkflowInstance extends BaseEntity {
   currentStep: string
   status: 'active' | 'completed' | 'cancelled'
   steps: WorkflowInstanceStep[]
-  context: Record<string, any>
+  context: Record<string, unknown>
 }
 
 export interface WorkflowInstanceStep {
@@ -595,7 +595,7 @@ export interface WorkflowInstanceStep {
   assignedTo: string[]
   completedAt?: string
   completedBy?: string
-  output?: Record<string, any>
+  output?: Record<string, unknown>
 }
 
 export interface WorkflowTask extends BaseEntity {
@@ -607,8 +607,8 @@ export interface WorkflowTask extends BaseEntity {
   status: 'pending' | 'in_progress' | 'completed' | 'overdue'
   dueDate?: string
   priority: 'low' | 'medium' | 'high'
-  inputs?: Record<string, any>
-  outputs?: Record<string, any>
+  inputs?: Record<string, unknown>
+  outputs?: Record<string, unknown>
 }
 
 export interface WorkflowTaskAssignment {
@@ -1360,7 +1360,7 @@ export interface TerceroIdentificadoPrefill {
   tipo_relacion?: string
 }
 
-export interface CausaRaizSummary {
+export interface CausaRaizSummaryPrefill {
   problema: string
   causa_raiz: string
   accion_plan?: string
