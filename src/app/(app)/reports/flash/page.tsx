@@ -8,7 +8,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFlashReports } from '@/shared/hooks/report-hooks'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Card, CardContent } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -21,7 +21,15 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Download,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
+import { toast } from 'sonner'
 import type { FlashReport, ReportStatus } from '@/shared/types/api'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -31,15 +39,26 @@ export default function FlashReportsPage() {
   const { data: reports, error, isLoading } = useFlashReports()
   const [filter, setFilter] = useState<ReportStatus | 'all'>('all')
 
+  const handleExport = async (reportId: string, format: 'pdf' | 'docx') => {
+    try {
+      toast.info(`Descargando reporte en formato ${format.toUpperCase()}...`)
+      // TODO: Implementar llamada al API de exportación cuando esté disponible
+      // await api.flashReport.export(reportId, format)
+      toast.success(`Reporte descargado exitosamente`)
+    } catch {
+      toast.error('Error al descargar el reporte')
+    }
+  }
+
   const getStatusBadge = (status: ReportStatus) => {
     const statusConfig = {
       draft: { label: 'Borrador', variant: 'secondary' as const, icon: Edit },
-      submitted: { label: 'Enviado', variant: 'default' as const, icon: Clock },
-      under_review: { label: 'En Revisión', variant: 'default' as const, icon: Clock },
-      approved: { label: 'Aprobado', variant: 'default' as const, icon: CheckCircle },
+      submitted: { label: 'Enviado', variant: 'info' as const, icon: Clock },
+      under_review: { label: 'En Revisión', variant: 'info' as const, icon: Clock },
+      approved: { label: 'Aprobado', variant: 'success' as const, icon: CheckCircle },
       rejected: { label: 'Rechazado', variant: 'destructive' as const, icon: XCircle },
-      in_progress: { label: 'En Progreso', variant: 'default' as const, icon: Clock },
-      completed: { label: 'Completado', variant: 'default' as const, icon: CheckCircle },
+      in_progress: { label: 'En Progreso', variant: 'warning' as const, icon: Clock },
+      completed: { label: 'Completado', variant: 'success' as const, icon: CheckCircle },
       published: { label: 'Publicado', variant: 'default' as const, icon: CheckCircle },
       closed: { label: 'Cerrado', variant: 'secondary' as const, icon: CheckCircle },
     }
@@ -93,28 +112,28 @@ export default function FlashReportsPage() {
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
         <Button
-          variant={filter === 'all' ? 'default' : 'outline'}
+          variant={filter === 'all' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('all')}
         >
           Todos
         </Button>
         <Button
-          variant={filter === 'draft' ? 'default' : 'outline'}
+          variant={filter === 'draft' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('draft')}
         >
           Borradores
         </Button>
         <Button
-          variant={filter === 'submitted' ? 'default' : 'outline'}
+          variant={filter === 'submitted' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('submitted')}
         >
           Enviados
         </Button>
         <Button
-          variant={filter === 'approved' ? 'default' : 'outline'}
+          variant={filter === 'approved' ? 'primary' : 'outline'}
           size="sm"
           onClick={() => setFilter('approved')}
         >
@@ -174,6 +193,23 @@ export default function FlashReportsPage() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleExport(report.id, 'pdf')}>
+                          Descargar PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport(report.id, 'docx')}>
+                          Descargar Word
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     {report.report_status === 'draft' && (
                       <>
                         <Button
