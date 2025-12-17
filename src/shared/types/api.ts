@@ -170,8 +170,35 @@ export interface JoinCompanyData {
 }
 
 // ============================================================================
-// INCIDENT MANAGEMENT TYPES
+// SUCESO (INCIDENT) MANAGEMENT TYPES
 // ============================================================================
+
+// Nueva taxonomía de Sucesos
+export type SucesoCategory = 'accidente' | 'incidente' | 'tolerancia_0'
+
+// Tipos de Accidente
+export type AccidenteType = 
+  | 'acc_trabajo_con_baja'
+  | 'acc_trabajo_sin_baja'
+  | 'acc_trayecto_con_baja'
+  | 'acc_trayecto_sin_baja'
+  | 'acc_ambiental'
+
+// Tipos de Incidente
+export type IncidenteType = 
+  | 'inc_laboral'
+  | 'inc_industrial'
+  | 'inc_ambiental'
+  | 'inc_plgf'
+
+// Tipos de Tolerancia 0
+export type Tolerancia0Type = 
+  | 't0_accion_insegura'
+  | 't0_condicion_insegura'
+  | 't0_stop_work'
+
+// Tipo unión de todos los tipos de suceso
+export type SucesoType = AccidenteType | IncidenteType | Tolerancia0Type
 
 export interface Incident extends BaseEntity {
   title: string
@@ -189,10 +216,14 @@ export interface Incident extends BaseEntity {
   attachments: Attachment[]
   companyId: string
   workflowState: WorkflowState
+  // Nuevos campos para taxonomía de Sucesos
+  categoria?: SucesoCategory
+  tipoSuceso?: SucesoType
 }
 
 export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical'
 export type IncidentStatus = 'reported' | 'investigating' | 'in_progress' | 'resolved' | 'closed'
+// Tipos legacy - mantener para compatibilidad
 export type IncidentType = 'safety' | 'security' | 'environmental' | 'quality' | 'operational'
 
 export interface WorkflowState {
@@ -227,6 +258,9 @@ export interface CreateIncidentData {
   type: IncidentType
   location: string
   tags?: string[]
+  // Nuevos campos de taxonomía de Sucesos
+  categoria?: SucesoCategory
+  tipoSuceso?: SucesoType
 }
 
 export interface UpdateIncidentData {
@@ -236,6 +270,9 @@ export interface UpdateIncidentData {
   status?: IncidentStatus
   assignedTo?: string
   tags?: string[]
+  // Nuevos campos de taxonomía de Sucesos
+  categoria?: SucesoCategory
+  tipoSuceso?: SucesoType
 }
 
 export interface IncidentListParams extends PaginationParams {
