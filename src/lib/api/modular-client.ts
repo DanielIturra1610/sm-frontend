@@ -19,6 +19,7 @@ import {
   ZeroToleranceService,
   SLAService,
   AttachmentService,
+  MetricsService,
 } from './services';
 
 class ModularApiClient {
@@ -38,6 +39,7 @@ class ModularApiClient {
   zeroTolerance: ZeroToleranceService;
   sla: SLAService;
   attachments: AttachmentService;
+  metrics: MetricsService;
 
   constructor() {
     const serviceConfig = {
@@ -59,6 +61,7 @@ class ModularApiClient {
     this.zeroTolerance = new ZeroToleranceService(serviceConfig);
     this.sla = new SLAService(serviceConfig);
     this.attachments = new AttachmentService(serviceConfig);
+    this.metrics = new MetricsService(serviceConfig);
   }
 
   /**

@@ -27,49 +27,7 @@ import {
 } from '@/shared/components/ui/select'
 import { Loader2, Building2, ArrowLeft, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
-
-// RUT validation function (Chilean Tax ID)
-function validateRUT(rut: string): boolean {
-  // Remove dots and hyphens
-  const cleanRUT = rut.replace(/\./g, '').replace(/-/g, '').toUpperCase()
-  
-  // Check minimum length (7 digits + 1 verifier)
-  if (cleanRUT.length < 8 || cleanRUT.length > 9) {
-    return false
-  }
-  
-  // Extract body and verifier digit
-  const body = cleanRUT.slice(0, -1)
-  const verifier = cleanRUT.slice(-1)
-  
-  // Check that body contains only numbers
-  if (!/^\d+$/.test(body)) {
-    return false
-  }
-  
-  // Calculate verifier digit
-  let sum = 0
-  let multiplier = 2
-  
-  for (let i = body.length - 1; i >= 0; i--) {
-    sum += parseInt(body[i]) * multiplier
-    multiplier = multiplier === 7 ? 2 : multiplier + 1
-  }
-  
-  const remainder = sum % 11
-  const calculatedVerifier = 11 - remainder
-  
-  let expectedVerifier: string
-  if (calculatedVerifier === 11) {
-    expectedVerifier = '0'
-  } else if (calculatedVerifier === 10) {
-    expectedVerifier = 'K'
-  } else {
-    expectedVerifier = calculatedVerifier.toString()
-  }
-  
-  return verifier === expectedVerifier
-}
+import { validateRUT } from '@/lib/utils/rut'
 
 // Define the form schema
 const createTenantSchema = z.object({
