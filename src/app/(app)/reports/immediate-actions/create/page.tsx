@@ -1,15 +1,16 @@
 /**
  * Create Immediate Actions Report Page
  * Form with dynamic table of action items and progress tracking
+ * Auto-fills data from Flash Report if exists
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useCreateImmediateActionsReport } from '@/shared/hooks/report-hooks'
+import { useCreateImmediateActionsReport, useFlashReportByIncident } from '@/shared/hooks/report-hooks'
 import { immediateActionsReportSchema, type ImmediateActionsReportFormData } from '@/lib/validations/report-schemas'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
@@ -19,8 +20,10 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Separator } from '@/shared/components/ui/separator'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
+import { Badge } from '@/shared/components/ui/badge'
 import { toast } from 'sonner'
-import { Loader2, Save, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Save, Plus, Trash2, CheckCircle2, FileText, AlertCircle, Copy } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -31,36 +34,37 @@ import {
 } from '@/shared/components/ui/table'
 
 // Predefined actions
+// tipo_acc_inc values: 'ACC' (Accidente), 'INC' (Incidente), 'FLASH' (Importado de Flash Report)
 const PREDEFINED_ACTIONS = [
   {
     numero: 1,
     tarea: 'Comunicar lo acontecido a Jefatura Directa',
-    tipo_acc_inc: 'comunicacion',
+    tipo_acc_inc: 'INC',
   },
   {
     numero: 2,
     tarea: 'Informar Incidente y su clasificación a la Dirección',
-    tipo_acc_inc: 'reporte',
+    tipo_acc_inc: 'INC',
   },
   {
     numero: 3,
     tarea: 'Enviar recopilación de antecedentes',
-    tipo_acc_inc: 'documentacion',
+    tipo_acc_inc: 'INC',
   },
   {
     numero: 4,
     tarea: 'Informar Incidente Ocurrido a Jefatura CGE',
-    tipo_acc_inc: 'comunicacion',
+    tipo_acc_inc: 'INC',
   },
   {
     numero: 5,
     tarea: 'Generar Reporte Flash vía WhatsApp a Jefe de Área CGE y HSEQ',
-    tipo_acc_inc: 'reporte',
+    tipo_acc_inc: 'INC',
   },
   {
     numero: 6,
     tarea: 'Iniciar Proceso de Investigación Preliminar de Incidentes',
-    tipo_acc_inc: 'investigacion',
+    tipo_acc_inc: 'INC',
   },
 ]
 
@@ -68,6 +72,7 @@ export default function CreateImmediateActionsReportPage() {
   const router = useRouter()
   const { trigger: createReport, isMutating } = useCreateImmediateActionsReport()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasAutoFilled, setHasAutoFilled] = useState(false)
 
   const {
     register,
@@ -76,6 +81,7 @@ export default function CreateImmediateActionsReportPage() {
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm<ImmediateActionsReportFormData>({
     resolver: zodResolver(immediateActionsReportSchema),
     defaultValues: {
@@ -100,6 +106,118 @@ export default function CreateImmediateActionsReportPage() {
   const incident_id = watch('incident_id')
   const items = watch('items')
 
+  // Fetch Flash Report when incident is selected
+  const { data: flashReport, isLoading: isLoadingFlashReport } = useFlashReportByIncident(incident_id || null)
+
+  // Parse immediate actions from Flash Report text
+  const parseActionsFromFlashReport = (actionsText: string): string[] => {
+    if (!actionsText) return []
+
+    // Split by common patterns: numbered lists, line breaks, or numbered with dots/parentheses
+    const lines = actionsText
+      .split(/(?:\r?\n)|(?:\d+[.)]\s*)/)
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+
+    return lines
+  }
+
+  // Auto-fill form when Flash Report is found
+  useEffect(() => {
+    if (flashReport && incident_id && !hasAutoFilled) {
+      // Format date for input (YYYY-MM-DD)
+      const formatDate = (dateStr: string | null | undefined) => {
+        if (!dateStr) return ''
+        try {
+          const date = new Date(dateStr)
+          return date.toISOString().split('T')[0]
+        } catch {
+          return ''
+        }
+      }
+
+      const fechaInicio = formatDate(flashReport.fecha)
+
+      // Parse actions from Flash Report's acciones_inmediatas field
+      const flashReportActions = parseActionsFromFlashReport(flashReport.acciones_inmediatas || '')
+
+      let updatedItems: typeof PREDEFINED_ACTIONS extends readonly (infer T)[] ? (T & {
+        inicio: string
+        fin: string
+        responsable: string
+        cliente: string
+        avance_real: number
+        avance_programado: number
+        comentario: string
+      })[] : never
+
+      if (flashReportActions.length > 0) {
+        // Use actions from Flash Report instead of predefined ones
+        updatedItems = flashReportActions.map((tarea, index) => ({
+          numero: index + 1,
+          tarea,
+          tipo_acc_inc: 'FLASH', // Imported from Flash Report
+          inicio: fechaInicio,
+          fin: fechaInicio, // Same as inicio since these are immediate actions
+          responsable: flashReport.supervisor || '',
+          cliente: '',
+          avance_real: 100, // Actions from flash report are already completed
+          avance_programado: 100,
+          comentario: 'Acción tomada según Flash Report',
+        }))
+      } else {
+        // Fall back to predefined actions if no actions in Flash Report
+        updatedItems = PREDEFINED_ACTIONS.map((action) => {
+          const baseItem = {
+            ...action,
+            inicio: fechaInicio,
+            fin: '',
+            responsable: '',
+            cliente: '',
+            avance_real: 0,
+            avance_programado: 0,
+            comentario: '',
+          }
+
+          // Pre-fill supervisor for communication actions
+          if (flashReport.supervisor) {
+            if ([
+              'Comunicar lo acontecido a Jefatura Directa',
+              'Informar Incidente y su clasificación a la Dirección',
+              'Informar Incidente Ocurrido a Jefatura CGE'
+            ].includes(action.tarea)) {
+              baseItem.responsable = flashReport.supervisor
+            }
+          }
+
+          return baseItem
+        })
+      }
+
+      // Reset form with pre-filled data
+      reset({
+        incident_id,
+        fecha_inicio: fechaInicio,
+        fecha_termino: '',
+        items: updatedItems,
+      })
+
+      setHasAutoFilled(true)
+      toast.success(
+        flashReportActions.length > 0
+          ? `${flashReportActions.length} acciones importadas desde el Flash Report`
+          : 'Datos pre-llenados desde el Flash Report'
+      )
+    }
+  }, [flashReport, incident_id, hasAutoFilled, reset])
+
+  // Reset auto-fill flag when incident changes
+  useEffect(() => {
+    if (!incident_id) {
+      setHasAutoFilled(false)
+    }
+  }, [incident_id])
+
   // Calculate overall progress
   const calculateOverallProgress = () => {
     if (!items || items.length === 0) return 0
@@ -107,19 +225,67 @@ export default function CreateImmediateActionsReportPage() {
     return Math.round(totalProgress / items.length)
   }
 
+  // Duplicate action item
+  const duplicateItem = (index: number) => {
+    const itemToDuplicate = items[index]
+    if (itemToDuplicate) {
+      append({
+        numero: items.length + 1,
+        tarea: itemToDuplicate.tarea,
+        inicio: itemToDuplicate.inicio,
+        fin: itemToDuplicate.fin,
+        responsable: itemToDuplicate.responsable,
+        cliente: itemToDuplicate.cliente,
+        avance_real: 0,
+        avance_programado: 0,
+        comentario: '',
+        tipo_acc_inc: itemToDuplicate.tipo_acc_inc,
+      })
+      toast.success('Acción duplicada exitosamente')
+    }
+  }
+
   const onSubmit = async (data: ImmediateActionsReportFormData) => {
     try {
       setIsSubmitting(true)
-      // Calculate overall progress before submitting
-      const overallProgress = calculateOverallProgress()
-      await createReport({
-        ...data,
-        porcentaje_avance_plan: overallProgress,
-      })
+
+      // Validate incident_id is present
+      if (!data.incident_id) {
+        toast.error('Debe seleccionar un incidente')
+        return
+      }
+
+      // Transform and clean data for API
+      const cleanedItems = (data.items || []).map((item, index) => ({
+        numero: index + 1, // Ensure numero starts from 1
+        tarea: item.tarea || '',
+        inicio: item.inicio || undefined,
+        fin: item.fin || undefined,
+        responsable: item.responsable || undefined,
+        cliente: item.cliente || undefined,
+        avance_real: item.avance_real ?? 0,
+        avance_programado: item.avance_programado ?? 0,
+        comentario: item.comentario || undefined,
+        tipo_acc_inc: item.tipo_acc_inc || 'INC',
+      }))
+
+      // Prepare payload matching the backend DTO exactly
+      const payload = {
+        incident_id: data.incident_id,
+        fecha_inicio: data.fecha_inicio || undefined,
+        fecha_termino: data.fecha_termino || undefined,
+        items: cleanedItems.length > 0 ? cleanedItems : undefined,
+      }
+
+      console.log('Creating immediate actions report with payload:', payload)
+
+      await createReport(payload)
       toast.success('Reporte de Acciones Inmediatas creado exitosamente')
       router.push('/reports/immediate-actions')
     } catch (error: any) {
-      toast.error(error.message || 'Error al crear el reporte')
+      console.error('Error creating immediate actions report:', error)
+      const errorMessage = error?.message || error?.response?.data?.message || 'Error al crear el reporte'
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -142,13 +308,66 @@ export default function CreateImmediateActionsReportPage() {
               Seleccione el incidente al cual pertenece este reporte
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <IncidentSelector
               value={incident_id || ''}
-              onChange={(value) => setValue('incident_id', value)}
+              onChange={(value) => {
+                setValue('incident_id', value)
+                setHasAutoFilled(false) // Reset to allow auto-fill for new incident
+              }}
               error={errors.incident_id?.message}
               required
             />
+
+            {/* Flash Report Status Indicator */}
+            {incident_id && (
+              <div className="mt-4">
+                {isLoadingFlashReport ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Buscando Flash Report...
+                  </div>
+                ) : flashReport ? (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-800">Flash Report Encontrado</AlertTitle>
+                    <AlertDescription className="text-green-700">
+                      <div className="flex items-center gap-2 mt-1">
+                        <FileText className="h-4 w-4" />
+                        <span>Los datos se han pre-llenado automáticamente desde el Flash Report.</span>
+                        <Badge variant={
+                          flashReport.report_status === 'approved' ? 'default' :
+                          flashReport.report_status === 'submitted' ? 'secondary' : 'outline'
+                        }>
+                          {flashReport.report_status === 'approved' ? 'Aprobado' :
+                           flashReport.report_status === 'submitted' ? 'Enviado' :
+                           flashReport.report_status === 'draft' ? 'Borrador' : flashReport.report_status}
+                        </Badge>
+                      </div>
+                      {flashReport.acciones_inmediatas && (
+                        <div className="text-sm mt-2 p-2 bg-green-100 rounded">
+                          <strong>Acciones importadas del Flash Report:</strong>
+                          <div className="mt-1 text-xs whitespace-pre-line">{flashReport.acciones_inmediatas}</div>
+                        </div>
+                      )}
+                      {flashReport.supervisor && (
+                        <div className="text-sm mt-1">
+                          <strong>Supervisor:</strong> {flashReport.supervisor}
+                        </div>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className="border-yellow-200 bg-yellow-50">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <AlertTitle className="text-yellow-800">Sin Flash Report</AlertTitle>
+                    <AlertDescription className="text-yellow-700">
+                      No se encontró un Flash Report para este incidente. Los campos comenzarán vacíos.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -221,7 +440,7 @@ export default function CreateImmediateActionsReportPage() {
                     <TableHead className="w-32">Avance Real</TableHead>
                     <TableHead className="w-32">Avance Prog.</TableHead>
                     <TableHead>Comentario</TableHead>
-                    <TableHead className="w-16"></TableHead>
+                    <TableHead className="w-24">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -311,16 +530,29 @@ export default function CreateImmediateActionsReportPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        {index >= 6 && (
+                        <div className="flex gap-1">
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => remove(index)}
+                            onClick={() => duplicateItem(index)}
+                            title="Duplicar acción"
                           >
-                            <Trash2 className="h-4 w-4 text-red-600" />
+                            <Copy className="h-4 w-4" />
                           </Button>
-                        )}
+                          {index >= 6 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => remove(index)}
+                              className="text-red-600"
+                              title="Eliminar acción"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -344,7 +576,7 @@ export default function CreateImmediateActionsReportPage() {
                   avance_real: 0,
                   avance_programado: 0,
                   comentario: '',
-                  tipo_acc_inc: 'adicional',
+                  tipo_acc_inc: 'INC', // Manual/additional action
                 })
               }
             >
