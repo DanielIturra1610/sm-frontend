@@ -81,17 +81,17 @@ export default function CreateIncidentPage() {
       if (pendingFiles.length > 0) {
         try {
           await uploadMultiple(newIncident.id, pendingFiles)
-          toast.success('Incidente creado con ' + pendingFiles.length + ' foto(s)')
+          toast.success('Suceso creado con ' + pendingFiles.length + ' foto(s)')
         } catch (uploadError) {
-          toast.success('Incidente creado, pero hubo error al subir fotos')
+          toast.success('Suceso creado, pero hubo error al subir fotos')
         }
       } else {
-        toast.success('Incidente creado exitosamente')
+        toast.success('Suceso creado exitosamente')
       }
       router.push(`/incidents/${newIncident.id}`)
     } catch (error) {
       console.error('Error creating incident:', error)
-      toast.error(error instanceof Error ? error.message : 'Error al crear el incidente')
+      toast.error(error instanceof Error ? error.message : 'Error al crear el suceso')
     } finally {
       setIsSubmitting(false)
     }
@@ -111,17 +111,19 @@ export default function CreateIncidentPage() {
             Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Crear Nuevo Incidente</h1>
-            <p className="text-muted-foreground">Reportar un nuevo incidente de seguridad</p>
+            <h1 className="text-3xl font-bold text-gray-900">Crear Nuevo Suceso</h1>
+            <p className="text-gray-600 mt-2">
+              Reporta un nuevo suceso de seguridad en tu organización
+            </p>
           </div>
         </div>
 
         {/* Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Detalles del Incidente</CardTitle>
+            <CardTitle>Detalles del Suceso</CardTitle>
             <CardDescription>
-              Proporciona información detallada sobre el incidente
+              Proporciona información detallada sobre el suceso
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -271,7 +273,7 @@ export default function CreateIncidentPage() {
                       <FormLabel>Ubicación *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="¿Dónde ocurrió este incidente?"
+                          placeholder="¿Dónde ocurrió este suceso?"
                           {...field}
                           disabled={isSubmitting}
                         />
@@ -348,7 +350,7 @@ export default function CreateIncidentPage() {
                     )}
                   </div>
                   <FormDescription>
-                    Agrega fotos del incidente (se subiran al crear)
+                    Agrega fotos del suceso (se subirán al crear)
                   </FormDescription>
                 </div>
 

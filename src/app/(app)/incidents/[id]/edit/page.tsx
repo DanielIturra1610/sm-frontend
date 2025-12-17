@@ -95,11 +95,11 @@ export default function EditIncidentPage() {
       }
 
       await updateIncident(incidentData)
-      toast.success('Incidente actualizado exitosamente')
+      toast.success('Suceso actualizado exitosamente')
       router.push(`/incidents/${incidentId}`)
     } catch (error) {
       console.error('Error updating incident:', error)
-      toast.error(error instanceof Error ? error.message : 'Error al actualizar el incidente')
+      toast.error(error instanceof Error ? error.message : 'Error al actualizar el suceso')
     } finally {
       setIsSubmitting(false)
     }
@@ -149,17 +149,19 @@ export default function EditIncidentPage() {
             Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Editar Incidente</h1>
-            <p className="text-muted-foreground">Incidente #{incidentId.slice(0, 8)}</p>
+            <h1 className="text-3xl font-bold text-gray-900">Editar Suceso</h1>
+            <p className="text-gray-600 mt-2">
+              Modifica la información del suceso
+            </p>
           </div>
         </div>
 
         {/* Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Detalles del Incidente</CardTitle>
+            <CardTitle>Detalles del Suceso</CardTitle>
             <CardDescription>
-              Modifica la información del incidente
+              Actualiza la información del suceso
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -309,7 +311,7 @@ export default function EditIncidentPage() {
                       <FormLabel>Ubicación *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="¿Dónde ocurrió este incidente?"
+                          placeholder="¿Dónde ocurrió este suceso?"
                           {...field}
                           disabled={isSubmitting}
                         />
