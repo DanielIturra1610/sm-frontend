@@ -6,6 +6,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '@/shared/contexts/auth-context'
+import { useDebouncedCompanyValidation } from '@/shared/hooks/company-hooks'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -24,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Loader2, Building2, ArrowLeft } from 'lucide-react'
+import { Loader2, Building2, ArrowLeft, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
 // RUT validation function (Chilean Tax ID)
@@ -123,11 +124,22 @@ export default function CreateTenantPage() {
   const { createCompany } = useAuth()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  
+  // Real-time validation hook
+  const {
+    validateName,
+    validateRUT,
+    nameExists,
+    rutExists,
+    isValidating,
+  } = useDebouncedCompanyValidation(500)
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
+    setError: setFormError,
     formState: { errors, isSubmitting },
   } = useForm<CreateTenantForm>({
     resolver: zodResolver(createTenantSchema),
@@ -144,6 +156,40 @@ export default function CreateTenantPage() {
       city: '',
     }
   })
+
+  // Watch for changes in name and RUT fields
+  const watchName = watch('name')
+  const watchRUT = watch('rut')
+
+  // Trigger validation when fields change
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value && value.trim().length >= 2) {
+      validateName(value)
+    }
+  }
+
+  const handleRUTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value && value.trim().length >= 8) {
+      validateRUT(value)
+    }
+  }
+
+  // Set form errors when validation detects duplicates
+  if (nameExists === true && !errors.name) {
+    setFormError('name', { 
+      type: 'manual', 
+      message: 'Ya existe una empresa con este nombre' 
+    })
+  }
+
+  if (rutExists === true && !errors.rut) {
+    setFormError('rut', { 
+      type: 'manual', 
+      message: 'Ya existe una empresa con este RUT' 
+    })
+  }
 
   const onSubmit = async (data: CreateTenantForm) => {
     try {
@@ -487,14 +533,39 @@ export default function CreateTenantPage() {
                 <Label htmlFor="name">
                   Nombre de la Empresa *
                 </Label>
-                <Input
-                  id="name"
-                  {...register('name')}
-                  placeholder="Nombre legal de tu empresa"
-                  aria-invalid={errors.name ? 'true' : 'false'}
-                />
+                <div className="relative">
+                  <Input
+                    id="name"
+                    {...register('name')}
+                    onChange={(e) => {
+                      register('name').onChange(e)
+                      handleNameChange(e)
+                    }}
+                    placeholder="Nombre legal de tu empresa"
+                    aria-invalid={errors.name ? 'true' : 'false'}
+                    className={nameExists === false ? 'pr-10 border-green-500' : nameExists === true ? 'pr-10 border-red-500' : ''}
+                  />
+                  {isValidating && watchName && watchName.trim().length >= 2 && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                  )}
+                  {!isValidating && nameExists === false && watchName && watchName.trim().length >= 2 && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                  )}
+                  {!isValidating && nameExists === true && (
+                    <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />
+                  )}
+                </div>
                 {errors.name && (
-                  <p className="text-sm text-red-600">{errors.name.message}</p>
+                  <p className="text-sm text-red-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.name.message}
+                  </p>
+                )}
+                {!errors.name && nameExists === false && watchName && watchName.trim().length >= 2 && (
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Nombre disponible
+                  </p>
                 )}
                 <p className="text-xs text-gray-500">Ingresa el nombre legal de tu empresa</p>
               </div>
@@ -503,16 +574,41 @@ export default function CreateTenantPage() {
                 <Label htmlFor="rut">
                   RUT / ID Tributario *
                 </Label>
-                <Input
-                  id="rut"
-                  {...register('rut')}
-                  placeholder="Número de identificación tributaria"
-                  aria-invalid={errors.rut ? 'true' : 'false'}
-                />
+                <div className="relative">
+                  <Input
+                    id="rut"
+                    {...register('rut')}
+                    onChange={(e) => {
+                      register('rut').onChange(e)
+                      handleRUTChange(e)
+                    }}
+                    placeholder="12.345.678-9"
+                    aria-invalid={errors.rut ? 'true' : 'false'}
+                    className={rutExists === false ? 'pr-10 border-green-500' : rutExists === true ? 'pr-10 border-red-500' : ''}
+                  />
+                  {isValidating && watchRUT && watchRUT.trim().length >= 8 && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                  )}
+                  {!isValidating && rutExists === false && watchRUT && watchRUT.trim().length >= 8 && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                  )}
+                  {!isValidating && rutExists === true && (
+                    <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />
+                  )}
+                </div>
                 {errors.rut && (
-                  <p className="text-sm text-red-600">{errors.rut.message}</p>
+                  <p className="text-sm text-red-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.rut.message}
+                  </p>
                 )}
-                <p className="text-xs text-gray-500">Ingresa el número de identificación tributaria de tu empresa (RUT en Chile)</p>
+                {!errors.rut && rutExists === false && watchRUT && watchRUT.trim().length >= 8 && (
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    RUT disponible
+                  </p>
+                )}
+                <p className="text-xs text-gray-500">Ingresa el RUT con formato 12.345.678-9</p>
               </div>
             </div>
             
@@ -709,7 +805,7 @@ export default function CreateTenantPage() {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isSubmitting}
+                disabled={isSubmitting || nameExists === true || rutExists === true || isValidating}
               >
                 {isSubmitting ? (
                   <>
