@@ -16,7 +16,7 @@ export function IncidentTrendsChart() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">
-            Tendencias de Incidentes
+            Tendencias de Sucesos
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -94,7 +94,7 @@ export function IncidentTrendsChart() {
                 stackId="1"
                 stroke="hsl(var(--chart-1))"
                 fill="url(#incidents)"
-                name="Total Incidentes"
+                name="Total Sucesos"
               />
               <Area
                 type="monotone"

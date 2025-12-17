@@ -100,7 +100,7 @@ export function SeverityDistributionChart() {
                         </div>
                         <div className="mt-1">
                           <span className="text-sm text-muted-foreground">
-                            {data.value} incidentes ({percentage}%)
+                            {data.value} sucesos ({percentage}%)
                           </span>
                         </div>
                       </div>

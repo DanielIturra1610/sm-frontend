@@ -46,7 +46,7 @@ export function IncidentStatsCard({ stats, className }: IncidentStatsCardProps) 
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Estadísticas de Incidentes</CardTitle>
+        <CardTitle className="text-lg">Estadísticas de Sucesos</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

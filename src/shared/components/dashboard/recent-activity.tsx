@@ -29,7 +29,7 @@ const activityConfig: Record<string, { icon: React.ReactNode; iconBg: string; ve
   reported: {
     icon: <AlertTriangle className="h-4 w-4 text-yellow-600" />,
     iconBg: 'bg-yellow-100',
-    verb: 'Incidente reportado',
+    verb: 'Suceso reportado',
   },
   investigating: {
     icon: <Search className="h-4 w-4 text-purple-600" />,
@@ -44,12 +44,12 @@ const activityConfig: Record<string, { icon: React.ReactNode; iconBg: string; ve
   resolved: {
     icon: <CheckCircle className="h-4 w-4 text-green-600" />,
     iconBg: 'bg-green-100',
-    verb: 'Incidente resuelto',
+    verb: 'Suceso resuelto',
   },
   closed: {
     icon: <XCircle className="h-4 w-4 text-gray-600" />,
     iconBg: 'bg-gray-100',
-    verb: 'Incidente cerrado',
+    verb: 'Suceso cerrado',
   },
 }
 
