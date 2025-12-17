@@ -38,7 +38,7 @@ export default function IncidentDetailPage() {
       await uploadPhotos(files)
       toast.success('Fotos subidas exitosamente')
       setShowUploader(false)
-    } catch (err) {
+    } catch {
       toast.error('Error al subir fotos')
     }
   }
@@ -47,7 +47,7 @@ export default function IncidentDetailPage() {
     try {
       await deletePhoto(id)
       toast.success('Foto eliminada')
-    } catch (err) {
+    } catch {
       toast.error('Error al eliminar foto')
     }
   }
@@ -56,7 +56,7 @@ export default function IncidentDetailPage() {
     try {
       await updateCaption(id, caption)
       toast.success('Descripcion actualizada')
-    } catch (err) {
+    } catch {
       toast.error('Error al actualizar')
     }
   }
@@ -65,7 +65,7 @@ export default function IncidentDetailPage() {
     try {
       await toggleFinalReport(id, include)
       toast.success(include ? 'Foto incluida en reporte' : 'Foto excluida del reporte')
-    } catch (err) {
+    } catch {
       toast.error('Error al actualizar')
     }
   }
