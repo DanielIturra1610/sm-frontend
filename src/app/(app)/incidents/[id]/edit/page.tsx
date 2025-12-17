@@ -29,6 +29,8 @@ import {
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { SUCESO_CATEGORIES, getSucesoTypesByCategory } from '@/shared/constants/suceso-options'
+import type { SucesoCategory, SucesoType } from '@/shared/types/api'
 
 const incidentSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
@@ -36,9 +38,10 @@ const incidentSchema = z.object({
   severity: z.enum(['low', 'medium', 'high', 'critical'], {
     required_error: 'Por favor selecciona un nivel de severidad',
   }),
-  type: z.enum(['safety', 'security', 'environmental', 'quality', 'operational'], {
-    required_error: 'Por favor selecciona un tipo de incidente',
+  categoria: z.enum(['accidente', 'incidente', 'tolerancia_0'], {
+    required_error: 'Por favor selecciona una categoría de suceso',
   }),
+  tipoSuceso: z.string().min(1, 'Por favor selecciona un tipo de suceso'),
   location: z.string().min(5, 'La ubicación debe tener al menos 3 caracteres'),
 })
 
@@ -49,6 +52,7 @@ export default function EditIncidentPage() {
   const router = useRouter()
   const incidentId = params?.id as string
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedCategoria, setSelectedCategoria] = useState<SucesoCategory | undefined>()
 
   const { data: incident, error, isLoading } = useIncident(incidentId)
   const { trigger: updateIncident } = useUpdateIncident(incidentId)
@@ -65,11 +69,14 @@ export default function EditIncidentPage() {
   // Pre-fill form when incident data is loaded
   useEffect(() => {
     if (incident) {
+      const categoria = incident.categoria || 'incidente'
+      setSelectedCategoria(categoria as SucesoCategory)
       form.reset({
         title: incident.title || '',
         description: incident.description || '',
         severity: incident.severity || 'low',
-        type: incident.type || 'safety',
+        categoria: categoria as SucesoCategory,
+        tipoSuceso: incident.tipoSuceso || '',
         location: incident.location || '',
       })
     }
@@ -83,6 +90,8 @@ export default function EditIncidentPage() {
         title: data.title,
         description: data.description,
         severity: data.severity,
+        categoria: data.categoria,
+        tipoSuceso: data.tipoSuceso as SucesoType,
       }
 
       await updateIncident(incidentData)
@@ -230,14 +239,47 @@ export default function EditIncidentPage() {
 
                   <FormField
                     control={form.control}
-                    name="type"
+                    name="categoria"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tipo *</FormLabel>
+                        <FormLabel>Categoría de Suceso *</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value)
+                            setSelectedCategoria(value as SucesoCategory)
+                            form.setValue('tipoSuceso', '')
+                          }}
+                          value={field.value}
+                          disabled={isSubmitting}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona la categoría" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {SUCESO_CATEGORIES.map((cat) => (
+                              <SelectItem key={cat.value} value={cat.value}>
+                                {cat.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tipoSuceso"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Suceso *</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
-                          disabled={isSubmitting}
+                          disabled={isSubmitting || !selectedCategoria}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -245,11 +287,11 @@ export default function EditIncidentPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="safety">Seguridad</SelectItem>
-                            <SelectItem value="security">Seguridad Física</SelectItem>
-                            <SelectItem value="environmental">Ambiental</SelectItem>
-                            <SelectItem value="quality">Calidad</SelectItem>
-                            <SelectItem value="operational">Operacional</SelectItem>
+                            {selectedCategoria && getSucesoTypesByCategory(selectedCategoria).map((tipo) => (
+                              <SelectItem key={tipo.value} value={tipo.value}>
+                                {tipo.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
