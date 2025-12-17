@@ -151,7 +151,8 @@ export interface Subscription {
 
 export interface CreateCompanyData {
   name: string
-  domain: string
+  rut: string // Chilean RUT or Tax ID
+  domain?: string
   industry: string
   size: 'small' | 'medium' | 'large' | 'enterprise'
   country: string // ISO 2-character country code
@@ -253,20 +254,56 @@ export interface IncidentListParams extends PaginationParams {
 
 export interface FiveWhysAnalysis extends BaseEntity {
   incidentId: string
-  problem: string
-  whys: WhyStep[]
-  rootCause: string
-  actionItems: ActionItem[]
+  tenantId?: string
+  title: string
+  problemStatement: string
+  whys: WhyEntry[]
+  rootCause: string | null
+  rootCauseCategory?: string | null
+  actionItems: FiveWhysActionItem[]
   status: AnalysisStatus
+  leadAnalyst?: string
+  analysisTeam?: string[]
   createdBy: string
-  reviewedBy?: string
-  reviewedAt?: string
+  createdByName?: string
+  updatedBy?: string
+  reviewedBy?: string | null
+  reviewedAt?: string | null
+  reviewComments?: string | null
+  rejectionReason?: string | null
 }
 
-export interface WhyStep {
+export interface WhyEntry {
+  id: string
+  analysisId: string
+  whyNumber: number
   question: string
   answer: string
-  evidence?: string[]
+  evidence: string[]
+  notes?: string | null
+  isRootCause: boolean
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Legacy alias for backwards compatibility
+export type WhyStep = WhyEntry
+
+export interface FiveWhysActionItem {
+  id: string
+  analysisId: string
+  description: string
+  actionType: 'corrective' | 'preventive'
+  priority: 'high' | 'medium' | 'low'
+  assignedTo?: string | null
+  dueDate?: string | null
+  status: 'pending' | 'in_progress' | 'completed'
+  completedAt?: string | null
+  completedBy?: string | null
+  createdBy: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface FishboneAnalysis extends BaseEntity {
@@ -305,8 +342,43 @@ export type AnalysisStatus = 'draft' | 'in_review' | 'approved' | 'rejected'
 
 export interface CreateFiveWhysData {
   incidentId: string
-  problem: string
-  whys: Omit<WhyStep, 'evidence'>[]
+  title: string
+  problemStatement: string
+  analysisTeam?: string[]
+}
+
+export interface AddWhyEntryData {
+  whyNumber: number
+  question: string
+  answer: string
+  evidence?: string[]
+  notes?: string
+  isRootCause?: boolean
+}
+
+export interface UpdateWhyEntryData {
+  question?: string
+  answer?: string
+  evidence?: string[]
+  notes?: string
+  isRootCause?: boolean
+}
+
+export interface AddActionItemData {
+  description: string
+  actionType: 'corrective' | 'preventive'
+  priority: 'high' | 'medium' | 'low'
+  assignedTo?: string
+  dueDate?: string
+}
+
+export interface UpdateActionItemData {
+  description?: string
+  actionType?: 'corrective' | 'preventive'
+  priority?: 'high' | 'medium' | 'low'
+  assignedTo?: string
+  dueDate?: string
+  status?: 'pending' | 'in_progress' | 'completed'
 }
 
 export interface CreateFishboneData {
@@ -1142,6 +1214,11 @@ export interface SourceReportsInfo {
   immediate_actions_id?: string
   root_cause_id?: string
   action_plan_id?: string
+  zero_tolerance_id?: string
+  // Analysis reports
+  five_whys_ids?: string[]
+  fishbone_ids?: string[]
+  causal_tree_ids?: string[]
 }
 
 // Prefill data containing consolidated data from previous reports
@@ -1183,6 +1260,129 @@ export interface PrefillData {
 
   // Source reports metadata
   source_reports: SourceReportsInfo
+
+  // Action Plan specific data (only populated when target is action-plan)
+  action_plan_data?: ActionPlanPrefillExtension
+
+  // Final Report specific data (only populated when target is final-report)
+  final_report_data?: FinalReportPrefillExtension
+}
+
+// Action Plan prefill extension types
+export interface ActionPlanSuggestedItem {
+  numero: number
+  tarea: string
+  subtarea?: string
+  tipo_acc_inc?: string // ACC or INC
+  source?: string // Where this suggestion came from (five_whys, fishbone, causal_tree, root_cause, default)
+  priority?: string // high, medium, low (for RCA items)
+}
+
+export interface ActionPlanPrefillExtension {
+  suggested_duration_days: number
+  suggested_items: ActionPlanSuggestedItem[]
+}
+
+// Final Report prefill extension types
+export interface FinalReportPrefillExtension {
+  // Company data
+  company_data: CompanyDataPrefill
+
+  // Accident classification
+  tipo_accidente_tabla: TipoAccidenteTablaPrefill
+
+  // Persons involved (consolidated from all reports)
+  personas_involucradas?: PersonaInvolucrada[]
+
+  // Damaged equipment (from flash report)
+  equipos_danados?: EquipoDanadoPrefill[]
+
+  // Third parties (from flash report)
+  terceros_identificados?: TerceroIdentificadoPrefill[]
+
+  // Accident details (consolidated description)
+  detalles_accidente?: string
+
+  // Root cause analysis summary (from root cause report + analyses)
+  analisis_causas_raiz?: CausaRaizSummary[]
+
+  // Detailed description (consolidated narrative)
+  descripcion_detallada?: string
+
+  // Suggested conclusions
+  conclusiones?: string
+
+  // Lessons learned
+  lecciones_aprendidas?: string
+
+  // Immediate actions summary
+  acciones_inmediatas_resumen?: string
+
+  // Action plan summary
+  plan_accion_resumen?: string
+
+  // Evidence images (consolidated from all reports)
+  imagenes_evidencia?: ImagenEvidenciaPrefill[]
+
+  // Investigation responsibles
+  responsables_investigacion?: ResponsableInvestigacionPrefill[]
+
+  // Zero tolerance info
+  zero_tolerance_info?: ZeroToleranceSummaryPrefill
+}
+
+export interface CompanyDataPrefill {
+  nombre?: string
+  rut?: string
+  direccion?: string
+  comuna?: string
+  ciudad?: string
+}
+
+export interface TipoAccidenteTablaPrefill {
+  con_baja_il: boolean
+  sin_baja_il: boolean
+  incidente_industrial: boolean
+  incidente_laboral: boolean
+  es_plgf: boolean
+  nivel_plgf?: string
+}
+
+export interface EquipoDanadoPrefill {
+  nombre: string
+  descripcion?: string
+  costo_estimado?: number
+}
+
+export interface TerceroIdentificadoPrefill {
+  nombre: string
+  empresa?: string
+  tipo_relacion?: string
+}
+
+export interface CausaRaizSummary {
+  problema: string
+  causa_raiz: string
+  accion_plan?: string
+  metodologia: string
+}
+
+export interface ImagenEvidenciaPrefill {
+  url: string
+  descripcion?: string
+  fecha?: string
+}
+
+export interface ResponsableInvestigacionPrefill {
+  nombre: string
+  cargo?: string
+  rol?: string
+}
+
+export interface ZeroToleranceSummaryPrefill {
+  numero_documento?: string
+  severidad?: string
+  acciones_tomadas?: string
 }
 
 // ============================================================================
