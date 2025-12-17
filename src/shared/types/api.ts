@@ -734,12 +734,12 @@ export interface CreateFlashReportData {
   factores_riesgo?: string
   numero_prodity?: string
   zonal?: string
-  con_baja_il?: boolean
-  sin_baja_il?: boolean
-  incidente_industrial?: boolean
-  incidente_laboral?: boolean
+  con_baja_il: boolean
+  sin_baja_il: boolean
+  incidente_industrial: boolean
+  incidente_laboral: boolean
   // PLGF Classification
-  es_plgf?: boolean
+  es_plgf: boolean
   nivel_plgf?: string
   justificacion_plgf?: string
 }

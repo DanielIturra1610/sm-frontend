@@ -12,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useCreateFlashReport } from '@/shared/hooks/report-hooks'
 import { useIncident } from '@/shared/hooks/incident-hooks'
 import { flashReportSchema, type FlashReportFormData } from '@/lib/validations/report-schemas'
-import { getSucesoCategoryLabel, getSucesoTypeLabel } from '@/shared/constants/suceso-options'
+import { getSucesoTypeLabel } from '@/shared/constants/suceso-options'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
@@ -21,9 +21,8 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Checkbox } from '@/shared/components/ui/checkbox'
-import { Separator } from '@/shared/components/ui/separator'
 import { toast } from 'sonner'
-import { Loader2, Save, Send } from 'lucide-react'
+import { Loader2, Save } from 'lucide-react'
 
 export default function CreateFlashReportPage() {
   const router = useRouter()
@@ -83,17 +82,14 @@ export default function CreateFlashReportPage() {
       await createReport(data)
       toast.success('Flash Report creado exitosamente')
       router.push('/reports/flash')
-    } catch (error: any) {
-      toast.error(error.message || 'Error al crear el reporte')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al crear el reporte'
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleSaveDraft = async () => {
-    // Save as draft without full validation
-    handleSubmit(onSubmit)()
-  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

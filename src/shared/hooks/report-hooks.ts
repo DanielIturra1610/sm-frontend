@@ -4,11 +4,12 @@
  * Includes Flash Reports, Immediate Actions, Root Cause, Action Plan, Final Reports, and Zero Tolerance
  */
 
-import useSWR, { type SWRConfiguration, type KeyedMutator } from 'swr'
+import useSWR, { type SWRConfiguration } from 'swr'
 import useSWRMutation from 'swr/mutation'
 import { api } from '@/lib/api/modular-client'
 import type {
   FlashReport,
+  CreateFlashReportData,
   ImmediateActionsReport,
   RootCauseReport,
   ActionPlanReport,
@@ -70,7 +71,7 @@ export function useFlashReportByIncident(incidentId: string | null, config?: SWR
 export function useCreateFlashReport() {
   const { mutate: mutateFlashReports } = useFlashReports()
 
-  return useSWRMutation('/flash-reports',
+  return useSWRMutation<FlashReport, Error, string, CreateFlashReportData>('/flash-reports',
     async (key, { arg }) => {
       const newReport = await api.flashReport.create(arg)
       await mutateFlashReports()

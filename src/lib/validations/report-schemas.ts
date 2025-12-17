@@ -29,12 +29,12 @@ export const flashReportSchema = z.object({
   factores_riesgo: z.string().optional(),
   numero_prodity: z.string().optional(),
   zonal: z.string().optional(),
-  con_baja_il: z.boolean().default(false),
-  sin_baja_il: z.boolean().default(false),
-  incidente_industrial: z.boolean().default(false),
-  incidente_laboral: z.boolean().default(false),
+  con_baja_il: z.boolean(),
+  sin_baja_il: z.boolean(),
+  incidente_industrial: z.boolean(),
+  incidente_laboral: z.boolean(),
   // PLGF Classification
-  es_plgf: z.boolean().default(false),
+  es_plgf: z.boolean(),
   nivel_plgf: plgfLevelSchema.optional(),
   justificacion_plgf: z.string().optional(),
 })
@@ -109,15 +109,17 @@ export const actionPlanItemSchema = z.object({
   fin: z.string().optional(),
   responsable: z.string().optional(),
   cliente: z.string().optional(),
-  avance_real: z.number().int().min(0).max(100).default(0),
-  avance_programado: z.number().int().min(0).max(100).default(0),
+  avance_real: z.number().int().min(0).max(100),
+  avance_programado: z.number().int().min(0).max(100),
   comentario: z.string().optional(),
   tipo_acc_inc: z.string().optional(),
+  estado: z.enum(['pending', 'in_progress', 'completed', 'cancelled', 'delayed']).optional(),
 })
 
 export const actionPlanReportSchema = z.object({
   incident_id: z.string().uuid('Debe ser un UUID válido'),
   fecha_inicio: z.string().optional(),
+  fecha_fin_estimada: z.string().optional(),
   duracion_dias: z.number().int().positive().optional(),
   items: z.array(actionPlanItemSchema).optional(),
 })
