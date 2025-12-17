@@ -37,7 +37,7 @@ const incidentSchema = z.object({
   severity: z.enum(['low', 'medium', 'high', 'critical'], {
     required_error: 'Por favor selecciona un nivel de severidad',
   }),
-  type: z.enum(['accident', 'incident', 'near_miss', 'zero_tolerance', 'environmental', 'occupational'], {
+  type: z.enum(['safety', 'security', 'environmental', 'quality', 'operational'], {
     required_error: 'Por favor selecciona un tipo de incidente',
   }),
   location: z.string().min(5, 'La ubicación debe tener al menos 3 caracteres'),
@@ -80,11 +80,10 @@ export default function CreateIncidentPage() {
         severity: data.severity,
         type: data.type,
         location: data.location,
-        date_time: new Date(data.date_time).toISOString(),
         tags,
       }
 
-      const newIncident = await createIncident(incidentData, {})
+      const newIncident = await createIncident(incidentData)
 
       // Upload photos if any
       if (pendingFiles.length > 0) {
@@ -225,12 +224,11 @@ export default function CreateIncidentPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="accident">Accidente</SelectItem>
-                            <SelectItem value="incident">Incidente</SelectItem>
-                            <SelectItem value="near_miss">Casi Accidente</SelectItem>
-                            <SelectItem value="zero_tolerance">Tolerancia Cero</SelectItem>
+                            <SelectItem value="safety">Seguridad</SelectItem>
+                            <SelectItem value="security">Seguridad Física</SelectItem>
                             <SelectItem value="environmental">Ambiental</SelectItem>
-                            <SelectItem value="occupational">Laboral</SelectItem>
+                            <SelectItem value="quality">Calidad</SelectItem>
+                            <SelectItem value="operational">Operacional</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

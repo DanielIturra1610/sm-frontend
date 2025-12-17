@@ -14,6 +14,7 @@ import type {
   IncidentTrends,
   IncidentExportRequest,
   UpdateIncidentData,
+  CreateIncidentData,
 } from '@/shared/types/api'
 
 // ============================================================================
@@ -67,7 +68,7 @@ export function useIncident(id: string | null, config?: SWRConfiguration) {
 export function useCreateIncident() {
   const { mutate: mutateIncidents } = useIncidents()
 
-  return useSWRMutation('/incidents',
+  return useSWRMutation<Incident, Error, string, CreateIncidentData>('/incidents',
     async (key, { arg }) => {
       const newIncident = await api.incident.create(arg)
       // Optimistically update the incidents list
