@@ -15,21 +15,21 @@ export function IncidentStatsCard({ stats, className }: IncidentStatsCardProps) 
   const statItems = [
     {
       title: "Total",
-      value: stats.total,
+      value: stats.totalIncidents,
       icon: TrendingUp,
       color: "text-stegmaier-blue",
       bgColor: "bg-stegmaier-blue/10",
     },
     {
       title: "Abiertos",
-      value: stats.open,
+      value: stats.openIncidents,
       icon: AlertTriangle,
       color: "text-amber-600",
       bgColor: "bg-amber-100",
     },
     {
       title: "Resueltos",
-      value: stats.closed,
+      value: stats.totalIncidents - stats.openIncidents,
       icon: CheckCircle,
       color: "text-success",
       bgColor: "bg-success/10",
@@ -65,7 +65,7 @@ export function IncidentStatsCard({ stats, className }: IncidentStatsCardProps) 
         <div className="mt-6">
           <h3 className="text-sm font-medium text-stegmaier-gray-dark mb-2">Por Severidad</h3>
           <div className="space-y-2">
-            {Object.entries(stats.bySeverity).map(([severity, count]) => (
+            {Object.entries(stats.severityDistribution || {}).map(([severity, count]) => (
               <div key={severity} className="flex items-center justify-between">
                 <span className="text-sm capitalize">{severity}</span>
                 <Badge variant="outline" className="text-xs">

@@ -1,11 +1,10 @@
 /**
- * Incident Selector Component
- * Select an incident for report creation
+ * Suceso Selector Component
+ * Select a suceso for report creation
  */
 
 'use client'
 
-import { useState } from 'react'
 import { useIncidents } from '@/shared/hooks/incident-hooks'
 import {
   Select,
@@ -28,12 +27,11 @@ interface IncidentSelectorProps {
 
 export function IncidentSelector({ value, onChange, error, required = true }: IncidentSelectorProps) {
   const { data: incidentsResponse, isLoading, error: fetchError } = useIncidents()
-  const [searchTerm, setSearchTerm] = useState('')
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <Label>Incidente {required && <span className="text-red-500">*</span>}</Label>
+        <Label>Suceso {required && <span className="text-red-500">*</span>}</Label>
         <Skeleton className="h-10 w-full" />
       </div>
     )
@@ -42,10 +40,10 @@ export function IncidentSelector({ value, onChange, error, required = true }: In
   if (fetchError) {
     return (
       <div className="space-y-2">
-        <Label>Incidente {required && <span className="text-red-500">*</span>}</Label>
+        <Label>Suceso {required && <span className="text-red-500">*</span>}</Label>
         <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-md">
           <AlertCircle className="h-4 w-4" />
-          <span>Error al cargar incidentes</span>
+          <span>Error al cargar sucesos</span>
         </div>
       </div>
     )
@@ -56,16 +54,16 @@ export function IncidentSelector({ value, onChange, error, required = true }: In
   return (
     <div className="space-y-2">
       <Label htmlFor="incident_id">
-        Incidente {required && <span className="text-red-500">*</span>}
+        Suceso {required && <span className="text-red-500">*</span>}
       </Label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger id="incident_id" className={error ? 'border-red-500' : ''}>
-          <SelectValue placeholder="Seleccione un incidente" />
+          <SelectValue placeholder="Seleccionar suceso" />
         </SelectTrigger>
         <SelectContent>
           {incidents.length === 0 ? (
             <div className="p-4 text-center text-sm text-gray-500">
-              No hay incidentes disponibles
+              No hay sucesos disponibles
             </div>
           ) : (
             incidents.map((incident: Incident) => (
