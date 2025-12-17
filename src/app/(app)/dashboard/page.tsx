@@ -17,6 +17,14 @@ import {
   PendingTasks,
 } from '@/shared/components/dashboard'
 import {
+  FrequencyIndexCard,
+  OverdueIncidentsCard,
+  SafetyPyramidCard,
+  IncidentsByCategoryCard,
+  IncidentsByZoneCard,
+  IncidentsByActivityCard,
+} from './components'
+import {
   Shield,
   FileText,
   BarChart3,
@@ -37,6 +45,24 @@ export default function DashboardPage() {
 
       {/* Indicadores Clave de Desempeño */}
       <DashboardMetrics />
+
+      {/* Métricas Avanzadas - Nuevos Componentes */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <FrequencyIndexCard />
+        <IncidentsByCategoryCard />
+        <OverdueIncidentsCard />
+      </div>
+
+      {/* Distribución de Sucesos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <IncidentsByActivityCard />
+        <IncidentsByZoneCard />
+      </div>
+
+      {/* Pirámide de Seguridad */}
+      <div className="grid grid-cols-1 gap-6">
+        <SafetyPyramidCard />
+      </div>
 
       {/* Sección de Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
