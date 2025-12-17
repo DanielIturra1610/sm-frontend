@@ -44,7 +44,7 @@ export default function FiveWhysListPage() {
   const filteredAnalyses = useMemo(() => {
     if (!analyses) return []
     return analyses.filter((analysis) => {
-      const problemText = analysis.problem || ''
+      const problemText = analysis.problemStatement || analysis.title || ''
       const matchesSearch = problemText.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesStatus = statusFilter === 'all' || analysis.status === statusFilter
       return matchesSearch && matchesStatus
@@ -249,7 +249,7 @@ export default function FiveWhysListPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{analysis.problem}</h3>
+                      <h3 className="text-lg font-semibold">{analysis.title || analysis.problemStatement}</h3>
                       <Badge className={getStatusColor(analysis.status)}>
                         <span className="flex items-center gap-1">
                           {getStatusIcon(analysis.status)}
@@ -285,7 +285,7 @@ export default function FiveWhysListPage() {
                     )}
                   </div>
                   <div className="text-right">
-                    <Badge variant="outline">{analysis.whysCount} Whys</Badge>
+                    <Badge variant="outline">{analysis.whys?.length || 0} Whys</Badge>
                   </div>
                 </div>
               </CardContent>

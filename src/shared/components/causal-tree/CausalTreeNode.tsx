@@ -2,7 +2,6 @@
 
 import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { Card } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -12,7 +11,9 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  Flag
+  Flag,
+  Circle,
+  Square
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -35,11 +36,11 @@ const CausalTreeNode = ({ data }: NodeProps<CausalTreeNodeData>) => {
   const getNodeIcon = () => {
     switch (causalNode.nodeType) {
       case 'final_event':
-        return <AlertTriangle className="h-4 w-4 text-red-600" />
+        return <AlertTriangle className="h-3 w-3 text-red-600" />
       case 'root_cause':
-        return <Target className="h-4 w-4 text-green-600" />
+        return <Target className="h-3 w-3 text-green-600" />
       default:
-        return <GitBranch className="h-4 w-4 text-blue-600" />
+        return <GitBranch className="h-3 w-3 text-blue-600" />
     }
   }
 
@@ -65,17 +66,25 @@ const CausalTreeNode = ({ data }: NodeProps<CausalTreeNodeData>) => {
     }
   }
 
-  const getRelationTypeLabel = () => {
-    switch (causalNode.relationType) {
-      case 'chain':
-        return 'Cadena (A → B)'
-      case 'conjunctive':
-        return 'Conjuntiva (A ∧ B)'
-      case 'disjunctive':
-        return 'Disyuntiva (A ∨ B)'
-      default:
-        return ''
-    }
+  // Obtener la forma del nodo según factType
+  // Círculo = variación, Cuadrado = permanente
+  const isCircle = causalNode.factType === 'variacion'
+  
+  const getNodeShape = () => {
+    return isCircle ? 'rounded-full' : 'rounded-lg'
+  }
+
+  // Para círculos: dimensiones fijas y centrado. Para cuadrados: ancho flexible
+  const getNodeSize = () => {
+    return isCircle 
+      ? 'w-[180px] h-[180px] flex items-center justify-center' 
+      : 'min-w-[160px] max-w-[220px]'
+  }
+
+  const getFactTypeIcon = () => {
+    return isCircle
+      ? <Circle className="h-3 w-3" />
+      : <Square className="h-3 w-3" />
   }
 
   return (
@@ -85,95 +94,80 @@ const CausalTreeNode = ({ data }: NodeProps<CausalTreeNodeData>) => {
         <Handle
           type="target"
           position={Position.Top}
-          className="!bg-blue-500 !w-3 !h-3"
+          className="!bg-blue-500 !w-2 !h-2"
           isConnectable={true}
         />
       )}
 
-      <Card className={`min-w-[280px] max-w-[350px] ${getNodeColor()} border-2 shadow-lg`}>
-        <div className="p-4">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
+      {/* Nodo con forma según factType */}
+      <div className={`${getNodeSize()} ${getNodeColor()} ${getNodeShape()} border-2 shadow-md bg-white`}>
+        <div className={isCircle ? "p-4 text-center" : "p-3"}>
+          {/* Header compacto */}
+          <div className={"flex items-center gap-1 mb-1 " + (isCircle ? "justify-center flex-wrap" : "justify-between")}>
+            <div className="flex items-center gap-1">
               {getNodeIcon()}
-              <Badge variant="outline" className="text-xs">
-                {getNodeTypeLabel()}
-              </Badge>
+              {getFactTypeIcon()}
               {causalNode.isRootCause && (
-                <Badge className="bg-green-600 text-white text-xs">
-                  <Flag className="h-3 w-3 mr-1" />
-                  Raíz
-                </Badge>
+                <Flag className="h-3 w-3 text-green-600" />
               )}
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {onEdit && (
-                  <DropdownMenuItem onClick={() => onEdit(causalNode)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </DropdownMenuItem>
-                )}
-                {onMarkAsRootCause && !causalNode.isRootCause && (
-                  <DropdownMenuItem onClick={() => onMarkAsRootCause(causalNode.id)}>
-                    <Flag className="h-4 w-4 mr-2" />
-                    Marcar como Raíz
-                  </DropdownMenuItem>
-                )}
-                {onDelete && causalNode.nodeType !== 'final_event' && (
-                  <DropdownMenuItem
-                    onClick={() => onDelete(causalNode.id)}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Eliminar
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {!isCircle && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {onEdit && (
+                    <DropdownMenuItem onClick={() => onEdit(causalNode)}>
+                      <Edit className="h-3 w-3 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
+                  )}
+                  {onMarkAsRootCause && !causalNode.isRootCause && (
+                    <DropdownMenuItem onClick={() => onMarkAsRootCause(causalNode.id)}>
+                      <Flag className="h-3 w-3 mr-2" />
+                      Marcar Raíz
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && causalNode.nodeType !== 'final_event' && (
+                    <DropdownMenuItem
+                      onClick={() => onDelete(causalNode.id)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-3 w-3 mr-2" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
-          {/* Fact */}
-          <div className="mb-2">
-            <p className="text-sm font-medium text-gray-900 line-clamp-3">
-              {causalNode.fact}
-            </p>
-          </div>
+          {/* Fact - texto principal */}
+          <p className={"text-xs font-medium text-gray-900 " + (isCircle ? "line-clamp-4" : "line-clamp-3 mb-1")}>
+            {causalNode.fact}
+          </p>
 
-          {/* Relation Type */}
-          {causalNode.parentNodes.length > 0 && (
-            <div className="text-xs text-gray-600 mb-2">
-              Relación: <span className="font-medium">{getRelationTypeLabel()}</span>
+          {/* Info adicional solo para cuadrados */}
+          {!isCircle && (
+            <div className="text-[10px] text-gray-500">
+              N{causalNode.level}
+              {causalNode.evidence && causalNode.evidence.length > 0 && (
+                <span> • {causalNode.evidence.length} ev.</span>
+              )}
             </div>
           )}
-
-          {/* Evidence Count */}
-          {causalNode.evidence && causalNode.evidence.length > 0 && (
-            <div className="flex items-center gap-1 text-xs text-gray-600">
-              <Badge variant="secondary" className="text-xs">
-                {causalNode.evidence.length} evidencia{causalNode.evidence.length > 1 ? 's' : ''}
-              </Badge>
-            </div>
-          )}
-
-          {/* Level */}
-          <div className="mt-2 text-xs text-gray-500">
-            Nivel: {causalNode.level}
-          </div>
         </div>
-      </Card>
+      </div>
 
       {/* Source Handle (salida) */}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!bg-blue-500 !w-3 !h-3"
+        className="!bg-blue-500 !w-2 !h-2"
         isConnectable={true}
       />
     </>

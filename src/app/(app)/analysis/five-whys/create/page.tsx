@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateFiveWhysAnalysis } from '@/shared/hooks/analysis-hooks'
@@ -19,18 +19,13 @@ import {
 } from '@/shared/components/forms/form'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { ArrowLeft, Plus, Trash2, Save, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const fiveWhysSchema = z.object({
   incidentId: z.string().min(1, 'ID del incidente es requerido'),
-  problem: z.string().min(10, 'La descripción del problema debe tener al menos 10 caracteres'),
-  whys: z.array(
-    z.object({
-      question: z.string().min(5, 'La pregunta debe tener al menos 5 caracteres'),
-      answer: z.string().min(5, 'La respuesta debe tener al menos 5 caracteres'),
-    })
-  ).min(1, 'Debe haber al menos un por qué').max(10, 'Máximo 10 porqués permitidos'),
+  title: z.string().min(5, 'El título debe tener al menos 5 caracteres').max(200, 'El título no puede exceder 200 caracteres'),
+  problemStatement: z.string().min(10, 'La descripción del problema debe tener al menos 10 caracteres').max(1000, 'La descripción no puede exceder 1000 caracteres'),
 })
 
 type FiveWhysFormValues = z.infer<typeof fiveWhysSchema>
@@ -46,20 +41,9 @@ function CreateFiveWhysForm() {
     resolver: zodResolver(fiveWhysSchema),
     defaultValues: {
       incidentId,
-      problem: '',
-      whys: [
-        { question: '¿Por qué sucedió esto?', answer: '' },
-        { question: '¿Por qué?', answer: '' },
-        { question: '¿Por qué?', answer: '' },
-        { question: '¿Por qué?', answer: '' },
-        { question: '¿Por qué?', answer: '' },
-      ],
+      title: '',
+      problemStatement: '',
     },
-  })
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'whys',
   })
 
   const onSubmit = async (data: FiveWhysFormValues) => {
@@ -139,10 +123,32 @@ function CreateFiveWhysForm() {
                   )}
                 />
 
+                {/* Title */}
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título del Análisis *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ej: Análisis de derrame de aceite en zona de producción"
+                          {...field}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Un título descriptivo para identificar este análisis
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Problem Statement */}
                 <FormField
                   control={form.control}
-                  name="problem"
+                  name="problemStatement"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Declaración del Problema *</FormLabel>
@@ -162,87 +168,15 @@ function CreateFiveWhysForm() {
                   )}
                 />
 
-                {/* Five Whys */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">Los Porqués</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Pregunta por qué iterativamente para profundizar en la causa raíz
-                      </p>
-                    </div>
-                    {fields.length < 10 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => append({ question: '¿Por qué?', answer: '' })}
-                        disabled={isSubmitting}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Agregar Porqué
-                      </Button>
-                    )}
-                  </div>
-
-                  {fields.map((field, index) => (
-                    <Card key={field.id} className="border-2">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">Por qué #{index + 1}</CardTitle>
-                          {fields.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => remove(index)}
-                              disabled={isSubmitting}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <FormField
-                          control={form.control}
-                          name={`whys.${index}.question`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Pregunta</FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  disabled={isSubmitting}
-                                  placeholder="¿Por qué ocurrió esto?"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`whys.${index}.answer`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Respuesta</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  {...field}
-                                  disabled={isSubmitting}
-                                  placeholder="Proporciona una respuesta detallada..."
-                                  className="min-h-[80px]"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                {/* Info about next steps */}
+                <Card className="bg-amber-50 border-amber-200">
+                  <CardContent className="pt-4">
+                    <p className="text-sm text-amber-800">
+                      <strong>Siguiente paso:</strong> Después de crear el análisis, podrás agregar las preguntas
+                      &quot;¿Por qué?&quot; y sus respuestas en la página de detalle del análisis.
+                    </p>
+                  </CardContent>
+                </Card>
 
                 {/* Actions */}
                 <div className="flex gap-4 pt-4">

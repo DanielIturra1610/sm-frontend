@@ -26,14 +26,7 @@ export function useCausalTreeAnalyses(filter?: CausalTreeAnalysisFilter) {
   return useQuery<CausalTreeAnalysisListResponse>({
     queryKey: ['causal-tree-analyses', filter],
     queryFn: async () => {
-      const params = new URLSearchParams()
-      if (filter?.incidentId) params.append('incidentId', filter.incidentId)
-      if (filter?.status) params.append('status', filter.status)
-      if (filter?.limit) params.append('limit', filter.limit.toString())
-      if (filter?.offset) params.append('offset', filter.offset.toString())
-
-      const response = await api.get(`/analysis/causal-tree?${params}`)
-      return response.data
+      return api.analysis.listCausalTree(filter)
     },
   })
 }
@@ -46,8 +39,7 @@ export function useCausalTreeAnalysis(analysisId: string | null) {
     queryKey: ['causal-tree-analysis', analysisId],
     queryFn: async () => {
       if (!analysisId) throw new Error('Analysis ID is required')
-      const response = await api.get(`/analysis/causal-tree/${analysisId}`)
-      return response.data
+      return api.analysis.getCausalTreeById(analysisId)
     },
     enabled: !!analysisId,
   })
@@ -61,8 +53,7 @@ export function useCausalTreeNodes(analysisId: string | null) {
     queryKey: ['causal-tree-nodes', analysisId],
     queryFn: async () => {
       if (!analysisId) throw new Error('Analysis ID is required')
-      const response = await api.get(`/analysis/causal-tree/${analysisId}/nodes`)
-      return response.data
+      return api.analysis.getCausalTreeNodes(analysisId)
     },
     enabled: !!analysisId,
   })
@@ -76,8 +67,7 @@ export function useCausalTreeMeasures(analysisId: string | null) {
     queryKey: ['causal-tree-measures', analysisId],
     queryFn: async () => {
       if (!analysisId) throw new Error('Analysis ID is required')
-      const response = await api.get(`/analysis/causal-tree/${analysisId}/measures`)
-      return response.data
+      return api.analysis.getCausalTreeMeasures(analysisId)
     },
     enabled: !!analysisId,
   })
@@ -91,12 +81,11 @@ export function useCausalTreeValidation(analysisId: string | null) {
     queryKey: ['causal-tree-validation', analysisId],
     queryFn: async () => {
       if (!analysisId) throw new Error('Analysis ID is required')
-      const response = await api.post(`/analysis/causal-tree/${analysisId}/validate`, {
+      return api.analysis.validateCausalTree(analysisId, {
         checkObjectivity: true,
         checkLogic: true,
         checkMeasures: true,
       })
-      return response.data
     },
     enabled: !!analysisId,
   })
@@ -114,8 +103,7 @@ export function useCreateCausalTreeAnalysis() {
 
   return useMutation({
     mutationFn: async (data: CreateCausalTreeAnalysisDTO) => {
-      const response = await api.post('/analysis/causal-tree', data)
-      return response.data as CausalTreeAnalysis
+      return api.analysis.createCausalTree(data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-analyses'] })
@@ -131,8 +119,7 @@ export function useUpdateCausalTreeAnalysis() {
 
   return useMutation({
     mutationFn: async ({ analysisId, data }: { analysisId: string; data: UpdateCausalTreeAnalysisDTO }) => {
-      const response = await api.put(`/analysis/causal-tree/${analysisId}`, data)
-      return response.data as CausalTreeAnalysis
+      return api.analysis.updateCausalTree(analysisId, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-analysis', variables.analysisId] })
@@ -149,7 +136,7 @@ export function useDeleteCausalTreeAnalysis() {
 
   return useMutation({
     mutationFn: async (analysisId: string) => {
-      await api.delete(`/analysis/causal-tree/${analysisId}`)
+      return api.analysis.deleteCausalTree(analysisId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-analyses'] })
@@ -165,8 +152,7 @@ export function useAddCausalNode() {
 
   return useMutation({
     mutationFn: async (data: AddCausalNodeDTO) => {
-      const response = await api.post(`/analysis/causal-tree/${data.analysisId}/nodes`, data)
-      return response.data as CausalNode
+      return api.analysis.addCausalTreeNode(data.analysisId, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-nodes', variables.analysisId] })
@@ -183,8 +169,7 @@ export function useUpdateCausalNode() {
 
   return useMutation({
     mutationFn: async ({ analysisId, nodeId, data }: { analysisId: string; nodeId: string; data: UpdateCausalNodeDTO }) => {
-      const response = await api.put(`/analysis/causal-tree/${analysisId}/nodes/${nodeId}`, data)
-      return response.data as CausalNode
+      return api.analysis.updateCausalTreeNode(analysisId, nodeId, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-nodes', variables.analysisId] })
@@ -201,7 +186,7 @@ export function useDeleteCausalNode() {
 
   return useMutation({
     mutationFn: async ({ analysisId, nodeId }: { analysisId: string; nodeId: string }) => {
-      await api.delete(`/analysis/causal-tree/${analysisId}/nodes/${nodeId}`)
+      return api.analysis.deleteCausalTreeNode(analysisId, nodeId)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-nodes', variables.analysisId] })
@@ -218,8 +203,7 @@ export function useMarkAsRootCause() {
 
   return useMutation({
     mutationFn: async ({ analysisId, nodeId }: { analysisId: string; nodeId: string }) => {
-      const response = await api.post(`/analysis/causal-tree/${analysisId}/nodes/${nodeId}/mark-root-cause`)
-      return response.data as CausalNode
+      return api.analysis.markNodeAsRootCause(analysisId, nodeId)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-nodes', variables.analysisId] })
@@ -236,8 +220,7 @@ export function useAddPreventiveMeasure() {
 
   return useMutation({
     mutationFn: async (data: AddPreventiveMeasureDTO) => {
-      const response = await api.post(`/analysis/causal-tree/${data.analysisId}/measures`, data)
-      return response.data as PreventiveMeasure
+      return api.analysis.addCausalTreeMeasure(data.analysisId, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-measures', variables.analysisId] })
@@ -254,8 +237,7 @@ export function useUpdatePreventiveMeasure() {
 
   return useMutation({
     mutationFn: async ({ analysisId, measureId, data }: { analysisId: string; measureId: string; data: UpdatePreventiveMeasureDTO }) => {
-      const response = await api.put(`/analysis/causal-tree/${analysisId}/measures/${measureId}`, data)
-      return response.data as PreventiveMeasure
+      return api.analysis.updateCausalTreeMeasure(analysisId, measureId, data)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-measures', variables.analysisId] })
@@ -272,7 +254,7 @@ export function useDeletePreventiveMeasure() {
 
   return useMutation({
     mutationFn: async ({ analysisId, measureId }: { analysisId: string; measureId: string }) => {
-      await api.delete(`/analysis/causal-tree/${analysisId}/measures/${measureId}`)
+      return api.analysis.deleteCausalTreeMeasure(analysisId, measureId)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['causal-tree-measures', variables.analysisId] })
@@ -288,12 +270,11 @@ export function useCompleteCausalTreeAnalysis() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (analysisId: string) => {
-      const response = await api.post(`/analysis/causal-tree/${analysisId}/complete`)
-      return response.data as CausalTreeAnalysis
+    mutationFn: async ({ analysisId, rootCauses }: { analysisId: string; rootCauses?: string[] }) => {
+      return api.analysis.completeCausalTree(analysisId, rootCauses)
     },
-    onSuccess: (_, analysisId) => {
-      queryClient.invalidateQueries({ queryKey: ['causal-tree-analysis', analysisId] })
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['causal-tree-analysis', variables.analysisId] })
       queryClient.invalidateQueries({ queryKey: ['causal-tree-analyses'] })
     },
   })

@@ -75,7 +75,7 @@ export default function IncidentsPage() {
   // Show error toast
   React.useEffect(() => {
     if (error) {
-      toast.error('Error al cargar incidentes: ' + (error.message || 'Error desconocido'))
+      toast.error('Error al cargar sucesos: ' + (error.message || 'Error desconocido'))
     }
   }, [error])
 
@@ -120,9 +120,8 @@ export default function IncidentsPage() {
     
   }, [])
 
-
   const handleDelete = React.useCallback(async (incident: Incident) => {
-    if (confirm(`¿Estás seguro de que deseas eliminar el incidente "${incident.title}"?`)) {
+    if (confirm(`¿Estás seguro de que deseas eliminar el suceso "${incident.title}"?`)) {
       console.log("Delete incident:", incident.id)
       
       mutate()
@@ -133,7 +132,7 @@ export default function IncidentsPage() {
   const columns: ColumnDef<Incident>[] = [
     {
       accessorKey: "title",
-      header: "Incidente",
+      header: "Suceso",
       cell: ({ row }) => {
         const incident = row.original
         return (
@@ -289,8 +288,8 @@ export default function IncidentsPage() {
                 <AlertTriangle className="h-5 w-5 text-stegmaier-blue" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Gestión de Incidentes</h1>
-                <p className="text-sm text-gray-600">Rastrea y gestiona incidentes de seguridad</p>
+                <h1 className="text-xl font-semibold text-gray-900">Gestión de Sucesos</h1>
+                <p className="text-sm text-gray-600">Rastrea y gestiona sucesos de seguridad</p>
               </div>
             </div>
 
@@ -305,7 +304,7 @@ export default function IncidentsPage() {
               </Button>
               <Button onClick={() => router.push("/incidents/create")}>
                 <Plus className="h-4 w-4 mr-2" />
-                Nuevo Incidente
+                Nuevo Suceso
               </Button>
             </div>
           </div>
@@ -335,16 +334,16 @@ export default function IncidentsPage() {
               onPaginationChange={handlePaginationChange}
               onRefresh={handleRefresh}
               isLoading={isLoading}
-              title="Incidentes"
-              description={`${pagination.total} incidentes totales`}
-              searchPlaceholder="Buscar incidentes..."
+              title="Sucesos"
+              description={`${pagination.total} sucesos totales`}
+              searchPlaceholder="Buscar sucesos..."
               showSearch={false} // Using filter panel instead
               showColumnToggle={true}
               showPagination={true}
               showExport={false}
               showRefresh={false} // Using header refresh instead
-              emptyStateTitle="No se encontraron incidentes"
-              emptyStateDescription="No hay incidentes que coincidan con tus filtros actuales. Intenta ajustar tus criterios de búsqueda."
+              emptyStateTitle="No se encontraron sucesos"
+              emptyStateDescription="No hay sucesos que coincidan con tus filtros actuales. Intenta ajustar tus criterios de búsqueda."
               emptyStateAction={
                 <Button variant="outline" onClick={resetFilters}>
                   Limpiar Filtros

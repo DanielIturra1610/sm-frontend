@@ -9,6 +9,12 @@ import { api } from '@/lib/api/modular-client'
 import type {
   FiveWhysAnalysis,
   CreateFiveWhysData,
+  WhyEntry,
+  AddWhyEntryData,
+  UpdateWhyEntryData,
+  FiveWhysActionItem,
+  AddActionItemData,
+  UpdateActionItemData,
   FishboneAnalysis,
   CreateFishboneData,
   FishboneCause,
@@ -161,6 +167,112 @@ export function useAddFishboneCauses(analysisId: string) {
     }
   }
 }
+
+// ============================================================================
+// FIVE WHYS - WHY ENTRIES
+// ============================================================================
+
+/**
+ * Add why entry to Five Whys analysis
+ */
+export function useAddWhyEntry(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FiveWhysAnalysis>(`/analysis/five-whys/${analysisId}`)
+
+  return useSWRMutation(`/analysis/five-whys/${analysisId}/whys`,
+    async (key, { arg }: { arg: AddWhyEntryData }) => {
+      const entry = await api.analysis.addWhyEntry(analysisId, arg)
+      // Revalidate the analysis to get updated whys array
+      await mutateAnalysis()
+      return entry
+    }
+  )
+}
+
+/**
+ * Update why entry
+ */
+export function useUpdateWhyEntry(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FiveWhysAnalysis>(`/analysis/five-whys/${analysisId}`)
+
+  return useSWRMutation(`/analysis/five-whys/${analysisId}/whys`,
+    async (key, { arg }: { arg: { entryId: string; data: UpdateWhyEntryData } }) => {
+      const entry = await api.analysis.updateWhyEntry(analysisId, arg.entryId, arg.data)
+      // Revalidate the analysis to get updated whys array
+      await mutateAnalysis()
+      return entry
+    }
+  )
+}
+
+/**
+ * Delete why entry
+ */
+export function useDeleteWhyEntry(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FiveWhysAnalysis>(`/analysis/five-whys/${analysisId}`)
+
+  return useSWRMutation(`/analysis/five-whys/${analysisId}/whys`,
+    async (key, { arg }: { arg: string }) => {
+      await api.analysis.deleteWhyEntry(analysisId, arg)
+      // Revalidate the analysis to get updated whys array
+      await mutateAnalysis()
+    }
+  )
+}
+
+// ============================================================================
+// FIVE WHYS - ACTION ITEMS
+// ============================================================================
+
+/**
+ * Add action item to Five Whys analysis
+ */
+export function useAddFiveWhysActionItem(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FiveWhysAnalysis>(`/analysis/five-whys/${analysisId}`)
+
+  return useSWRMutation(`/analysis/five-whys/${analysisId}/action-items`,
+    async (key, { arg }: { arg: AddActionItemData }) => {
+      const item = await api.analysis.addFiveWhysActionItem(analysisId, arg)
+      // Revalidate the analysis to get updated action items array
+      await mutateAnalysis()
+      return item
+    }
+  )
+}
+
+/**
+ * Update Five Whys action item
+ */
+export function useUpdateFiveWhysActionItem(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FiveWhysAnalysis>(`/analysis/five-whys/${analysisId}`)
+
+  return useSWRMutation(`/analysis/five-whys/${analysisId}/action-items`,
+    async (key, { arg }: { arg: { itemId: string; data: UpdateActionItemData } }) => {
+      const item = await api.analysis.updateFiveWhysActionItem(analysisId, arg.itemId, arg.data)
+      // Revalidate the analysis to get updated action items array
+      await mutateAnalysis()
+      return item
+    }
+  )
+}
+
+/**
+ * Delete Five Whys action item
+ */
+export function useDeleteFiveWhysActionItem(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FiveWhysAnalysis>(`/analysis/five-whys/${analysisId}`)
+
+  return useSWRMutation(`/analysis/five-whys/${analysisId}/action-items`,
+    async (key, { arg }: { arg: string }) => {
+      await api.analysis.deleteFiveWhysActionItem(analysisId, arg)
+      // Revalidate the analysis to get updated action items array
+      await mutateAnalysis()
+    }
+  )
+}
+
+// ============================================================================
+// TEMPLATES & REPORTS
+// ============================================================================
 
 /**
  * Create analysis template

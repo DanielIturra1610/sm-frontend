@@ -24,7 +24,6 @@ export default function CausalTreePage() {
 
   const filter: CausalTreeAnalysisFilter = {
     status: statusFilter !== 'all' ? statusFilter : undefined,
-    search: searchQuery || undefined,
     limit: 20,
     offset: 0,
   }

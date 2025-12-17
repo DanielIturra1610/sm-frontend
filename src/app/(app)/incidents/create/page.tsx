@@ -138,7 +138,7 @@ export default function CreateIncidentPage() {
                       <FormLabel>Título *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Breve descripción del incidente"
+                          placeholder="Breve descripción del suceso"
                           {...field}
                           disabled={isSubmitting}
                         />
@@ -369,7 +369,7 @@ export default function CreateIncidentPage() {
                     ) : (
                       <>
                         <Save className="mr-2 h-4 w-4" />
-                        Crear Incidente
+                        Crear Suceso
                       </>
                     )}
                   </Button>

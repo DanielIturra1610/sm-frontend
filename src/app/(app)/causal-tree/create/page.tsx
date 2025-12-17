@@ -24,7 +24,7 @@ export default function CreateCausalTreePage() {
   const router = useRouter()
   const { toast } = useToast()
   const createMutation = useCreateCausalTreeAnalysis()
-  const { data: incidentsData } = useIncidents({ status: 'open', limit: 100 })
+  const { data: incidentsData } = useIncidents({ limit: 100 })
 
   const [formData, setFormData] = useState<CreateCausalTreeAnalysisDTO>({
     incidentId: '',
@@ -65,8 +65,8 @@ export default function CreateCausalTreePage() {
     setFormData({ ...formData, incidentId })
 
     // Auto-fill title if empty
-    if (!formData.title && incidentsData) {
-      const incident = incidentsData.incidents.find((i) => i.id === incidentId)
+    if (!formData.title && incidentsData?.data) {
+      const incident = incidentsData.data.find((i) => i.id === incidentId)
       if (incident) {
         setFormData({
           ...formData,
@@ -117,7 +117,7 @@ export default function CreateCausalTreePage() {
                     <SelectValue placeholder="Selecciona un incidente..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {incidentsData?.incidents.map((incident) => (
+                    {incidentsData?.data?.map((incident) => (
                       <SelectItem key={incident.id} value={incident.id}>
                         {incident.title}
                       </SelectItem>

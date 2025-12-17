@@ -1,36 +1,27 @@
 'use client'
 
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Download, CheckCircle2, List, GitBranch, Circle, Square, Flag, Edit, Trash2, ChevronRight, FileSpreadsheet, FileText, FileDown } from 'lucide-react'
+import { ArrowLeft, Download, CheckCircle2, List, GitBranch, Circle, Square, Flag, Trash2, ChevronRight } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { Separator } from '@/shared/components/ui/separator'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu'
 import { useToast } from '@/shared/hooks/use-toast'
 import {
   useCausalTreeAnalysis,
   useAddCausalNode,
-  useUpdateCausalNode,
   useDeleteCausalNode,
   useMarkAsRootCause,
   useCompleteCausalTreeAnalysis,
-  useAddPreventiveMeasure,
+  useUpdateCausalNode,
 } from '@/shared/hooks/causal-tree-hooks'
 import CausalTreeDiagram from '@/shared/components/causal-tree/CausalTreeDiagram'
 import { EditNodeDialog } from '@/shared/components/causal-tree/EditNodeDialog'
-import type { AddCausalNodeDTO, AddPreventiveMeasureDTO, UpdateCausalNodeDTO, CausalNode } from '@/shared/types/causal-tree'
+import { ExportDialog } from '@/shared/components/causal-tree/ExportDialog'
+import type { AddCausalNodeDTO, CausalNode, UpdateCausalNodeDTO } from '@/shared/types/causal-tree'
 import { FACT_TYPE_LABELS, NODE_TYPE_LABELS } from '@/shared/types/causal-tree'
-import { exportToExcel, exportToWord, exportToPDF } from '@/shared/utils/causal-tree-export'
 
 export default function CausalTreeDetailPage() {
   const params = useParams()
@@ -40,32 +31,18 @@ export default function CausalTreeDetailPage() {
 
   const { data: analysis, isLoading, error } = useCausalTreeAnalysis(analysisId)
   const addNodeMutation = useAddCausalNode()
-  const updateNodeMutation = useUpdateCausalNode()
   const deleteNodeMutation = useDeleteCausalNode()
   const markRootCauseMutation = useMarkAsRootCause()
   const completeMutation = useCompleteCausalTreeAnalysis()
+  const updateNodeMutation = useUpdateCausalNode()
 
   const [activeTab, setActiveTab] = useState('diagram')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [showFactsList, setShowFactsList] = useState(true)
   const [editingNode, setEditingNode] = useState<CausalNode | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  
-  // Ref to store diagram image capture function
+  const [showExportDialog, setShowExportDialog] = useState(false)
   const diagramImageCaptureRef = useRef<(() => Promise<string | null>) | null>(null)
-  
-  // Callback to receive the capture function from CausalTreeDiagram
-  const handleImageCaptureReady = useCallback((captureFunc: () => Promise<string | null>) => {
-    diagramImageCaptureRef.current = captureFunc
-  }, [])
-  
-  // Function to get diagram image for export
-  const getDiagramImageForExport = useCallback(async (): Promise<string | null> => {
-    if (diagramImageCaptureRef.current) {
-      return await diagramImageCaptureRef.current()
-    }
-    return null
-  }, [])
 
   const handleAddNode = async (data: AddCausalNodeDTO) => {
     try {
@@ -78,29 +55,6 @@ export default function CausalTreeDetailPage() {
       toast({
         title: 'Error',
         description: 'No se pudo agregar el nodo. Intenta nuevamente.',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  const handleEditNode = (node: CausalNode) => {
-    setEditingNode(node)
-    setShowEditDialog(true)
-  }
-
-  const handleUpdateNode = async (nodeId: string, data: UpdateCausalNodeDTO) => {
-    try {
-      await updateNodeMutation.mutateAsync({ analysisId, nodeId, data })
-      toast({
-        title: 'Nodo actualizado',
-        description: 'El nodo ha sido actualizado correctamente.',
-      })
-      setShowEditDialog(false)
-      setEditingNode(null)
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el nodo. Intenta nuevamente.',
         variant: 'destructive',
       })
     }
@@ -135,6 +89,29 @@ export default function CausalTreeDetailPage() {
       toast({
         title: 'Error',
         description: 'No se pudo marcar como causa raíz.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleEditNode = (node: CausalNode) => {
+    setEditingNode(node)
+    setShowEditDialog(true)
+  }
+
+  const handleUpdateNode = async (nodeId: string, data: UpdateCausalNodeDTO) => {
+    try {
+      await updateNodeMutation.mutateAsync({ analysisId, nodeId, data })
+      toast({
+        title: 'Nodo actualizado',
+        description: 'El nodo ha sido actualizado correctamente.',
+      })
+      setShowEditDialog(false)
+      setEditingNode(null)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el nodo.',
         variant: 'destructive',
       })
     }
@@ -187,6 +164,14 @@ export default function CausalTreeDetailPage() {
         <Card className="border-destructive">
           <CardContent className="pt-6">
             <p className="text-destructive">Error al cargar el análisis.</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => router.push('/root-cause-analysis')}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver a Análisis
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -201,7 +186,7 @@ export default function CausalTreeDetailPage() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push('/causal-tree')}
+          onClick={() => router.push('/root-cause-analysis')}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -212,6 +197,9 @@ export default function CausalTreeDetailPage() {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold tracking-tight">{analysis.title}</h1>
+              <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                Árbol Causal
+              </Badge>
               <Badge variant={analysis.status === 'completed' ? 'default' : 'outline'}>
                 {analysis.status === 'draft' && 'Borrador'}
                 {analysis.status === 'in_progress' && 'En Progreso'}
@@ -230,59 +218,10 @@ export default function CausalTreeDetailPage() {
                 Completar Análisis
               </Button>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Formato de exportación</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    exportToExcel(analysis)
-                    toast({
-                      title: 'Exportación exitosa',
-                      description: 'El archivo Excel ha sido descargado.',
-                    })
-                  }}
-                  className="cursor-pointer"
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
-                  Excel (.xlsx)
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const diagramImage = await getDiagramImageForExport()
-                    await exportToWord(analysis, diagramImage || undefined)
-                    toast({
-                      title: 'Exportación exitosa',
-                      description: 'El archivo Word ha sido descargado.',
-                    })
-                  }}
-                  className="cursor-pointer"
-                >
-                  <FileText className="h-4 w-4 mr-2 text-blue-600" />
-                  Word (.docx)
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const diagramImage = await getDiagramImageForExport()
-                    exportToPDF(analysis, diagramImage || undefined)
-                    toast({
-                      title: 'Vista de impresión',
-                      description: 'Se ha abierto la vista previa para imprimir/guardar como PDF.',
-                    })
-                  }}
-                  className="cursor-pointer"
-                >
-                  <FileDown className="h-4 w-4 mr-2 text-red-600" />
-                  PDF (Imprimir)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button variant="outline" onClick={() => setShowExportDialog(true)}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
           </div>
         </div>
       </div>
@@ -425,11 +364,11 @@ export default function CausalTreeDetailPage() {
                 <CausalTreeDiagram
                   analysis={analysis}
                   onAddNode={handleAddNode}
-                  onEditNode={handleEditNode}
                   onDeleteNode={handleDeleteNode}
                   onMarkAsRootCause={handleMarkAsRootCause}
+                  onEditNode={handleEditNode}
                   readonly={isReadonly}
-                  onImageCaptureReady={handleImageCaptureReady}
+                  onImageCaptureReady={(fn) => { diagramImageCaptureRef.current = fn }}
                 />
               </CardContent>
             </Card>
@@ -570,6 +509,26 @@ export default function CausalTreeDetailPage() {
         onSubmit={handleUpdateNode}
         isLoading={updateNodeMutation.isPending}
       />
+
+      {/* Export Dialog */}
+      <ExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        analysis={analysis}
+        onGetDiagramImage={async () => {
+          if (diagramImageCaptureRef.current) {
+            return await diagramImageCaptureRef.current()
+          }
+          return null
+        }}
+        onExportImage={async () => {
+          // Trigger the download from CausalTreeDiagram
+          const downloadBtn = document.querySelector('.causal-tree-diagram button[title*="Descargar"], .causal-tree-diagram button:has(.lucide-download)') as HTMLButtonElement
+          if (downloadBtn) {
+            downloadBtn.click()
+          }
+        }}
+      />
     </div>
   )
 }
@@ -615,7 +574,7 @@ function FactListItem({ node, isSelected, onClick, onDelete, onMarkAsRootCause }
       onClick={onClick}
       className={`
         relative p-3 rounded-lg border-l-4 cursor-pointer
-        transition-all hover:shadow-md
+        transition-all hover:shadow-md group
         ${getNodeColor()}
         ${isSelected ? 'ring-2 ring-blue-400 shadow-md' : ''}
       `}

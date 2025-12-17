@@ -5,11 +5,11 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useCreateFinalReport } from '@/shared/hooks/report-hooks'
+import { useCreateFinalReport, usePrefillData } from '@/shared/hooks/report-hooks'
 import { finalReportSchema, type FinalReportFormData } from '@/lib/validations/report-schemas'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
@@ -21,13 +21,16 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { Separator } from '@/shared/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { Checkbox } from '@/shared/components/ui/checkbox'
+import { Badge } from '@/shared/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
 import { toast } from 'sonner'
-import { Loader2, Save, Plus, Trash2, FileCheck } from 'lucide-react'
+import { Loader2, Save, Plus, Trash2, FileCheck, CheckCircle2, FileText } from 'lucide-react'
 
 export default function CreateFinalReportPage() {
   const router = useRouter()
   const { trigger: createReport, isMutating } = useCreateFinalReport()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasAutoFilled, setHasAutoFilled] = useState(false)
 
   const {
     register,
@@ -54,12 +57,98 @@ export default function CreateFinalReportPage() {
   const { fields: personas, append: appendPersona, remove: removePersona } = useFieldArray({ control, name: 'personas_involucradas' })
   const { fields: equipos, append: appendEquipo, remove: removeEquipo } = useFieldArray({ control, name: 'equipos_danados' })
   const { fields: terceros, append: appendTercero, remove: removeTercero } = useFieldArray({ control, name: 'terceros_identificados' })
-  const { fields: causas, append: appendCausa, remove: removeCausa } = useFieldArray({ control, name: 'analisis_causas_raiz' })
+  const { fields: causas, append: appendCausa, remove: removeCausa, replace: replaceCausas } = useFieldArray({ control, name: 'analisis_causas_raiz' })
   const { fields: costos, append: appendCosto, remove: removeCosto } = useFieldArray({ control, name: 'costos_tabla' })
   const { fields: evidencias, append: appendEvidencia, remove: removeEvidencia } = useFieldArray({ control, name: 'imagenes_evidencia' })
   const { fields: responsables, append: appendResponsable, remove: removeResponsable } = useFieldArray({ control, name: 'responsables_investigacion' })
 
   const incident_id = watch('incident_id')
+
+  // Fetch prefill data when incident is selected
+  const { data: prefillData, isLoading: isLoadingPrefill } = usePrefillData(incident_id || null, 'final-report')
+
+  // Auto-fill form when prefill data is available
+  useEffect(() => {
+    if (prefillData && incident_id && !hasAutoFilled) {
+      // Company data
+      if (prefillData.final_report_data?.company_data) {
+        const cd = prefillData.final_report_data.company_data
+        if (cd.nombre) setValue('company_data.nombre', cd.nombre)
+        if (cd.rut) setValue('company_data.rut', cd.rut)
+        if (cd.direccion) setValue('company_data.direccion', cd.direccion)
+      } else if (prefillData.empresa) {
+        setValue('company_data.nombre', prefillData.empresa)
+      }
+
+      // Accident classification
+      if (prefillData.final_report_data?.tipo_accidente_tabla) {
+        const tat = prefillData.final_report_data.tipo_accidente_tabla
+        setValue('tipo_accidente_tabla.con_baja_il', tat.con_baja_il || false)
+        setValue('tipo_accidente_tabla.sin_baja_il', tat.sin_baja_il || false)
+        setValue('tipo_accidente_tabla.incidente_industrial', tat.incidente_industrial || false)
+        setValue('tipo_accidente_tabla.incidente_laboral', tat.incidente_laboral || false)
+      } else {
+        setValue('tipo_accidente_tabla.con_baja_il', prefillData.con_baja_il || false)
+        setValue('tipo_accidente_tabla.sin_baja_il', prefillData.sin_baja_il || false)
+        setValue('tipo_accidente_tabla.incidente_industrial', prefillData.incidente_industrial || false)
+        setValue('tipo_accidente_tabla.incidente_laboral', prefillData.incidente_laboral || false)
+      }
+
+      // Text fields from final report data
+      if (prefillData.final_report_data) {
+        const frd = prefillData.final_report_data
+        if (frd.detalles_accidente) setValue('detalles_accidente', frd.detalles_accidente)
+        if (frd.descripcion_detallada) setValue('descripcion_detallada', frd.descripcion_detallada)
+        if (frd.conclusiones) setValue('conclusiones', frd.conclusiones)
+        if (frd.lecciones_aprendidas) setValue('lecciones_aprendidas', frd.lecciones_aprendidas)
+        if (frd.acciones_inmediatas_resumen) setValue('acciones_inmediatas_resumen', frd.acciones_inmediatas_resumen)
+        if (frd.plan_accion_resumen) setValue('plan_accion_resumen', frd.plan_accion_resumen)
+
+        // Root cause analysis - replace the array
+        if (frd.analisis_causas_raiz && frd.analisis_causas_raiz.length > 0) {
+          const causasData = frd.analisis_causas_raiz.map((c) => ({
+            problema: c.problema || '',
+            causa_raiz: c.causa_raiz || '',
+            accion_plan: c.accion_plan || '',
+            metodologia: c.metodologia || '',
+          }))
+          replaceCausas(causasData)
+        }
+      }
+
+      // Basic description from prefill
+      if (!prefillData.final_report_data?.detalles_accidente && prefillData.descripcion) {
+        setValue('detalles_accidente', prefillData.descripcion)
+        setValue('descripcion_detallada', prefillData.descripcion)
+      }
+
+      setHasAutoFilled(true)
+      toast.success('Datos pre-llenados desde reportes anteriores')
+    }
+  }, [prefillData, incident_id, hasAutoFilled, setValue, replaceCausas])
+
+  // Reset autofill flag when incident changes
+  useEffect(() => {
+    if (!incident_id) {
+      setHasAutoFilled(false)
+    }
+  }, [incident_id])
+
+  // Count source reports for display
+  const getSourceReportsCount = () => {
+    if (!prefillData?.source_reports) return 0
+    const sr = prefillData.source_reports
+    let count = 0
+    if (sr.flash_report_id) count++
+    if (sr.immediate_actions_id) count++
+    if (sr.root_cause_id) count++
+    if (sr.action_plan_id) count++
+    if (sr.zero_tolerance_id) count++
+    if (sr.five_whys_ids?.length) count += sr.five_whys_ids.length
+    if (sr.fishbone_ids?.length) count += sr.fishbone_ids.length
+    if (sr.causal_tree_ids?.length) count += sr.causal_tree_ids.length
+    return count
+  }
 
   const onSubmit = async (data: FinalReportFormData) => {
     try {
@@ -87,14 +176,90 @@ export default function CreateFinalReportPage() {
         <Card>
           <CardHeader>
             <CardTitle>Selección de Incidente</CardTitle>
+            <CardDescription>
+              Seleccione el incidente para el cual se generará el reporte final.
+              Los datos se pre-llenarán automáticamente desde reportes anteriores.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <IncidentSelector
               value={incident_id || ''}
-              onChange={(value) => setValue('incident_id', value)}
+              onChange={(value) => {
+                setValue('incident_id', value)
+                setHasAutoFilled(false)
+              }}
               error={errors.incident_id?.message}
               required
             />
+
+            {/* Prefill Status Indicator */}
+            {incident_id && (
+              <div className="space-y-3">
+                {isLoadingPrefill && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cargando datos de reportes anteriores...
+                  </div>
+                )}
+
+                {hasAutoFilled && prefillData && (
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertTitle>Datos pre-llenados</AlertTitle>
+                    <AlertDescription className="space-y-2">
+                      <p>Se han cargado datos de {getSourceReportsCount()} reporte(s) anterior(es).</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {prefillData.source_reports?.flash_report_id && (
+                          <Badge variant="secondary">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Flash Report
+                          </Badge>
+                        )}
+                        {prefillData.source_reports?.immediate_actions_id && (
+                          <Badge variant="secondary">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Acciones Inmediatas
+                          </Badge>
+                        )}
+                        {prefillData.source_reports?.root_cause_id && (
+                          <Badge variant="secondary">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Causa Raíz
+                          </Badge>
+                        )}
+                        {prefillData.source_reports?.action_plan_id && (
+                          <Badge variant="secondary">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Plan de Acción
+                          </Badge>
+                        )}
+                        {prefillData.source_reports?.zero_tolerance_id && (
+                          <Badge variant="secondary">
+                            <FileText className="h-3 w-3 mr-1" />
+                            Tolerancia Cero
+                          </Badge>
+                        )}
+                        {prefillData.source_reports?.five_whys_ids?.map((id, i) => (
+                          <Badge key={id} variant="outline" className="bg-blue-50">
+                            5 Porqués #{i + 1}
+                          </Badge>
+                        ))}
+                        {prefillData.source_reports?.fishbone_ids?.map((id, i) => (
+                          <Badge key={id} variant="outline" className="bg-green-50">
+                            Ishikawa #{i + 1}
+                          </Badge>
+                        ))}
+                        {prefillData.source_reports?.causal_tree_ids?.map((id, i) => (
+                          <Badge key={id} variant="outline" className="bg-purple-50">
+                            Árbol Causal #{i + 1}
+                          </Badge>
+                        ))}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -298,38 +463,111 @@ export default function CreateFinalReportPage() {
 
           {/* Tab 4: Analysis */}
           <TabsContent value="analysis">
-            <Card>
-              <CardHeader>
-                <CardTitle>Análisis y Conclusiones</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="detalles_accidente">Detalles del Accidente</Label>
-                  <Textarea {...register('detalles_accidente')} rows={4} placeholder="Detalles..." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="descripcion_detallada">Descripción Detallada</Label>
-                  <Textarea {...register('descripcion_detallada')} rows={4} placeholder="Descripción..." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="conclusiones">Conclusiones</Label>
-                  <Textarea {...register('conclusiones')} rows={3} placeholder="Conclusiones..." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lecciones_aprendidas">Lecciones Aprendidas</Label>
-                  <Textarea {...register('lecciones_aprendidas')} rows={3} placeholder="Lecciones..." />
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label htmlFor="acciones_inmediatas_resumen">Resumen Acciones Inmediatas</Label>
-                  <Textarea {...register('acciones_inmediatas_resumen')} rows={3} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="plan_accion_resumen">Resumen Plan de Acción</Label>
-                  <Textarea {...register('plan_accion_resumen')} rows={3} />
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Root Cause Analysis Summary */}
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Análisis de Causas Raíz</CardTitle>
+                      <CardDescription>
+                        Resumen de causas identificadas en los análisis realizados
+                      </CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendCausa({ problema: '', causa_raiz: '', accion_plan: '', metodologia: '' })}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {causas.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay causas raíz registradas. Seleccione un incidente con análisis previos o agregue manualmente.
+                      </p>
+                    ) : (
+                      causas.map((field, index) => {
+                        const metodologia = watch(`analisis_causas_raiz.${index}.metodologia`)
+                        const getBadgeColor = (met: string) => {
+                          if (met?.includes('5 Por') || met?.includes('5 Why')) return 'bg-blue-100 text-blue-800'
+                          if (met?.includes('Ishikawa') || met?.includes('Fishbone')) return 'bg-green-100 text-green-800'
+                          if (met?.includes('Árbol') || met?.includes('Causal Tree')) return 'bg-purple-100 text-purple-800'
+                          return 'bg-gray-100 text-gray-800'
+                        }
+                        return (
+                          <Card key={field.id} className="bg-gray-50">
+                            <CardContent className="p-4">
+                              <div className="flex gap-4">
+                                <div className="flex-1 space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <Badge className={getBadgeColor(metodologia || '')}>
+                                      {metodologia || 'Manual'}
+                                    </Badge>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Problema</Label>
+                                      <Input {...register(`analisis_causas_raiz.${index}.problema`)} placeholder="Problema identificado" />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-xs">Causa Raíz</Label>
+                                      <Input {...register(`analisis_causas_raiz.${index}.causa_raiz`)} placeholder="Causa raíz" />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">Acción Propuesta</Label>
+                                    <Input {...register(`analisis_causas_raiz.${index}.accion_plan`)} placeholder="Acción para mitigar" />
+                                  </div>
+                                  <Input type="hidden" {...register(`analisis_causas_raiz.${index}.metodologia`)} />
+                                </div>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => removeCausa(index)}>
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Analysis Text Fields */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Análisis y Conclusiones</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="detalles_accidente">Detalles del Accidente</Label>
+                    <Textarea {...register('detalles_accidente')} rows={4} placeholder="Detalles..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="descripcion_detallada">Descripción Detallada</Label>
+                    <Textarea {...register('descripcion_detallada')} rows={4} placeholder="Descripción..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="conclusiones">Conclusiones</Label>
+                    <Textarea {...register('conclusiones')} rows={3} placeholder="Conclusiones..." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lecciones_aprendidas">Lecciones Aprendidas</Label>
+                    <Textarea {...register('lecciones_aprendidas')} rows={3} placeholder="Lecciones..." />
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label htmlFor="acciones_inmediatas_resumen">Resumen Acciones Inmediatas</Label>
+                    <Textarea {...register('acciones_inmediatas_resumen')} rows={3} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="plan_accion_resumen">Resumen Plan de Acción</Label>
+                    <Textarea {...register('plan_accion_resumen')} rows={3} />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Tab 5: Costs & Evidence */}

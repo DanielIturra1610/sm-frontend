@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
       {/* Cuadrícula de Contenido Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Columna Izquierda - Acciones Rápidas e Incidentes Recientes */}
+        {/* Columna Izquierda - Acciones Rápidas y Sucesos Recientes */}
         <div className="lg:col-span-2 space-y-6">
           {/* Acciones Rápidas */}
           <Card>
@@ -127,7 +127,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Incidentes Recientes - Componente conectado al API */}
+          {/* Sucesos Recientes - Componente conectado al API */}
           <RecentIncidents />
         </div>
 

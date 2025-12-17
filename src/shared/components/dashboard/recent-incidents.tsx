@@ -99,7 +99,7 @@ export function RecentIncidents() {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">Incidentes Recientes</CardTitle>
+            <CardTitle className="text-xl">Sucesos Recientes</CardTitle>
             <Skeleton className="h-9 w-24" />
           </div>
         </CardHeader>
@@ -120,7 +120,7 @@ export function RecentIncidents() {
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl">Incidentes Recientes</CardTitle>
+          <CardTitle className="text-xl">Sucesos Recientes</CardTitle>
           <Button variant="outline" size="sm" onClick={() => router.push('/incidents')}>
             Ver Todos
           </Button>
@@ -129,14 +129,14 @@ export function RecentIncidents() {
       <CardContent>
         {incidents.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>No hay incidentes registrados</p>
+            <p>No hay sucesos registrados</p>
             <Button
               variant="outline"
               size="sm"
               className="mt-4"
               onClick={() => router.push('/incidents/create')}
             >
-              Crear primer incidente
+              Crear primer suceso
             </Button>
           </div>
         ) : (
