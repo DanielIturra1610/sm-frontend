@@ -1,20 +1,17 @@
 /**
- * Create Flash Report Page
- * Complete form with all fields, validation, and best practices
+ * Edit Flash Report Page
+ * Allows editing existing Flash Report with all fields
  */
 
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useCreateFlashReport } from '@/shared/hooks/report-hooks'
-import { useIncident } from '@/shared/hooks/incident-hooks'
+import { useFlashReport, useUpdateFlashReport } from '@/shared/hooks/report-hooks'
 import { flashReportSchema, type FlashReportFormData } from '@/lib/validations/report-schemas'
-import { getSucesoTypeLabel } from '@/shared/constants/suceso-options'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
-import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -23,9 +20,13 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { toast } from 'sonner'
 import { Loader2, Save } from 'lucide-react'
 
-export default function CreateFlashReportPage() {
+export default function EditFlashReportPage() {
   const router = useRouter()
-  const { trigger: createReport, isMutating } = useCreateFlashReport()
+  const params = useParams()
+  const id = params?.id as string
+  
+  const { data: report, isLoading: isLoadingReport } = useFlashReport(id)
+  const { trigger: updateReport, isMutating } = useUpdateFlashReport(id)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const {
@@ -33,85 +34,82 @@ export default function CreateFlashReportPage() {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
+    reset,
   } = useForm<FlashReportFormData>({
     resolver: zodResolver(flashReportSchema),
   })
 
-  const incident_id = watch('incident_id')
-
-  // Fetch incident details when incident is selected
-  const { data: selectedIncident } = useIncident(incident_id || '')
-
-  // Auto-fill form fields when incident is selected
+  // Load existing report data
   useEffect(() => {
-    if (selectedIncident) {
-      // Auto-fill basic fields
-      setValue('suceso', selectedIncident.title || '')
-      setValue('tipo', selectedIncident.tipoSuceso ? getSucesoTypeLabel(selectedIncident.tipoSuceso) : '')
-      setValue('lugar', selectedIncident.location || '')
-      setValue('descripcion', selectedIncident.description || '')
-      
-      // Auto-fill new fields from incident
-      setValue('area_zona', selectedIncident.area_zona || '')
-      setValue('empresa', selectedIncident.empresa || '')
-      setValue('supervisor', selectedIncident.supervisor || '')
-      
-      // Parse date and time from reportedAt
-      if (selectedIncident.reportedAt) {
-        const date = new Date(selectedIncident.reportedAt)
-        const dateStr = date.toISOString().split('T')[0]
-        const timeStr = date.toTimeString().slice(0, 5)
-        setValue('fecha', dateStr)
-        setValue('hora', timeStr)
-      }
-
-      toast.success('Campos rellenados automáticamente desde el suceso')
+    if (report) {
+      reset({
+        incident_id: report.incident_id,
+        suceso: report.suceso || '',
+        tipo: report.tipo || '',
+        lugar: report.lugar || '',
+        fecha: report.fecha || '',
+        hora: report.hora || '',
+        area_zona: report.area_zona || '',
+        empresa: report.empresa || '',
+        supervisor: report.supervisor || '',
+        descripcion: report.descripcion || '',
+        acciones_inmediatas: report.acciones_inmediatas || '',
+        controles_inmediatos: report.controles_inmediatos || '',
+        factores_riesgo: report.factores_riesgo || '',
+        numero_prodity: report.numero_prodity || '',
+        zonal: report.zonal || '',
+        con_baja_il: report.con_baja_il || false,
+        sin_baja_il: report.sin_baja_il || false,
+        incidente_industrial: report.incidente_industrial || false,
+        incidente_laboral: report.incidente_laboral || false,
+      })
     }
-  }, [selectedIncident, setValue])
+  }, [report, reset])
 
   const onSubmit = async (data: FlashReportFormData) => {
     try {
       setIsSubmitting(true)
-      await createReport(data)
-      toast.success('Flash Report creado exitosamente')
-      router.push('/reports/flash')
+      // @ts-expect-error - useSWRMutation type signature issue
+      await updateReport(data)
+      toast.success('Flash Report actualizado exitosamente')
+      router.push(`/reports/flash/${id}`)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al crear el reporte'
+      const errorMessage = error instanceof Error ? error.message : 'Error al actualizar el reporte'
       toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  if (isLoadingReport) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
+  if (!report) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-gray-500">Reporte no encontrado</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <ReportFormHeader
-        title="Crear Flash Report"
-        description="Reporte inicial del incidente (debe crearse dentro de 24 horas)"
-        backUrl="/reports/flash"
+        title="Editar Flash Report"
+        description="Actualiza la información del reporte inicial"
+        backUrl={`/reports/flash/${id}`}
       />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Incident Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Selección de Incidente</CardTitle>
-            <CardDescription>
-              Seleccione el incidente al cual pertenece este reporte
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <IncidentSelector
-              value={incident_id || ''}
-              onChange={(value) => setValue('incident_id', value)}
-              error={errors.incident_id?.message}
-              required
-            />
-          </CardContent>
-        </Card>
-
         {/* Basic Event Information */}
         <Card>
           <CardHeader>
@@ -326,7 +324,7 @@ export default function CreateFlashReportPage() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push('/reports/flash')}
+            onClick={() => router.push(`/reports/flash/${id}`)}
             disabled={isMutating || isSubmitting}
           >
             Cancelar
@@ -339,7 +337,7 @@ export default function CreateFlashReportPage() {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
             <Save className="mr-2 h-4 w-4" />
-            Crear Reporte
+            Guardar Cambios
           </Button>
         </div>
       </form>

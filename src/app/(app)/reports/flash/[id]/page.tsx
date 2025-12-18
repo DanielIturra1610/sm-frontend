@@ -320,32 +320,7 @@ export default function FlashReportDetailPage() {
         </Card>
       )}
 
-      {/* Classification */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Clasificación</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {report.con_baja_il && (
-              <Badge variant="default">Con Baja - Incapacidad Laboral</Badge>
-            )}
-            {report.sin_baja_il && (
-              <Badge variant="secondary">Sin Baja - Incapacidad Laboral</Badge>
-            )}
-            {report.incidente_industrial && (
-              <Badge variant="default">Incidente Industrial</Badge>
-            )}
-            {report.incidente_laboral && (
-              <Badge variant="default">Incidente Laboral</Badge>
-            )}
-            {!report.con_baja_il && !report.sin_baja_il && !report.incidente_industrial && !report.incidente_laboral && (
-              <p className="text-sm text-gray-500">Sin clasificación</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-{/* Photos from Incident */}      {incidentPhotos && incidentPhotos.length > 0 && (        <Card className="mt-6">          <CardHeader>            <CardTitle className="flex items-center gap-2">              <Camera className="h-5 w-5" />              Fotos del Incidente            </CardTitle>          </CardHeader>          <CardContent>            <PhotoGallery              photos={incidentPhotos}              loading={photosLoading}              showFinalReportToggle={false}            />          </CardContent>        </Card>      )}
+      {/* Photos from Incident */}      {incidentPhotos && incidentPhotos.length > 0 && (        <Card className="mt-6">          <CardHeader>            <CardTitle className="flex items-center gap-2">              <Camera className="h-5 w-5" />              Fotos del Incidente            </CardTitle>          </CardHeader>          <CardContent>            <PhotoGallery              photos={incidentPhotos}              loading={photosLoading}              showFinalReportToggle={false}            />          </CardContent>        </Card>      )}
     </div>
   )
 }
