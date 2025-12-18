@@ -9,6 +9,7 @@ import { useAuth } from '@/shared/contexts/auth-context'
 import { useDebouncedCompanyValidation } from '@/shared/hooks/company-hooks'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { RutInput } from '@/shared/components/ui/rut-input'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Label } from '@/shared/components/ui/label'
 import { 
@@ -124,13 +125,6 @@ export default function CreateTenantPage() {
     const value = e.target.value
     if (value && value.trim().length >= 2) {
       validateName(value)
-    }
-  }
-
-  const handleRUTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value && value.trim().length >= 8) {
-      validateRUT(value)
     }
   }
 
@@ -533,25 +527,32 @@ export default function CreateTenantPage() {
                   RUT / ID Tributario *
                 </Label>
                 <div className="relative">
-                  <Input
-                    id="rut"
-                    {...register('rut')}
-                    onChange={(e) => {
-                      register('rut').onChange(e)
-                      handleRUTChange(e)
-                    }}
-                    placeholder="12.345.678-9"
-                    aria-invalid={errors.rut ? 'true' : 'false'}
-                    className={rutExists === false ? 'pr-10 border-green-500' : rutExists === true ? 'pr-10 border-red-500' : ''}
+                  <Controller
+                    name="rut"
+                    control={control}
+                    render={({ field }) => (
+                      <RutInput
+                        id="rut"
+                        value={field.value}
+                        onChange={(value) => {
+                          field.onChange(value)
+                          if (value && value.trim().length >= 8) {
+                            validateRUT(value)
+                          }
+                        }}
+                        showValidation={false}
+                        className={rutExists === false ? 'pr-10 border-green-500' : rutExists === true ? 'pr-10 border-red-500' : ''}
+                      />
+                    )}
                   />
                   {isValidating && watchRUT && watchRUT.trim().length >= 8 && (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                    <Loader2 className="absolute right-3 top-8 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
                   )}
                   {!isValidating && rutExists === false && watchRUT && watchRUT.trim().length >= 8 && (
-                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                    <CheckCircle2 className="absolute right-3 top-8 -translate-y-1/2 h-4 w-4 text-green-500" />
                   )}
                   {!isValidating && rutExists === true && (
-                    <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-red-500" />
+                    <XCircle className="absolute right-3 top-8 -translate-y-1/2 h-4 w-4 text-red-500" />
                   )}
                 </div>
                 {errors.rut && (
@@ -566,7 +567,6 @@ export default function CreateTenantPage() {
                     RUT disponible
                   </p>
                 )}
-                <p className="text-xs text-gray-500">Ingresa el RUT con formato 12.345.678-9</p>
               </div>
             </div>
             
