@@ -33,7 +33,6 @@ export default function EditFlashReportPage() {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
     reset,
   } = useForm<FlashReportFormData>({
     resolver: zodResolver(flashReportSchema),
