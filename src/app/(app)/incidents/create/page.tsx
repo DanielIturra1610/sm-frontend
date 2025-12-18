@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { ArrowLeft, Save, Loader2, Camera, X } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { SUCESO_CATEGORIES, getSucesoTypesByCategory } from '@/shared/constants/suceso-options'
 import type { SucesoCategory, SucesoType } from '@/shared/types/api'
@@ -36,7 +36,7 @@ import type { SucesoCategory, SucesoType } from '@/shared/types/api'
 const incidentSchema = z.object({
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
   description: z.string().min(10, 'La descripción debe tener al menos 20 caracteres'),
-  severity: z.enum(['low', 'medium', 'high', 'critical'], {
+  severity: z.enum(['low', 'medium', 'high'], {
     required_error: 'Por favor selecciona un nivel de severidad',
   }),
   categoria: z.enum(['accidente', 'incidente', 'tolerancia_0'], {
@@ -45,6 +45,9 @@ const incidentSchema = z.object({
   tipoSuceso: z.string().min(1, 'Por favor selecciona un tipo de suceso'),
   location: z.string().min(5, 'La ubicación debe tener al menos 3 caracteres'),
   date_time: z.string().min(1, 'La fecha y hora son requeridas'),
+  area_zona: z.string().optional(),
+  empresa: z.string().optional(),
+  supervisor: z.string().optional(),
 })
 
 type IncidentFormValues = z.infer<typeof incidentSchema>
@@ -73,6 +76,9 @@ export default function CreateIncidentPage() {
         location: data.location,
         categoria: data.categoria,
         tipoSuceso: data.tipoSuceso as SucesoType,
+        area_zona: data.area_zona,
+        empresa: data.empresa,
+        supervisor: data.supervisor,
       }
 
       const newIncident = await createIncident(incidentData)
@@ -82,7 +88,7 @@ export default function CreateIncidentPage() {
         try {
           await uploadMultiple(newIncident.id, pendingFiles)
           toast.success('Suceso creado con ' + pendingFiles.length + ' foto(s)')
-        } catch (uploadError) {
+        } catch {
           toast.success('Suceso creado, pero hubo error al subir fotos')
         }
       } else {
@@ -193,7 +199,6 @@ export default function CreateIncidentPage() {
                             <SelectItem value="low">Baja</SelectItem>
                             <SelectItem value="medium">Media</SelectItem>
                             <SelectItem value="high">Alta</SelectItem>
-                            <SelectItem value="critical">Crítica</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -282,6 +287,66 @@ export default function CreateIncidentPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Additional Fields Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Area/Zona */}
+                  <FormField
+                    control={form.control}
+                    name="area_zona"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Área/Zona</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Área o zona específica"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Empresa */}
+                  <FormField
+                    control={form.control}
+                    name="empresa"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Empresa</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nombre de la empresa"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Supervisor */}
+                  <FormField
+                    control={form.control}
+                    name="supervisor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Supervisor</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nombre del supervisor"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 {/* Date and Time */}
                 <FormField

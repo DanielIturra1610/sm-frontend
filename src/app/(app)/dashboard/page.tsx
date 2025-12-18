@@ -1,5 +1,5 @@
 /**
- * Página de Dashboard Avanzado - Stegmaier Safety Management
+ * Página de Dashboard Avanzado - Origix
  * Dashboard completo con KPIs, gráficos y filtros
  */
 

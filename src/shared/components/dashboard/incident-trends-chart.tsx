@@ -1,15 +1,36 @@
 'use client'
 
+import { useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { Button } from '@/shared/components/ui/button'
 import { useIncidentTrends } from '@/shared/hooks/incident-hooks'
+import { CalendarDays } from 'lucide-react'
 
 export function IncidentTrendsChart() {
+  const currentYear = new Date().getFullYear()
+  const [selectedYears, setSelectedYears] = useState<number[]>([currentYear])
+  const [showComparison, setShowComparison] = useState(false)
+  
   const { data: trendsData, isLoading } = useIncidentTrends()
 
   // Use API data or empty array
   const data = trendsData?.trends ?? []
+  
+  // Toggle year comparison
+  const toggleYearComparison = () => {
+    if (showComparison) {
+      setSelectedYears([currentYear])
+      setShowComparison(false)
+    } else {
+      setSelectedYears([currentYear - 1, currentYear])
+      setShowComparison(true)
+    }
+  }
+  
+  // TODO: Backend endpoint needed for year comparison
+  // GET /api/v1/tenants/{tenant_id}/analytics/trends?years=2024,2025
 
   if (isLoading) {
     return (
@@ -29,9 +50,20 @@ export function IncidentTrendsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">
-          Tendencias de Incidentes
-        </CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg font-semibold">
+            Tendencias de Sucesos {showComparison && `(${selectedYears.join(' vs ')})`}
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleYearComparison}
+            className="ml-auto"
+          >
+            <CalendarDays className="h-4 w-4 mr-2" />
+            {showComparison ? 'Vista Simple' : 'Comparar Años'}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-80">

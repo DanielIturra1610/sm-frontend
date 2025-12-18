@@ -65,34 +65,34 @@ export function LoginForm() {
   const features = [
     {
       icon: <Shield className="h-6 w-6" />,
-      title: "Advanced Safety Protocols",
-      description: "Comprehensive incident management and compliance tracking with enterprise-grade security"
+      title: "Gestión de Hallazgos",
+      description: "Gestión integral de hallazgos y análisis de causa raíz con seguimiento en tiempo real"
     },
     {
       icon: <Users className="h-6 w-6" />,
-      title: "Team Collaboration",
-      description: "Seamless multi-tenant workspace management for teams of any size"
+      title: "Reportes y Entregables",
+      description: "Genera documentos de cumplimiento y entregables de forma automática"
     },
     {
       icon: <BarChart3 className="h-6 w-6" />,
-      title: "Analytics & Insights",
-      description: "Data-driven safety performance monitoring with real-time reporting"
+      title: "Indicadores Clave",
+      description: "Mejora la efectividad de tu organización con indicadores predictivos"
     }
   ]
 
   return (
     <AuthLayout
-      title="Industrial Safety Management Platform"
-      subtitle="Streamline your safety processes with our comprehensive management solution designed for modern industrial environments."
+      title="Origix"
+      subtitle="La plataforma más avanzada para la gestión de hallazgos, análisis de causa raíz, reportes y entregables e indicadores clave de desempeño para mejorar la efectividad en tu organización"
       features={features}
     >
       <Card className="card-stegmaier border-0 shadow-xl">
         <CardHeader className="text-center space-y-3 pb-8">
           <CardTitle className="text-3xl font-bold text-foreground">
-            Welcome back
+            Bienvenido de nuevo a Origix
           </CardTitle>
           <p className="text-muted-foreground text-lg">
-            Sign in to your safety management workspace
+            Accede a tu panel de gestión
           </p>
         </CardHeader>
 

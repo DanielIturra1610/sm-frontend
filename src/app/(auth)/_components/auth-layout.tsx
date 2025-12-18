@@ -95,7 +95,7 @@ export function AuthLayout({
 
           {/* Footer */}
           <div className="text-center text-white/60 text-sm">
-            <p>© 2024 Stegmaier Management. All rights reserved.</p>
+            <p>© 2024 Origix. Todos los derechos reservados.</p>
           </div>
         </div>
       </div>
