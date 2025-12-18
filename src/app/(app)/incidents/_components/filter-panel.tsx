@@ -1,8 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Calendar, CalendarDays, Filter, X, Search, Users, Tag } from "lucide-react"
-import { format } from "date-fns"
+import { CalendarDays, Filter, X, Search, Users, Tag } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/shared/components/ui/button"
@@ -72,7 +71,8 @@ export function FilterPanel({
       filters.assignedTo ||
       filters.dateFrom ||
       filters.dateTo ||
-      filters.search
+      filters.search ||
+      filters.correlativo
     )
   }, [filters])
 
@@ -85,6 +85,7 @@ export function FilterPanel({
     if (filters.dateFrom) count++
     if (filters.dateTo) count++
     if (filters.search) count++
+    if (filters.correlativo) count++
     return count
   }, [filters])
 
@@ -141,16 +142,37 @@ export function FilterPanel({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Search */}
+        {/* Search by Correlativo */}
+        <div className="space-y-2">
+          <Label htmlFor="correlativo" className="text-sm font-medium text-gray-700">
+            Buscar por Correlativo
+          </Label>
+          <div className="relative">
+            <Tag className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Input
+              id="correlativo"
+              placeholder="Ej: 00001, 00042..."
+              value={filters.correlativo || ""}
+              onChange={(e) => updateFilter("correlativo", e.target.value)}
+              className="pl-10"
+              maxLength={5}
+            />
+          </div>
+          <p className="text-xs text-gray-500">Busca sucesos por su número correlativo único</p>
+        </div>
+
+        <Separator />
+
+        {/* General Search */}
         <div className="space-y-2">
           <Label htmlFor="search" className="text-sm font-medium text-gray-700">
-            Search
+            Búsqueda General
           </Label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input
               id="search"
-              placeholder="Search incidents..."
+              placeholder="Buscar en título, descripción..."
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
               className="pl-10"
@@ -378,9 +400,20 @@ export function FilterPanel({
                     </button>
                   </span>
                 )}
+                {filters.correlativo && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-50 border border-purple-200 rounded-md text-purple-700">
+                    Correlativo: {filters.correlativo}
+                    <button
+                      onClick={() => updateFilter("correlativo", undefined)}
+                      className="hover:bg-purple-100 rounded"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
                 {filters.search && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded-md text-gray-700">
-                    Search: "{filters.search}"
+                    Search: &quot;{filters.search}&quot;
                     <button
                       onClick={() => {
                         updateFilter("search", undefined)

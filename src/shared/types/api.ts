@@ -219,6 +219,10 @@ export interface Incident extends BaseEntity {
   // Nuevos campos para taxonomía de Sucesos
   categoria?: SucesoCategory
   tipoSuceso?: SucesoType
+  // Nuevos campos Sprint 1: GAP #6
+  area_zona?: string
+  empresa?: string
+  supervisor?: string
 }
 
 export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical'
@@ -283,6 +287,7 @@ export interface IncidentListParams extends PaginationParams {
   dateFrom?: string
   dateTo?: string
   search?: string
+  correlativo?: string
 }
 
 // ============================================================================
