@@ -45,7 +45,7 @@ export default function FiveWhysDetailPage() {
 
   // Form state for adding
   const [showAddForm, setShowAddForm] = useState(false)
-  const [question, setQuestion] = useState('')
+  const [question, setQuestion] = useState('¿Por qué ocurrió esto?')
   const [answer, setAnswer] = useState('')
   const [evidence, setEvidence] = useState('')
   const [notes, setNotes] = useState('')
@@ -64,7 +64,7 @@ export default function FiveWhysDetailPage() {
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null)
 
   const resetForm = () => {
-    setQuestion('')
+    setQuestion('¿Por qué ocurrió esto?')
     setAnswer('')
     setEvidence('')
     setNotes('')
