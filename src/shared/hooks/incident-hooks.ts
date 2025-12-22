@@ -3,7 +3,7 @@
  * Custom hooks for incident management API integration with SWR
  */
 
-import useSWR, { type SWRConfiguration, type KeyedMutator } from 'swr'
+import useSWR, { type SWRConfiguration, type KeyedMutator, useSWRConfig } from 'swr'
 import useSWRMutation from 'swr/mutation'
 import { api } from '@/lib/api/modular-client'
 import type {
@@ -174,8 +174,37 @@ export function useIncidentTrends(config?: SWRConfiguration) {
  * Export incidents
  */
 export function useExportIncidents() {
-  return useSWRMutation('/incidents/export', 
-    async (key, { arg }: { arg: IncidentExportRequest }) => 
+  return useSWRMutation('/incidents/export',
+    async (key, { arg }: { arg: IncidentExportRequest }) =>
       api.incident.export(arg)
+  )
+}
+
+/**
+ * Delete incident with cache invalidation
+ * Uses SWRMutation for optimistic updates and proper error handling
+ */
+export function useDeleteIncident() {
+  const { mutate } = useSWRConfig()
+
+  return useSWRMutation<void, Error, string, string>(
+    '/incidents/delete',
+    async (key, { arg: id }) => {
+      await api.incident.delete(id)
+      // Invalidate all incident-related cache entries (with any filter params)
+      await mutate(
+        (cacheKey) => {
+          if (typeof cacheKey === 'string') {
+            return cacheKey.startsWith('/incidents')
+          }
+          if (Array.isArray(cacheKey) && cacheKey.length > 0) {
+            return cacheKey[0] === '/incidents'
+          }
+          return false
+        },
+        undefined,
+        { revalidate: true }
+      )
+    }
   )
 }
