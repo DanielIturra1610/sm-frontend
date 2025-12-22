@@ -77,19 +77,19 @@ const METHODOLOGIES = [
 
 // Schemas for each methodology
 const causalTreeSchema = z.object({
-  incidentId: z.string().min(1, 'Selecciona un incidente'),
+  incidentId: z.string().min(1, 'Selecciona un suceso'),
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
   finalEvent: z.string().min(10, 'El evento final debe tener al menos 10 caracteres'),
   description: z.string().optional(),
 })
 
 const fishboneSchema = z.object({
-  incidentId: z.string().min(1, 'Selecciona un incidente'),
+  incidentId: z.string().min(1, 'Selecciona un suceso'),
   problem: z.string().min(10, 'La declaración del problema debe tener al menos 10 caracteres'),
 })
 
 const fiveWhysSchema = z.object({
-  incidentId: z.string().min(1, 'Selecciona un incidente'),
+  incidentId: z.string().min(1, 'Selecciona un suceso'),
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres').max(200, 'El título no puede exceder 200 caracteres'),
   problemStatement: z.string().min(10, 'La descripción del problema debe tener al menos 10 caracteres').max(1000, 'La descripción no puede exceder 1000 caracteres'),
 })
@@ -103,8 +103,8 @@ function CreateAnalysisContent() {
   const [selectedMethodology, setSelectedMethodology] = useState<MethodologyType>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Fetch incidents
-  const { data: incidentsData } = useIncidents({ status: 'open', limit: 100 })
+  // Fetch incidents (all statuses for analysis)
+  const { data: incidentsData } = useIncidents({ limit: 100 })
 
   // Mutations for each methodology
   const createCausalTree = useCreateCausalTreeAnalysis()
@@ -326,7 +326,7 @@ function CreateAnalysisContent() {
                     name="incidentId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Incidente Asociado *</FormLabel>
+                        <FormLabel>Suceso Asociado *</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={(value) => {
@@ -336,7 +336,7 @@ function CreateAnalysisContent() {
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecciona un incidente..." />
+                              <SelectValue placeholder="Selecciona un suceso..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -441,7 +441,7 @@ function CreateAnalysisContent() {
                     name="incidentId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Incidente Asociado *</FormLabel>
+                        <FormLabel>Suceso Asociado *</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={(value) => {
@@ -451,7 +451,7 @@ function CreateAnalysisContent() {
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecciona un incidente..." />
+                              <SelectValue placeholder="Selecciona un suceso..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -536,7 +536,7 @@ function CreateAnalysisContent() {
                     name="incidentId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Incidente Asociado *</FormLabel>
+                        <FormLabel>Suceso Asociado *</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={(value) => {
@@ -546,7 +546,7 @@ function CreateAnalysisContent() {
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecciona un incidente..." />
+                              <SelectValue placeholder="Selecciona un suceso..." />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
