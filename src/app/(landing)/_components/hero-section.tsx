@@ -42,7 +42,7 @@ export function HeroSection() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               <div className="flex items-center space-x-3">
                 <CheckCircle className="h-5 w-5 text-white/90" />
-                <span className="text-white/90">OSHA Compliant</span>
+                <span className="text-white/90">ISO Compliant</span>
               </div>
               <div className="flex items-center space-x-3">
                 <CheckCircle className="h-5 w-5 text-white/90" />

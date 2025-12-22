@@ -68,13 +68,13 @@ export default function LandingPage() {
     {
       icon: Users,
       title: 'Gestión de Equipos',
-      description: 'Control de acceso, roles de usuarios y aprobaciones jerárquicas',
+      description: 'Coordina y direcciona de manera más precisa las decisiones estratégicas de la organización para la operatividad diaria',
       gradient: 'from-amber-500 to-orange-500'
     },
     {
       icon: CheckCircle,
       title: 'Cumplimiento',
-      description: 'Seguimiento de estándares ISO 45001, OHSAS 18001 y regulaciones locales',
+      description: 'Seguimiento de estándares ISO 45001 y regulaciones locales',
       gradient: 'from-teal-500 to-cyan-600'
     }
   ]
@@ -298,7 +298,7 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div className="inline-flex items-center px-4 py-2 bg-stegmaier-blue/10 text-stegmaier-blue rounded-full text-sm font-medium">
                   <Shield className="h-4 w-4 mr-2" />
-                  Seguridad Industrial Inteligente
+                  Gestión de indicadores predictivos
                 </div>
                 <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-slate-900 leading-tight">
                   Transforma tu
@@ -308,8 +308,8 @@ export default function LandingPage() {
                 </h1>
                 <p className="text-xl text-slate-600 max-w-2xl leading-relaxed">
                   La plataforma más avanzada para la gestión de incidentes, análisis de causas raíz, 
-                  documentos de seguridad y flujos de trabajo. Cumple con estándares OSHA y 
-                  mejora la seguridad industrial en tu organización.
+                  documentos de seguridad y flujos de trabajo. Cumple con estándares ISO y
+                  mejora la efectividad en tu organización.
                 </p>
               </div>
               
@@ -376,23 +376,23 @@ export default function LandingPage() {
                       <div className="h-full bg-gradient-to-r from-stegmaier-blue to-emerald-500 w-3/4"></div>
                     </div>
                     <div className="text-sm text-slate-600 flex justify-between">
-                      <span>Progreso de Seguridad</span>
+                      <span>Progreso</span>
                       <span>78%</span>
                     </div>
                   </div>
                   
                   <div className="pt-4 border-t border-slate-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Acciones Pendientes</span>
+                      <span className="text-sm text-slate-600">Tareas Pendientes</span>
                       <span className="text-sm font-medium text-slate-900">24</span>
                     </div>
                     <div className="mt-2 space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Inspección Quincenal</span>
+                        <span className="text-slate-600">Personalizados de gestión</span>
                         <span className="text-red-500 font-medium">Vence hoy</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Capacitación de Riesgos</span>
+                        <span className="text-slate-600">Formación y entrenamiento</span>
                         <span className="text-amber-500 font-medium">Mañana</span>
                       </div>
                     </div>

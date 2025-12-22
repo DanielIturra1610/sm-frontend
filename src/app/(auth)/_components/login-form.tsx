@@ -82,17 +82,18 @@ export function LoginForm() {
 
   return (
     <AuthLayout
-      title="Origix"
-      subtitle="La plataforma más avanzada para la gestión de hallazgos, análisis de causa raíz, reportes y entregables e indicadores clave de desempeño para mejorar la efectividad en tu organización"
+      title="ORIGYX"
+      subtitle="Gestión de indicadores predictivos"
+      description="La plataforma más avanzada para la gestión de hallazgos, análisis de causa raíz, reportes y entregables e indicadores clave de desempeño para mejorar la efectividad en tu organización."
       features={features}
     >
       <Card className="card-stegmaier border-0 shadow-xl">
         <CardHeader className="text-center space-y-3 pb-8">
           <CardTitle className="text-3xl font-bold text-foreground">
-            Bienvenido de nuevo a Origix
+            Bienvenido de nuevo a Stegmaier Management
           </CardTitle>
           <p className="text-muted-foreground text-lg">
-            Accede a tu panel de gestión
+            Continúa gestionando tus operaciones con confianza y precisión.
           </p>
         </CardHeader>
 

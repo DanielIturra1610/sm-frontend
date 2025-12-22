@@ -33,6 +33,7 @@ interface AuthLayoutProps {
   children: ReactNode
   title: string
   subtitle: string
+  description?: string
   features: Array<{
     icon: ReactNode
     title: string
@@ -46,6 +47,7 @@ export function AuthLayout({
   children,
   title,
   subtitle,
+  description,
   features,
   className,
   showMobileLogo = true,
@@ -77,6 +79,11 @@ export function AuthLayout({
               <p className="text-xl text-white/90 leading-relaxed max-w-md">
                 {subtitle}
               </p>
+              {description && (
+                <p className="text-base text-white/75 leading-relaxed max-w-md">
+                  {description}
+                </p>
+              )}
             </div>
           </div>
 
@@ -95,7 +102,7 @@ export function AuthLayout({
 
           {/* Footer */}
           <div className="text-center text-white/60 text-sm">
-            <p>© 2024 Origix. Todos los derechos reservados.</p>
+            <p>© 2024 ORIGYX. Todos los derechos reservados.</p>
           </div>
         </div>
       </div>

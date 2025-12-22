@@ -57,11 +57,11 @@ export default function LoginPage() {
           </div>
 
           <h1 className="text-4xl font-bold mb-6">
-            Bienvenido de nuevo a Stegmaier Management
+            Bienvenido de nuevo a ORIGYX
           </h1>
 
           <p className="text-xl mb-12 text-white/90">
-            Continúa gestionando tus operaciones de seguridad industrial con confianza y precisión.
+            Continúa gestionando tus operaciones con confianza y precisión.
           </p>
 
           <div className="space-y-6">
@@ -71,7 +71,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Monitoreo en Tiempo Real</h3>
-                <p className="text-white/80">Rastrea métricas de seguridad e incidentes según suceden</p>
+                <p className="text-white/80">Rastrea métricas y desviaciones</p>
               </div>
             </div>
 
@@ -81,7 +81,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Reportes de Cumplimiento</h3>
-                <p className="text-white/80">Genera documentos de cumplimiento OSHA y regulatorios</p>
+                <p className="text-white/80">Genera documentos de cumplimiento y entregables para seguimiento</p>
               </div>
             </div>
 
@@ -91,7 +91,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Gestión de Equipos</h3>
-                <p className="text-white/80">Coordina esfuerzos de seguridad en tu organización</p>
+                <p className="text-white/80">Coordina y direcciona de manera más precisa las decisiones estratégicas de la organización para la operatividad diaria</p>
               </div>
             </div>
           </div>

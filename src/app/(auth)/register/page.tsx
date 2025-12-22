@@ -123,7 +123,7 @@ export default function RegisterPage() {
                 <Shield className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Cumplimiento OSHA</h3>
+                <h3 className="font-semibold mb-1">Cumplimiento ISO</h3>
                 <p className="text-white/80">Seguimiento y reporte automático de cumplimiento</p>
               </div>
             </div>
