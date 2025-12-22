@@ -151,6 +151,36 @@ export function useUpdateFishbone(id: string) {
 }
 
 /**
+ * Delete Fishbone analysis
+ */
+export function useDeleteFishboneAnalysis() {
+  const { mutate: mutateList } = useSWR<FishboneAnalysis[]>(['/analysis/fishbone', undefined])
+
+  return useSWRMutation('/analysis/fishbone/delete',
+    async (key, { arg }: { arg: string }) => {
+      await api.analysis.deleteFishbone(arg)
+      // Revalidate the list
+      await mutateList()
+    }
+  )
+}
+
+/**
+ * Delete Five Whys analysis
+ */
+export function useDeleteFiveWhysAnalysis() {
+  const { mutate: mutateList } = useSWR<FiveWhysAnalysis[]>(['/analysis/five-whys', undefined])
+
+  return useSWRMutation('/analysis/five-whys/delete',
+    async (key, { arg }: { arg: string }) => {
+      await api.analysis.deleteFiveWhys(arg)
+      // Revalidate the list
+      await mutateList()
+    }
+  )
+}
+
+/**
  * Add causes to Fishbone analysis
  */
 export function useAddFishboneCauses(analysisId: string) {

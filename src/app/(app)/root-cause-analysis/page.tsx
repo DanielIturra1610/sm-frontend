@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  Pencil,
+  FileText,
 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -37,8 +39,9 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCausalTreeAnalyses, useDeleteCausalTreeAnalysis } from '@/shared/hooks/causal-tree-hooks'
-import { useFishboneAnalyses, useFiveWhysAnalyses } from '@/shared/hooks/analysis-hooks'
+import { useFishboneAnalyses, useFiveWhysAnalyses, useDeleteFishboneAnalysis, useDeleteFiveWhysAnalysis } from '@/shared/hooks/analysis-hooks'
 import { toast } from 'sonner'
 
 type MethodologyType = 'all' | 'causal-tree' | 'fishbone' | 'five-whys'
@@ -87,17 +90,29 @@ interface UnifiedAnalysis {
 
 export default function RootCauseAnalysisPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [methodologyFilter, setMethodologyFilter] = useState<MethodologyType>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   // Fetch all analyses
-  const { data: causalTreeData, isLoading: loadingCausalTree } = useCausalTreeAnalyses()
-  const { data: fishboneData, isLoading: loadingFishbone } = useFishboneAnalyses()
-  const { data: fiveWhysData, isLoading: loadingFiveWhys } = useFiveWhysAnalyses()
+  const { data: causalTreeData, isLoading: loadingCausalTree, refetch: refetchCausalTree } = useCausalTreeAnalyses()
+  const { data: fishboneData, isLoading: loadingFishbone, mutate: mutateFishbone } = useFishboneAnalyses()
+  const { data: fiveWhysData, isLoading: loadingFiveWhys, mutate: mutateFiveWhys } = useFiveWhysAnalyses()
 
   // Delete mutations
   const deleteCausalTree = useDeleteCausalTreeAnalysis()
+  const deleteFishbone = useDeleteFishboneAnalysis()
+  const deleteFiveWhys = useDeleteFiveWhysAnalysis()
+
+  // Refresh all data sources
+  const refreshAllData = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['causal-tree-analyses'] }),
+      mutateFishbone(),
+      mutateFiveWhys(),
+    ])
+  }
 
   const handleDelete = async (analysis: UnifiedAnalysis) => {
     const confirmed = window.confirm(`¿Estás seguro de eliminar el análisis "${analysis.title}"?`)
@@ -106,15 +121,33 @@ export default function RootCauseAnalysisPage() {
     try {
       if (analysis.methodology === 'causal-tree') {
         await deleteCausalTree.mutateAsync(analysis.id)
-        toast.success('Análisis eliminado correctamente')
-      } else {
-        // TODO: Implement delete for fishbone and five-whys
-        toast.error('Eliminación no implementada para este tipo de análisis')
+      } else if (analysis.methodology === 'fishbone') {
+        await deleteFishbone.trigger(analysis.id)
+      } else if (analysis.methodology === 'five-whys') {
+        await deleteFiveWhys.trigger(analysis.id)
       }
+      // Refresh all data after deletion
+      await refreshAllData()
+      toast.success('Análisis eliminado correctamente')
     } catch (error) {
       console.error('Error deleting analysis:', error)
       toast.error('Error al eliminar el análisis')
     }
+  }
+
+  const getEditUrl = (analysis: UnifiedAnalysis) => {
+    switch (analysis.methodology) {
+      case 'causal-tree':
+        return `/root-cause-analysis/causal-tree/${analysis.id}/edit`
+      case 'fishbone':
+        return `/root-cause-analysis/fishbone/${analysis.id}/edit`
+      case 'five-whys':
+        return `/root-cause-analysis/five-whys/${analysis.id}/edit`
+    }
+  }
+
+  const isDraft = (status: string) => {
+    return status === 'draft' || status === 'in_progress'
   }
 
   const isLoading = loadingCausalTree || loadingFishbone || loadingFiveWhys
@@ -385,17 +418,51 @@ export default function RootCauseAnalysisPage() {
                           <Eye className="h-4 w-4 mr-2" />
                           Ver Análisis
                         </DropdownMenuItem>
+                        {isDraft(analysis.status) && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(getEditUrl(analysis))
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-destructive"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleDelete(analysis)
+                            toast.info('Descarga de PDF no disponible aún')
                           }}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Eliminar
+                          <FileText className="h-4 w-4 mr-2" />
+                          Descargar PDF
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toast.info('Descarga de Word no disponible aún')
+                          }}
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Descargar Word
+                        </DropdownMenuItem>
+                        {isDraft(analysis.status) && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDelete(analysis)
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
