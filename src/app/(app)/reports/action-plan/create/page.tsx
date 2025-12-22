@@ -16,6 +16,7 @@ import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { SuggestionInput } from '@/shared/components/ui/suggestion-input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Separator } from '@/shared/components/ui/separator'
@@ -29,7 +30,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { toast } from 'sonner'
-import { Loader2, Save, Plus, Trash2, Calendar, TrendingUp, CheckCircle2, FileText, AlertCircle, GitBranch, HelpCircle, Fish, ClipboardList, ChevronDown, ChevronUp, Check, X } from 'lucide-react'
+import { Loader2, Save, Plus, Trash2, Calendar, TrendingUp, CheckCircle2, FileText, AlertCircle, GitBranch, HelpCircle, Fish, ClipboardList, ChevronDown, ChevronUp, Check, X, Copy } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 import {
   Table,
@@ -288,6 +289,56 @@ export default function CreateActionPlanReportPage() {
     if (!items || items.length === 0) return 0
     const totalProgress = items.reduce((sum, item) => sum + (item.avance_real || 0), 0)
     return Math.round(totalProgress / items.length)
+  }
+
+  // Fill all dates with today
+  const fillAllDatesWithToday = () => {
+    if (!items || items.length === 0) return
+    const today = new Date().toISOString().split('T')[0]
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.inicio`, today)
+      setValue(`items.${idx}.fin`, today)
+    })
+    toast.success('Todas las fechas establecidas con la fecha de hoy')
+  }
+
+  // Copy responsable to all items
+  const copyResponsableToAll = (sourceIndex: number) => {
+    if (!items || items.length === 0) return
+    const responsable = items[sourceIndex]?.responsable
+    if (!responsable) {
+      toast.error('El responsable está vacío')
+      return
+    }
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.responsable`, responsable)
+    })
+    toast.success(`Responsable "${responsable}" copiado a todas las tareas`)
+  }
+
+  // Copy cliente to all items
+  const copyClienteToAll = (sourceIndex: number) => {
+    if (!items || items.length === 0) return
+    const cliente = items[sourceIndex]?.cliente
+    if (!cliente) {
+      toast.error('El cliente está vacío')
+      return
+    }
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.cliente`, cliente)
+    })
+    toast.success(`Cliente "${cliente}" copiado a todas las tareas`)
+  }
+
+  // Fill all items with 100% progress
+  const fillAllWith100Percent = () => {
+    if (!items || items.length === 0) return
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.avance_real`, 100)
+      setValue(`items.${idx}.avance_programado`, 100)
+      setValue(`items.${idx}.estado`, 'completed')
+    })
+    toast.success('Todos los avances establecidos en 100% y estado completado')
   }
 
   const onSubmit = async (data: ActionPlanReportFormData) => {
@@ -741,6 +792,37 @@ export default function CreateActionPlanReportPage() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Productivity Toolbar */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fillAllDatesWithToday}
+                  disabled={!items || items.length === 0}
+                  className="text-xs"
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Llenar Fechas Hoy
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fillAllWith100Percent}
+                  disabled={!items || items.length === 0}
+                  className="text-xs"
+                >
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Llenar 100% en Todos
+                </Button>
+                <div className="text-xs text-gray-500 flex items-center ml-2">
+                  💡 Tip: Use los íconos en cada fila para copiar responsable/cliente a todas las tareas
+                </div>
+              </div>
+            </div>
+
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -792,16 +874,46 @@ export default function CreateActionPlanReportPage() {
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            {...register(`items.${index}.responsable`)}
-                            placeholder="Responsable"
-                          />
+                          <div className="flex items-center gap-1">
+                            <SuggestionInput
+                              suggestionType="responsables"
+                              {...register(`items.${index}.responsable`)}
+                              placeholder="Responsable"
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyResponsableToAll(index)}
+                              disabled={!items?.[index]?.responsable}
+                              title="Copiar a todas las filas"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Input
-                            {...register(`items.${index}.cliente`)}
-                            placeholder="Cliente"
-                          />
+                          <div className="flex items-center gap-1">
+                            <SuggestionInput
+                              suggestionType="clientes"
+                              {...register(`items.${index}.cliente`)}
+                              placeholder="Cliente"
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyClienteToAll(index)}
+                              disabled={!items?.[index]?.cliente}
+                              title="Copiar a todas las filas"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">

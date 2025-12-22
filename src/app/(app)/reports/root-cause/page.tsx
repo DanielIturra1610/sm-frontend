@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useRootCauseReports } from '@/shared/hooks/report-hooks'
+import { useRootCauseReports, useDeleteRootCauseReport } from '@/shared/hooks/report-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Plus, Search, Eye, AlertCircle, GitBranch, Download } from 'lucide-react'
+import { Plus, Search, Eye, AlertCircle, GitBranch, Download, Edit, Trash2, MoreHorizontal } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { ReportStatus } from '@/shared/types/api'
@@ -37,9 +37,20 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog'
 
 const METODOLOGIA_LABELS: Record<string, string> = {
   five_whys: '5 Por Qués',
@@ -52,8 +63,10 @@ const METODOLOGIA_LABELS: Record<string, string> = {
 export default function RootCauseReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useRootCauseReports()
+  const { trigger: deleteReport, isMutating: isDeleting } = useDeleteRootCauseReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null)
 
   const handleExport = async (reportId: string, format: 'pdf' | 'docx') => {
     try {
@@ -61,6 +74,21 @@ export default function RootCauseReportsPage() {
       toast.success(`Reporte descargado exitosamente`)
     } catch {
       toast.error('Error al descargar el reporte')
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!reportToDelete) return
+    try {
+      await deleteReport(reportToDelete)
+      toast.success('Reporte eliminado exitosamente')
+    } catch (error) {
+      console.error('Error al eliminar reporte:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+      toast.error(`Error al eliminar el reporte: ${errorMessage}`)
+    } finally {
+      setReportToDelete(null)
     }
   }
 
@@ -216,27 +244,54 @@ export default function RootCauseReportsPage() {
                         {format(new Date(report.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => router.push(`/reports/root-cause/${report.id}`)}
+                            title="Ver reporte"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
-                                <Download className="h-4 w-4" />
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/reports/root-cause/${report.id}`)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver Detalle
+                              </DropdownMenuItem>
+                              {report.report_status === 'draft' && (
+                                <DropdownMenuItem onClick={() => router.push(`/reports/root-cause/${report.id}/edit`)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleExport(report.id, 'pdf')}>
+                                <Download className="h-4 w-4 mr-2" />
                                 Descargar PDF
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleExport(report.id, 'docx')}>
+                                <Download className="h-4 w-4 mr-2" />
                                 Descargar Word
                               </DropdownMenuItem>
+                              {report.report_status === 'draft' && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => setReportToDelete(report.id)}
+                                    className="text-red-600 focus:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -249,6 +304,27 @@ export default function RootCauseReportsPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!reportToDelete} onOpenChange={() => setReportToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar reporte</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta accion no se puede deshacer. El reporte sera eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

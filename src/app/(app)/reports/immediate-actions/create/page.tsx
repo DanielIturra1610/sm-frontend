@@ -17,21 +17,14 @@ import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { SuggestionInput } from '@/shared/components/ui/suggestion-input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Separator } from '@/shared/components/ui/separator'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
 import { Badge } from '@/shared/components/ui/badge'
 import { toast } from 'sonner'
-import { Loader2, Save, Plus, Trash2, CheckCircle2, FileText, AlertCircle, Copy } from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/components/ui/table'
+import { Loader2, Save, Plus, Trash2, CheckCircle2, FileText, AlertCircle, Copy, Calendar } from 'lucide-react'
 
 // Predefined actions
 // tipo_acc_inc values: 'ACC' (Accidente), 'INC' (Incidente), 'FLASH' (Importado de Flash Report)
@@ -168,38 +161,25 @@ export default function CreateImmediateActionsReportPage() {
         }))
       } else {
         // Fall back to predefined actions if no actions in Flash Report
-        updatedItems = PREDEFINED_ACTIONS.map((action) => {
-          const baseItem = {
-            ...action,
-            inicio: fechaInicio,
-            fin: '',
-            responsable: '',
-            cliente: '',
-            avance_real: 0,
-            avance_programado: 0,
-            comentario: '',
-          }
-
-          // Pre-fill supervisor for communication actions
-          if (flashReport.supervisor) {
-            if ([
-              'Comunicar lo acontecido a Jefatura Directa',
-              'Informar Incidente y su clasificación a la Dirección',
-              'Informar Incidente Ocurrido a Jefatura CGE'
-            ].includes(action.tarea)) {
-              baseItem.responsable = flashReport.supervisor
-            }
-          }
-
-          return baseItem
-        })
+        // Pre-fill supervisor as responsable for ALL actions
+        updatedItems = PREDEFINED_ACTIONS.map((action) => ({
+          ...action,
+          inicio: fechaInicio,
+          fin: '',
+          responsable: flashReport.supervisor || '',
+          cliente: '',
+          avance_real: 0,
+          avance_programado: 0,
+          comentario: '',
+        }))
       }
 
       // Reset form with pre-filled data
+      // fecha_termino = fecha_inicio since immediate actions are completed the same day
       reset({
         incident_id,
         fecha_inicio: fechaInicio,
-        fecha_termino: '',
+        fecha_termino: fechaInicio,
         items: updatedItems,
       })
 
@@ -245,6 +225,55 @@ export default function CreateImmediateActionsReportPage() {
       })
       toast.success('Acción duplicada exitosamente')
     }
+  }
+
+  // Copy responsable to all items
+  const copyResponsableToAll = (sourceIndex: number) => {
+    if (!items || items.length === 0) return
+    const responsable = items[sourceIndex]?.responsable
+    if (!responsable) {
+      toast.error('El responsable está vacío')
+      return
+    }
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.responsable`, responsable)
+    })
+    toast.success(`Responsable "${responsable}" copiado a todas las acciones`)
+  }
+
+  // Copy cliente to all items
+  const copyClienteToAll = (sourceIndex: number) => {
+    if (!items || items.length === 0) return
+    const cliente = items[sourceIndex]?.cliente
+    if (!cliente) {
+      toast.error('El cliente está vacío')
+      return
+    }
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.cliente`, cliente)
+    })
+    toast.success(`Cliente "${cliente}" copiado a todas las acciones`)
+  }
+
+  // Fill all items with 100% progress
+  const fillAllWith100Percent = () => {
+    if (!items || items.length === 0) return
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.avance_real`, 100)
+      setValue(`items.${idx}.avance_programado`, 100)
+    })
+    toast.success('Todos los avances establecidos en 100%')
+  }
+
+  // Fill all dates with today
+  const fillAllDatesWithToday = () => {
+    if (!items || items.length === 0) return
+    const today = new Date().toISOString().split('T')[0]
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.inicio`, today)
+      setValue(`items.${idx}.fin`, today)
+    })
+    toast.success('Todas las fechas establecidas con la fecha de hoy')
   }
 
   const onSubmit = async (data: ImmediateActionsReportFormData) => {
@@ -431,137 +460,220 @@ export default function CreateImmediateActionsReportPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead className="min-w-[200px]">Tarea</TableHead>
-                    <TableHead>Inicio</TableHead>
-                    <TableHead>Fin</TableHead>
-                    <TableHead>Responsable</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="w-32">Avance Real</TableHead>
-                    <TableHead className="w-32">Avance Prog.</TableHead>
-                    <TableHead>Comentario</TableHead>
-                    <TableHead className="w-24">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fields.map((field, index) => (
-                    <TableRow key={field.id}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>
+            {/* Productivity Toolbar */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fillAllDatesWithToday}
+                  disabled={!items || items.length === 0}
+                  className="text-xs"
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Llenar Fechas Hoy
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fillAllWith100Percent}
+                  disabled={!items || items.length === 0}
+                  className="text-xs"
+                >
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Llenar 100% en Todos
+                </Button>
+                <div className="text-xs text-gray-500 flex items-center ml-2">
+                  💡 Tip: Use los íconos en cada fila para copiar responsable/cliente a todas las acciones
+                </div>
+              </div>
+            </div>
+
+            {/* Card-based layout for action items */}
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
+                >
+                  {/* Header row with number, task, and actions */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        {...register(`items.${index}.tarea`)}
+                        placeholder="Descripción de la tarea"
+                        className="font-medium"
+                      />
+                      {errors.items?.[index]?.tarea && (
+                        <p className="text-xs text-red-600 mt-1">
+                          {errors.items[index]?.tarea?.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => duplicateItem(index)}
+                        title="Duplicar acción"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      {index >= 6 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => remove(index)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Eliminar acción"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Fields grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Dates */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500">Fecha Inicio</Label>
+                      <Input
+                        type="date"
+                        {...register(`items.${index}.inicio`)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500">Fecha Fin</Label>
+                      <Input
+                        type="date"
+                        {...register(`items.${index}.fin`)}
+                      />
+                    </div>
+
+                    {/* Responsable */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-gray-500">Responsable</Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyResponsableToAll(index)}
+                          disabled={!items?.[index]?.responsable}
+                          title="Copiar a todas las acciones"
+                          className="h-5 px-1 text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copiar a todos
+                        </Button>
+                      </div>
+                      <SuggestionInput
+                        suggestionType="responsables"
+                        {...register(`items.${index}.responsable`)}
+                        value={items?.[index]?.responsable || ''}
+                        placeholder="Nombre del responsable"
+                      />
+                    </div>
+
+                    {/* Cliente */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-gray-500">Cliente</Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyClienteToAll(index)}
+                          disabled={!items?.[index]?.cliente}
+                          title="Copiar a todas las acciones"
+                          className="h-5 px-1 text-xs text-blue-600 hover:text-blue-700"
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copiar a todos
+                        </Button>
+                      </div>
+                      <SuggestionInput
+                        suggestionType="clientes"
+                        {...register(`items.${index}.cliente`)}
+                        value={items?.[index]?.cliente || ''}
+                        placeholder="Nombre del cliente"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Progress and Comments row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                    {/* Avance Real */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500">Avance Real (%)</Label>
+                      <div className="flex items-center gap-2">
                         <Input
-                          {...register(`items.${index}.tarea`)}
-                          placeholder="Descripción de la tarea"
-                          className="min-w-[200px]"
+                          type="number"
+                          min="0"
+                          max="100"
+                          {...register(`items.${index}.avance_real`, {
+                            valueAsNumber: true,
+                          })}
+                          className="w-20"
                         />
-                        {errors.items?.[index]?.tarea && (
-                          <p className="text-xs text-red-600 mt-1">
-                            {errors.items[index]?.tarea?.message}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="date"
-                          {...register(`items.${index}.inicio`)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="date"
-                          {...register(`items.${index}.fin`)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          {...register(`items.${index}.responsable`)}
-                          placeholder="Responsable"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          {...register(`items.${index}.cliente`)}
-                          placeholder="Cliente"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            {...register(`items.${index}.avance_real`, {
-                              valueAsNumber: true,
-                            })}
-                            className="w-20"
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            style={{ width: `${items?.[index]?.avance_real || 0}%` }}
                           />
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div
-                              className="bg-blue-600 h-1.5 rounded-full transition-all"
-                              style={{ width: `${items?.[index]?.avance_real || 0}%` }}
-                            />
-                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            {...register(`items.${index}.avance_programado`, {
-                              valueAsNumber: true,
-                            })}
-                            className="w-20"
-                          />
-                          <div className="w-full bg-gray-200 rounded-full h-1.5">
-                            <div
-                              className="bg-green-600 h-1.5 rounded-full transition-all"
-                              style={{ width: `${items?.[index]?.avance_programado || 0}%` }}
-                            />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Textarea
-                          {...register(`items.${index}.comentario`)}
-                          placeholder="Comentarios"
-                          rows={2}
-                          className="min-w-[150px]"
+                        <span className="text-sm font-medium text-blue-600 w-12 text-right">
+                          {items?.[index]?.avance_real || 0}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Avance Programado */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500">Avance Programado (%)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          {...register(`items.${index}.avance_programado`, {
+                            valueAsNumber: true,
+                          })}
+                          className="w-20"
                         />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => duplicateItem(index)}
-                            title="Duplicar acción"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          {index >= 6 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => remove(index)}
-                              className="text-red-600"
-                              title="Eliminar acción"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-green-600 h-2 rounded-full transition-all"
+                            style={{ width: `${items?.[index]?.avance_programado || 0}%` }}
+                          />
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <span className="text-sm font-medium text-green-600 w-12 text-right">
+                          {items?.[index]?.avance_programado || 0}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Comentario */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-gray-500">Comentario</Label>
+                      <Textarea
+                        {...register(`items.${index}.comentario`)}
+                        placeholder="Comentarios adicionales..."
+                        rows={2}
+                        className="resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <Separator className="my-4" />

@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useFinalReports } from '@/shared/hooks/report-hooks'
+import { useFinalReports, useDeleteFinalReport } from '@/shared/hooks/report-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Plus, Search, Eye, AlertCircle, FileCheck, Download } from 'lucide-react'
+import { Plus, Search, Eye, AlertCircle, FileCheck, Download, Edit, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { ReportStatus } from '@/shared/types/api'
@@ -39,12 +39,24 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog'
 
 export default function FinalReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useFinalReports()
+  const { trigger: deleteReport, isMutating: isDeleting } = useDeleteFinalReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null)
 
   const handleExport = async (reportId: string, format: 'pdf' | 'docx') => {
     try {
@@ -52,6 +64,19 @@ export default function FinalReportsPage() {
       toast.success(`Reporte descargado exitosamente`)
     } catch {
       toast.error('Error al descargar el reporte')
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!reportToDelete) return
+    try {
+      await deleteReport(reportToDelete)
+      toast.success('Reporte eliminado exitosamente')
+    } catch {
+      toast.error('Error al eliminar el reporte')
+    } finally {
+      setReportToDelete(null)
     }
   }
 
@@ -219,6 +244,25 @@ export default function FinalReportsPage() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          {report.report_status === 'draft' && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => router.push(`/reports/final/${report.id}/edit`)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => setReportToDelete(report.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -229,6 +273,27 @@ export default function FinalReportsPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!reportToDelete} onOpenChange={() => setReportToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar reporte</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta accion no se puede deshacer. El reporte sera eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
