@@ -52,12 +52,12 @@ export function OverdueIncidentsCard() {
             <AlertTriangle className="h-5 w-5 text-red-500" />
             Sucesos Vencidos
           </div>
-          <Badge variant="destructive">{data.total}</Badge>
+          <Badge variant="destructive">{data.total ?? 0}</Badge>
         </CardTitle>
         <CardDescription>Requieren atención inmediata</CardDescription>
       </CardHeader>
       <CardContent>
-        {data.incidents.length === 0 ? (
+        {!data.incidents || data.incidents.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground">
               ✓ No hay sucesos vencidos

@@ -41,8 +41,19 @@ export function FrequencyIndexCard() {
     )
   }
 
-  const index = data.frequency_index
+  const index = data.frequency_index ?? 0
   const isGood = index < 10 // Lower is better
+  const totalAccidents = data.total_accidents ?? 0
+  const totalHoursWorked = data.total_hours_worked ?? 0
+
+  // Handle period as string or object
+  const getPeriodLabel = () => {
+    if (!data.period) return 'No disponible'
+    if (typeof data.period === 'string') return data.period
+    if (typeof data.period === 'object' && data.period.label) return data.period.label
+    return 'No disponible'
+  }
+  const period = getPeriodLabel()
 
   return (
     <Card>
@@ -69,19 +80,19 @@ export function FrequencyIndexCard() {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Total Accidentes</p>
-              <p className="text-lg font-semibold">{data.total_accidents}</p>
+              <p className="text-lg font-semibold">{totalAccidents}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Horas Trabajadas</p>
               <p className="text-lg font-semibold">
-                {data.total_hours_worked.toLocaleString()}
+                {totalHoursWorked.toLocaleString()}
               </p>
             </div>
           </div>
 
           <div className="pt-2 border-t">
             <p className="text-xs text-muted-foreground">
-              Período: {data.period}
+              Período: {period}
             </p>
           </div>
         </div>

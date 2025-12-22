@@ -41,12 +41,13 @@ export function SafetyPyramidCard() {
     )
   }
 
+  const total = data.total ?? 0
   const levels = [
-    { label: 'Fatalidades', count: data.fatalities, color: 'bg-red-900', width: 'w-1/5' },
-    { label: 'Lesiones con tiempo perdido', count: data.lost_time_injuries, color: 'bg-red-600', width: 'w-2/5' },
-    { label: 'Tratamiento médico', count: data.medical_treatment, color: 'bg-orange-500', width: 'w-3/5' },
-    { label: 'Primeros auxilios', count: data.first_aid, color: 'bg-yellow-500', width: 'w-4/5' },
-    { label: 'Casi accidentes', count: data.near_miss, color: 'bg-green-500', width: 'w-full' },
+    { label: 'Fatalidades', count: data.fatalities ?? 0, color: 'bg-red-900', width: 'w-1/5' },
+    { label: 'Lesiones con tiempo perdido', count: data.lost_time_injuries ?? 0, color: 'bg-red-600', width: 'w-2/5' },
+    { label: 'Tratamiento médico', count: data.medical_treatment ?? 0, color: 'bg-orange-500', width: 'w-3/5' },
+    { label: 'Primeros auxilios', count: data.first_aid ?? 0, color: 'bg-yellow-500', width: 'w-4/5' },
+    { label: 'Casi accidentes', count: data.near_miss ?? 0, color: 'bg-green-500', width: 'w-full' },
   ]
 
   return (
@@ -57,7 +58,7 @@ export function SafetyPyramidCard() {
           Pirámide de Seguridad
         </CardTitle>
         <CardDescription>
-          Total: {data.total} incidentes registrados
+          Total: {total} incidentes registrados
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -72,9 +73,9 @@ export function SafetyPyramidCard() {
                 <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
                   <div
                     className={`${level.color} h-full flex items-center justify-center text-white text-xs font-semibold transition-all duration-500`}
-                    style={{ width: data.total > 0 ? `${(level.count / data.total) * 100}%` : '0%' }}
+                    style={{ width: total > 0 ? `${(level.count / total) * 100}%` : '0%' }}
                   >
-                    {level.count > 0 && `${((level.count / data.total) * 100).toFixed(1)}%`}
+                    {level.count > 0 && total > 0 && `${((level.count / total) * 100).toFixed(1)}%`}
                   </div>
                 </div>
               </div>

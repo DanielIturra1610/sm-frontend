@@ -41,10 +41,15 @@ export function IncidentsByCategoryCard() {
     )
   }
 
+  const total = data.total ?? 0
+  const accidente = data.accidente ?? 0
+  const incidente = data.incidente ?? 0
+  const tolerancia0 = data.tolerancia_0 ?? 0
+
   const categories = [
-    { name: 'Accidentes', count: data.accidente, color: 'bg-red-500', percentage: (data.accidente / data.total) * 100 },
-    { name: 'Incidentes', count: data.incidente, color: 'bg-orange-500', percentage: (data.incidente / data.total) * 100 },
-    { name: 'Tolerancia 0', count: data.tolerancia_0, color: 'bg-yellow-500', percentage: (data.tolerancia_0 / data.total) * 100 },
+    { name: 'Accidentes', count: accidente, color: 'bg-red-500', percentage: total > 0 ? (accidente / total) * 100 : 0 },
+    { name: 'Incidentes', count: incidente, color: 'bg-orange-500', percentage: total > 0 ? (incidente / total) * 100 : 0 },
+    { name: 'Tolerancia 0', count: tolerancia0, color: 'bg-yellow-500', percentage: total > 0 ? (tolerancia0 / total) * 100 : 0 },
   ]
 
   return (
@@ -54,7 +59,7 @@ export function IncidentsByCategoryCard() {
           <PieChart className="h-5 w-5" />
           Sucesos por Categoría
         </CardTitle>
-        <CardDescription>Total: {data.total} sucesos</CardDescription>
+        <CardDescription>Total: {total} sucesos</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

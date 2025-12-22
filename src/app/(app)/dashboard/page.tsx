@@ -1,5 +1,5 @@
 /**
- * Página de Dashboard Avanzado - Origix
+ * Página de Dashboard Avanzado - ORIGYX
  * Dashboard completo con KPIs, gráficos y filtros
  */
 

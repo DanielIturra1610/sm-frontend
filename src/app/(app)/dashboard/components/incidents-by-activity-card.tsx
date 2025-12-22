@@ -42,8 +42,9 @@ export function IncidentsByActivityCard() {
     )
   }
 
-  const total = data.reduce((sum, item) => sum + item.count, 0)
-  const sortedData = [...data].sort((a, b) => b.count - a.count)
+  const safeData = Array.isArray(data) ? data : []
+  const total = safeData.reduce((sum, item) => sum + (item.count ?? 0), 0)
+  const sortedData = [...safeData].sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
 
   const colors = [
     'bg-blue-500',
