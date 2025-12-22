@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateIncident } from '@/shared/hooks/incident-hooks'
+import { useCreateFlashReport } from '@/shared/hooks/report-hooks'
 import { useAttachmentMutations } from '@/shared/hooks/attachment-hooks'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -20,6 +21,8 @@ import {
 } from '@/shared/components/forms/form'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { Checkbox } from '@/shared/components/ui/checkbox'
+import { Label } from '@/shared/components/ui/label'
 import { PhotoUploader } from '@/shared/components/attachments/PhotoUploader'
 import {
   Select,
@@ -28,14 +31,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { ArrowLeft, Save, Loader2, X } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, X, FileText } from 'lucide-react'
 import { toast } from 'sonner'
-import { SUCESO_CATEGORIES, getSucesoTypesByCategory } from '@/shared/constants/suceso-options'
+import { SUCESO_CATEGORIES, getSucesoTypesByCategory, getSucesoTypeLabel } from '@/shared/constants/suceso-options'
 import type { SucesoCategory, SucesoType } from '@/shared/types/api'
 
-const incidentSchema = z.object({
+// Schema completo para Suceso + Flash Report
+const incidentWithFlashSchema = z.object({
+  // === DATOS DEL SUCESO ===
   title: z.string().min(5, 'El título debe tener al menos 5 caracteres'),
-  description: z.string().min(10, 'La descripción debe tener al menos 20 caracteres'),
+  description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),
   severity: z.enum(['low', 'medium', 'high'], {
     required_error: 'Por favor selecciona un nivel de severidad',
   }),
@@ -43,37 +48,114 @@ const incidentSchema = z.object({
     required_error: 'Por favor selecciona una categoría de suceso',
   }),
   tipoSuceso: z.string().min(1, 'Por favor selecciona un tipo de suceso'),
-  location: z.string().min(5, 'La ubicación debe tener al menos 3 caracteres'),
+  location: z.string().min(3, 'La ubicación debe tener al menos 3 caracteres'),
   date_time: z.string().min(1, 'La fecha y hora son requeridas'),
   area_zona: z.string().optional(),
   empresa: z.string().optional(),
   supervisor: z.string().optional(),
+
+  // === DATOS ADICIONALES FLASH REPORT ===
+  zonal: z.string().optional(),
+  numero_prodity: z.string().optional(),
+  acciones_inmediatas: z.string().optional(),
+  controles_inmediatos: z.string().optional(),
+  factores_riesgo: z.string().optional(),
+
+  // === CLASIFICACIÓN TIPO INCIDENTE ===
+  con_baja_il: z.boolean().optional(),
+  sin_baja_il: z.boolean().optional(),
+  incidente_industrial: z.boolean().optional(),
+  incidente_laboral: z.boolean().optional(),
+
+  // === CLASIFICACIÓN PLGF ===
+  es_plgf: z.boolean().optional(),
+  nivel_plgf: z.enum(['potencial', 'real', 'fatal']).optional(),
+  justificacion_plgf: z.string().optional(),
 })
 
-type IncidentFormValues = z.infer<typeof incidentSchema>
+type IncidentWithFlashFormValues = z.infer<typeof incidentWithFlashSchema>
 
 export default function CreateIncidentPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { trigger: createIncident } = useCreateIncident()
+  const { trigger: createFlashReport } = useCreateFlashReport()
   const { uploadMultiple } = useAttachmentMutations()
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [selectedCategoria, setSelectedCategoria] = useState<SucesoCategory | undefined>()
 
-  const form = useForm<IncidentFormValues>({
-    resolver: zodResolver(incidentSchema),
+  const form = useForm<IncidentWithFlashFormValues>({
+    resolver: zodResolver(incidentWithFlashSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      location: '',
+      date_time: '',
+      area_zona: '',
+      empresa: '',
+      supervisor: '',
+      zonal: '',
+      numero_prodity: '',
+      acciones_inmediatas: '',
+      controles_inmediatos: '',
+      factores_riesgo: '',
+      justificacion_plgf: '',
+      con_baja_il: false,
+      sin_baja_il: false,
+      incidente_industrial: false,
+      incidente_laboral: false,
+      es_plgf: false,
+    },
   })
 
-  const onSubmit = async (data: IncidentFormValues) => {
+  const watchTipoSuceso = form.watch('tipoSuceso')
+  const watchEsPlgf = form.watch('es_plgf')
+
+  // Auto-marcar checkboxes según el tipo de suceso seleccionado
+  const handleTipoSucesoChange = (value: string) => {
+    form.setValue('tipoSuceso', value)
+
+    // Reset checkboxes
+    form.setValue('con_baja_il', false)
+    form.setValue('sin_baja_il', false)
+    form.setValue('incidente_industrial', false)
+    form.setValue('incidente_laboral', false)
+    form.setValue('es_plgf', false)
+
+    // Auto-marcar según el tipo
+    if (value.includes('con_baja')) {
+      form.setValue('con_baja_il', true)
+    } else if (value.includes('sin_baja')) {
+      form.setValue('sin_baja_il', true)
+    } else if (value === 'inc_industrial') {
+      form.setValue('incidente_industrial', true)
+    } else if (value === 'inc_laboral') {
+      form.setValue('incidente_laboral', true)
+    } else if (value === 'inc_plgf') {
+      form.setValue('es_plgf', true)
+      form.setValue('incidente_industrial', true)
+    }
+  }
+
+  const onSubmit = async (data: IncidentWithFlashFormValues) => {
     try {
       setIsSubmitting(true)
+
+      // 1. Crear el Incidente
+      // Mapear categoría a type del backend
+      const typeMap: Record<string, 'accident' | 'incident' | 'zero_tolerance'> = {
+        accidente: 'accident',
+        incidente: 'incident',
+        tolerancia_0: 'zero_tolerance',
+      }
 
       const incidentData = {
         title: data.title,
         description: data.description,
         severity: data.severity,
-        type: 'safety' as const, // Legacy field - mantener por compatibilidad
+        type: typeMap[data.categoria] || 'incident',
         location: data.location,
+        date_time: new Date(data.date_time).toISOString(),
         categoria: data.categoria,
         tipoSuceso: data.tipoSuceso as SucesoType,
         area_zona: data.area_zona,
@@ -83,17 +165,50 @@ export default function CreateIncidentPage() {
 
       const newIncident = await createIncident(incidentData)
 
-      // Upload photos if any
+      // 2. Subir fotos si hay
       if (pendingFiles.length > 0) {
         try {
           await uploadMultiple(newIncident.id, pendingFiles)
-          toast.success('Suceso creado con ' + pendingFiles.length + ' foto(s)')
         } catch {
-          toast.success('Suceso creado, pero hubo error al subir fotos')
+          console.error('Error al subir fotos')
         }
-      } else {
-        toast.success('Suceso creado exitosamente')
       }
+
+      // 3. Crear Flash Report automáticamente
+      const dateTime = new Date(data.date_time)
+      const fecha = dateTime.toISOString().split('T')[0]
+      const hora = dateTime.toTimeString().slice(0, 5)
+
+      const flashReportData = {
+        incident_id: newIncident.id,
+        suceso: data.title,
+        tipo: getSucesoTypeLabel(data.tipoSuceso),
+        fecha,
+        hora,
+        lugar: data.location,
+        area_zona: data.area_zona,
+        empresa: data.empresa,
+        supervisor: data.supervisor,
+        descripcion: data.description,
+        zonal: data.zonal,
+        numero_prodity: data.numero_prodity,
+        acciones_inmediatas: data.acciones_inmediatas,
+        controles_inmediatos: data.controles_inmediatos,
+        factores_riesgo: data.factores_riesgo,
+        con_baja_il: data.con_baja_il,
+        sin_baja_il: data.sin_baja_il,
+        incidente_industrial: data.incidente_industrial,
+        incidente_laboral: data.incidente_laboral,
+        es_plgf: data.es_plgf,
+        nivel_plgf: data.nivel_plgf,
+        justificacion_plgf: data.justificacion_plgf,
+      }
+
+      await createFlashReport(flashReportData)
+
+      toast.success(
+        `Suceso y Flash Report creados exitosamente${pendingFiles.length > 0 ? ` con ${pendingFiles.length} foto(s)` : ''}`
+      )
       router.push(`/incidents/${newIncident.id}`)
     } catch (error) {
       console.error('Error creating incident:', error)
@@ -117,31 +232,33 @@ export default function CreateIncidentPage() {
             Atrás
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Crear Nuevo Suceso</h1>
-            <p className="text-gray-600 mt-2">
-              Reporta un nuevo suceso de seguridad en tu organización
+            <h1 className="text-3xl font-bold text-gray-900">Reportar Suceso</h1>
+            <p className="text-gray-600 mt-1 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Se creará automáticamente el Suceso y su Flash Report
             </p>
           </div>
         </div>
 
-        {/* Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalles del Suceso</CardTitle>
-            <CardDescription>
-              Proporciona información detallada sobre el suceso
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Title */}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+            {/* Card 1: Antecedentes Generales */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Antecedentes Generales</CardTitle>
+                <CardDescription>
+                  Información básica del suceso
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Título */}
                 <FormField
                   control={form.control}
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Título *</FormLabel>
+                      <FormLabel>Suceso / Título *</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Breve descripción del suceso"
@@ -154,53 +271,21 @@ export default function CreateIncidentPage() {
                   )}
                 />
 
-                {/* Description */}
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descripción *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Descripción detallada de lo que sucedió..."
-                          className="min-h-[150px]"
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Incluye qué sucedió, cuándo, dónde y quién estuvo involucrado
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Severity and Type */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Grid: Fecha, Hora, Zonal */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
-                    name="severity"
+                    name="date_time"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Severidad *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          disabled={isSubmitting}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona la severidad" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="low">Baja</SelectItem>
-                            <SelectItem value="medium">Media</SelectItem>
-                            <SelectItem value="high">Alta</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Fecha y Hora *</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="datetime-local"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -208,10 +293,135 @@ export default function CreateIncidentPage() {
 
                   <FormField
                     control={form.control}
+                    name="zonal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Zonal</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ej: O'Higgins, Metropolitana"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="numero_prodity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>N° Prodity</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Código Prodity"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Grid: Ubicación, Área, Empresa, Supervisor */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lugar, Comuna, Región *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ej: Angostura, San Fco de Mostazal"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="area_zona"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Área</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ej: Poda Tx, Mantención"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="empresa"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Empresa</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nombre de la empresa"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="supervisor"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Jefatura que Reporta</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Nombre del supervisor"
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Card 2: Clasificación del Suceso */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Clasificación del Suceso</CardTitle>
+                <CardDescription>
+                  Categoría, tipo y severidad del incidente
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Grid: Categoría, Tipo, Severidad */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
                     name="categoria"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Categoría de Suceso *</FormLabel>
+                        <FormLabel>Categoría *</FormLabel>
                         <Select
                           onValueChange={(value) => {
                             field.onChange(value)
@@ -223,7 +433,7 @@ export default function CreateIncidentPage() {
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecciona la categoría" />
+                              <SelectValue placeholder="Selecciona categoría" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -246,13 +456,13 @@ export default function CreateIncidentPage() {
                       <FormItem>
                         <FormLabel>Tipo de Suceso *</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={handleTipoSucesoChange}
                           defaultValue={field.value}
                           disabled={isSubmitting || !selectedCategoria}
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecciona el tipo" />
+                              <SelectValue placeholder="Selecciona tipo" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -267,190 +477,334 @@ export default function CreateIncidentPage() {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                {/* Location */}
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ubicación *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="¿Dónde ocurrió este suceso?"
-                          {...field}
+                  <FormField
+                    control={form.control}
+                    name="severity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Severidad *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
                           disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Additional Fields Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Area/Zona */}
-                  <FormField
-                    control={form.control}
-                    name="area_zona"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Área/Zona</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Área o zona específica"
-                            {...field}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Empresa */}
-                  <FormField
-                    control={form.control}
-                    name="empresa"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Empresa</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Nombre de la empresa"
-                            {...field}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Supervisor */}
-                  <FormField
-                    control={form.control}
-                    name="supervisor"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Supervisor</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Nombre del supervisor"
-                            {...field}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona severidad" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="low">Baja</SelectItem>
+                            <SelectItem value="medium">Media</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
 
-                {/* Date and Time */}
-                <FormField
-                  control={form.control}
-                  name="date_time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha y Hora *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="datetime-local"
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Photos */}
-                <div className="space-y-2">
-                  <FormLabel>Fotos (opcional)</FormLabel>
-                  <div className="border rounded-lg p-4">
-                    {pendingFiles.length === 0 ? (
-                      <PhotoUploader
-                        onUpload={async (files) => setPendingFiles(prev => [...prev, ...files])}
+                {/* Checkboxes Tipo Incidente */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <Label className="text-sm font-medium mb-3 block">Tipo de Incidente/Accidente</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="con_baja_il"
+                        checked={form.watch('con_baja_il') || false}
+                        onCheckedChange={(checked) => form.setValue('con_baja_il', Boolean(checked))}
                         disabled={isSubmitting}
-                        maxFiles={10}
-                        maxSizeMB={10}
                       />
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {pendingFiles.map((file, idx) => (
-                            <div key={idx} className="relative aspect-square rounded overflow-hidden border">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={file.name}
-                                className="w-full h-full object-cover"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}
-                                className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            {pendingFiles.length} foto(s) seleccionadas
-                          </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPendingFiles([])}
-                          >
-                            Limpiar
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                      <Label htmlFor="con_baja_il" className="text-sm font-normal cursor-pointer">
+                        Con Baja IL
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="sin_baja_il"
+                        checked={form.watch('sin_baja_il') || false}
+                        onCheckedChange={(checked) => form.setValue('sin_baja_il', Boolean(checked))}
+                        disabled={isSubmitting}
+                      />
+                      <Label htmlFor="sin_baja_il" className="text-sm font-normal cursor-pointer">
+                        Sin Baja IL
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="incidente_industrial"
+                        checked={form.watch('incidente_industrial') || false}
+                        onCheckedChange={(checked) => form.setValue('incidente_industrial', Boolean(checked))}
+                        disabled={isSubmitting}
+                      />
+                      <Label htmlFor="incidente_industrial" className="text-sm font-normal cursor-pointer">
+                        Incidente Industrial
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="incidente_laboral"
+                        checked={form.watch('incidente_laboral') || false}
+                        onCheckedChange={(checked) => form.setValue('incidente_laboral', Boolean(checked))}
+                        disabled={isSubmitting}
+                      />
+                      <Label htmlFor="incidente_laboral" className="text-sm font-normal cursor-pointer">
+                        Incidente Laboral
+                      </Label>
+                    </div>
                   </div>
-                  <FormDescription>
-                    Agrega fotos del suceso (se subirán al crear)
-                  </FormDescription>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-4 pt-4">
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 md:flex-initial"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creando...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Crear Suceso
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.push('/incidents')}
-                    disabled={isSubmitting}
-                  >
-                    Cancelar
-                  </Button>
+                {/* PLGF */}
+                <div className="border rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Checkbox
+                      id="es_plgf"
+                      checked={watchEsPlgf || false}
+                      onCheckedChange={(checked) => form.setValue('es_plgf', Boolean(checked))}
+                      disabled={isSubmitting}
+                    />
+                    <Label htmlFor="es_plgf" className="text-sm font-medium cursor-pointer">
+                      ¿Es un evento PLGF (Potencial de Lesión Grave o Fatal)?
+                    </Label>
+                  </div>
+
+                  {watchEsPlgf && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 pt-2 border-t">
+                      <FormField
+                        control={form.control}
+                        name="nivel_plgf"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nivel PLGF</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              disabled={isSubmitting}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar nivel" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="potencial">Potencial</SelectItem>
+                                <SelectItem value="real">Real</SelectItem>
+                                <SelectItem value="fatal">Fatal</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="justificacion_plgf"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Justificación PLGF</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Justifique la clasificación PLGF..."
+                                rows={2}
+                                {...field}
+                                disabled={isSubmitting}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+
+            {/* Card 3: Descripción y Acciones */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Descripción y Acciones</CardTitle>
+                <CardDescription>
+                  Detalles del evento y medidas tomadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción del Accidente/Incidente *</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describa detalladamente lo que sucedió..."
+                          className="min-h-[120px]"
+                          {...field}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Incluya qué sucedió, quién estuvo involucrado y las circunstancias
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="controles_inmediatos"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Controles Inmediatos</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Controles implementados inmediatamente..."
+                          rows={3}
+                          {...field}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="acciones_inmediatas"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Acciones Inmediatas</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Acciones tomadas inmediatamente después del suceso..."
+                          rows={3}
+                          {...field}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="factores_riesgo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Factores de Riesgo</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Factores de riesgo identificados..."
+                          rows={3}
+                          {...field}
+                          disabled={isSubmitting}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Card 4: Fotografías */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Fotografías</CardTitle>
+                <CardDescription>
+                  Evidencia fotográfica del suceso
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-lg p-4">
+                  {pendingFiles.length === 0 ? (
+                    <PhotoUploader
+                      onUpload={async (files) => setPendingFiles(prev => [...prev, ...files])}
+                      disabled={isSubmitting}
+                      maxFiles={10}
+                      maxSizeMB={10}
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {pendingFiles.map((file, idx) => (
+                          <div key={idx} className="relative aspect-square rounded overflow-hidden border">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setPendingFiles(prev => prev.filter((_, i) => i !== idx))}
+                              className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white hover:bg-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          {pendingFiles.length} foto(s) seleccionadas
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPendingFiles([])}
+                        >
+                          Limpiar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions */}
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 md:flex-initial"
+                size="lg"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Crear Suceso + Flash Report
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push('/incidents')}
+                disabled={isSubmitting}
+                size="lg"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   )

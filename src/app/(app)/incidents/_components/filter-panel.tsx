@@ -349,13 +349,13 @@ export function FilterPanel({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => updateFilter("type", "safety")}
+              onClick={() => updateFilter("type", "accident")}
               className={cn(
                 "text-xs",
-                filters.type === "safety" && "bg-red-50 border-red-200 text-red-700"
+                filters.type === "accident" && "bg-red-50 border-red-200 text-red-700"
               )}
             >
-              Safety Issues
+              Accidentes
             </Button>
           </div>
         </div>
