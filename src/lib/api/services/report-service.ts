@@ -111,6 +111,18 @@ export class FlashReportService extends BaseService {
       method: 'POST',
     });
   }
+
+  /**
+   * Export flash report to PDF, DOCX or PPTX format
+   * Downloads the file with the specified filename
+   * Routes: /exports/flash-reports/:id/pdf, /exports/flash-reports/:id/docx, /exports/flash-reports/:id/pptx
+   */
+  async export(id: string, format: 'pdf' | 'docx' | 'pptx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/flash-reports/${id}/${format}`,
+      filename
+    );
+  }
 }
 
 // ============================================================================
@@ -204,6 +216,18 @@ export class ImmediateActionsService extends BaseService {
     return this.request<ImmediateActionsReport>(`/immediate-actions/${id}/reject`, {
       method: 'POST',
     });
+  }
+
+  /**
+   * Export report to PDF or DOCX format
+   * Downloads the file with the specified filename
+   * Routes: /exports/immediate-actions/:id/pdf, /exports/immediate-actions/:id/docx
+   */
+  async export(id: string, format: 'pdf' | 'docx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/immediate-actions/${id}/${format}`,
+      filename
+    );
   }
 }
 
@@ -309,6 +333,18 @@ export class RootCauseService extends BaseService {
       method: 'POST',
     });
   }
+
+  /**
+   * Export report to PDF, DOCX or XLSX format
+   * Downloads the file with the specified filename
+   * Routes: /exports/root-cause/:id/pdf, /exports/root-cause/:id/docx, /exports/root-cause/:id/xlsx
+   */
+  async export(id: string, format: 'pdf' | 'docx' | 'xlsx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/root-cause/${id}/${format}`,
+      filename
+    );
+  }
 }
 
 // ============================================================================
@@ -411,6 +447,18 @@ export class ActionPlanService extends BaseService {
     return this.request<ActionPlanReport>(`/action-plan/${id}/complete`, {
       method: 'POST',
     });
+  }
+
+  /**
+   * Export report to PDF, DOCX or XLSX format
+   * Downloads the file with the specified filename
+   * Routes: /exports/action-plan/:id/pdf, /exports/action-plan/:id/docx, /exports/action-plan/:id/xlsx
+   */
+  async export(id: string, format: 'pdf' | 'docx' | 'xlsx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/action-plan/${id}/${format}`,
+      filename
+    );
   }
 }
 
@@ -525,6 +573,18 @@ export class FinalReportService extends BaseService {
       method: 'POST',
     });
   }
+
+  /**
+   * Export report to PDF or DOCX format
+   * Downloads the file with the specified filename
+   * Routes: /exports/final-reports/:id/pdf, /exports/final-reports/:id/docx
+   */
+  async export(id: string, format: 'pdf' | 'docx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/final-reports/${id}/${format}`,
+      filename
+    );
+  }
 }
 
 // ============================================================================
@@ -610,5 +670,17 @@ export class ZeroToleranceService extends BaseService {
     return this.request<ZeroToleranceReport>(`/zero-tolerance/${id}/close`, {
       method: 'POST',
     });
+  }
+
+  /**
+   * Export report to PDF or DOCX format
+   * Downloads the file with the specified filename
+   * Routes: /exports/zero-tolerance/:id/pdf, /exports/zero-tolerance/:id/docx
+   */
+  async export(id: string, format: 'pdf' | 'docx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/zero-tolerance/${id}/${format}`,
+      filename
+    );
   }
 }

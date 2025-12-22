@@ -71,6 +71,38 @@ export interface OverdueIncident {
   days_overdue: number
 }
 
+export interface YearlyComparisonFilter {
+  current_year?: number
+  previous_year?: number
+  limit?: number
+}
+
+export interface YearlyComparisonData {
+  current_year: number
+  previous_year: number
+  current_year_total: number
+  previous_year_total: number
+  change_percentage: number
+  by_category: {
+    category: string
+    current_year: number
+    previous_year: number
+    change_percentage: number
+  }[]
+  by_month: {
+    month: number
+    current_year: number
+    previous_year: number
+  }[]
+  top_changes: {
+    name: string
+    current_year: number
+    previous_year: number
+    change_percentage: number
+    type: string
+  }[]
+}
+
 export class MetricsService extends BaseService {
   /**
    * Get dashboard overview metrics
@@ -201,6 +233,25 @@ export class MetricsService extends BaseService {
   async getIncidentTrends(period: 'month' | 'quarter' | 'year' = 'month'): Promise<{ period: string; trends: IncidentTrend[] }> {
     return this.request<{ period: string; trends: IncidentTrend[] }>(
       `/metrics/trends?period=${period}`,
+      {
+        method: 'GET',
+      }
+    )
+  }
+
+  /**
+   * Get yearly comparison metrics (REQ-024)
+   * Compares current year with previous year
+   */
+  async getYearlyComparison(filter?: YearlyComparisonFilter): Promise<YearlyComparisonData> {
+    const params = new URLSearchParams()
+    if (filter?.current_year) params.append('current_year', String(filter.current_year))
+    if (filter?.previous_year) params.append('previous_year', String(filter.previous_year))
+    if (filter?.limit) params.append('limit', String(filter.limit))
+
+    const queryString = params.toString()
+    return this.request<YearlyComparisonData>(
+      `/metrics/yearly-comparison${queryString ? `?${queryString}` : ''}`,
       {
         method: 'GET',
       }

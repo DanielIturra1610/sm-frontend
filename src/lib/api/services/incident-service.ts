@@ -27,7 +27,7 @@ function transformIncident(apiData: ApiIncident): Incident {
     description: (apiData.description as string) || '',
     severity: apiData.severity as Incident['severity'],
     status: apiData.status as Incident['status'],
-    type: (apiData.type as Incident['type']) || 'safety',
+    type: (apiData.type as Incident['type']) || 'incident',
     location: (apiData.location as string) || '',
     reportedBy: (apiData.reported_by_name as string) || (apiData.reported_by as string) || '',
     reportedAt: (apiData.date_time as string) || (apiData.created_at as string) || '',

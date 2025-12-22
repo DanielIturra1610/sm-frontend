@@ -195,6 +195,15 @@ export class AnalysisService extends BaseService {
   }
 
   /**
+   * Delete Fishbone analysis
+   */
+  async deleteFishbone(id: string): Promise<void> {
+    return this.request<void>(`/analysis/fishbone/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
    * Add causes to Fishbone analysis
    */
   async addFishboneCauses(id: string, causes: FishboneCause[]): Promise<FishboneAnalysis> {

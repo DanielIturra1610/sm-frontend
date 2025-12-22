@@ -29,12 +29,13 @@ export const flashReportSchema = z.object({
   factores_riesgo: z.string().optional(),
   numero_prodity: z.string().optional(),
   zonal: z.string().optional(),
-  con_baja_il: z.boolean(),
-  sin_baja_il: z.boolean(),
-  incidente_industrial: z.boolean(),
-  incidente_laboral: z.boolean(),
+  // Tipo de Incidente/Accidente checkboxes
+  con_baja_il: z.boolean().optional(),
+  sin_baja_il: z.boolean().optional(),
+  incidente_industrial: z.boolean().optional(),
+  incidente_laboral: z.boolean().optional(),
   // PLGF Classification
-  es_plgf: z.boolean(),
+  es_plgf: z.boolean().optional(),
   nivel_plgf: plgfLevelSchema.optional(),
   justificacion_plgf: z.string().optional(),
 })
@@ -172,12 +173,12 @@ export const finalReportSchema = z.object({
   incident_id: z.string().uuid('Debe ser un UUID válido'),
   company_data: companyDataSchema.optional(),
   tipo_accidente_tabla: z.object({
-    con_baja_il: z.boolean().default(false),
-    sin_baja_il: z.boolean().default(false),
-    incidente_industrial: z.boolean().default(false),
-    incidente_laboral: z.boolean().default(false),
+    con_baja_il: z.boolean().optional(),
+    sin_baja_il: z.boolean().optional(),
+    incidente_industrial: z.boolean().optional(),
+    incidente_laboral: z.boolean().optional(),
     // PLGF Classification
-    es_plgf: z.boolean().default(false),
+    es_plgf: z.boolean().optional(),
     nivel_plgf: plgfLevelSchema.optional(),
   }).optional(),
   personas_involucradas: z.array(personaInvolucradaSchema).optional(),

@@ -190,6 +190,80 @@ export abstract class BaseService {
     }
   }
 
+  /**
+   * Special request method for file downloads (PDF, DOCX, etc.)
+   * Returns a Blob that can be downloaded
+   */
+  protected async downloadRequest(
+    endpoint: string,
+    filename: string,
+    options: RequestInit = {}
+  ): Promise<void> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = await this.getToken();
+
+    const headers: Record<string, string> = {
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (env.NEXT_PUBLIC_SHOW_API_LOGS) {
+      console.log(`🔌 API Download Request [${options.method || 'GET'}]:`, url);
+    }
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      if (response.status === 401) {
+        await this.redirectToLogin();
+        throw new StegmaierApiError(401, 'Unauthorized - redirecting to login');
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = `Download failed with status ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // Ignore parse error, use default message
+        }
+        throw new StegmaierApiError(response.status, errorMessage);
+      }
+
+      // Get the blob from response
+      const blob = await response.blob();
+
+      // Create download link and trigger download
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      if (env.NEXT_PUBLIC_SHOW_API_LOGS) {
+        console.log(`🔌 API Download Complete:`, filename);
+      }
+    } catch (error) {
+      if (error instanceof StegmaierApiError) {
+        throw error;
+      }
+      if (error instanceof Error && error.name === 'TypeError') {
+        throw new StegmaierApiError(0, 'Network error', 'NETWORK_ERROR');
+      }
+      throw error;
+    }
+  }
+
   protected async getToken(): Promise<string | null> {
     if (typeof window === 'undefined') return null;
 
