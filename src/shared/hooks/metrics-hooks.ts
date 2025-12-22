@@ -9,6 +9,8 @@ import type {
   AccidentsByLeaveType,
   IncidentsByCategory,
   OverdueIncident,
+  YearlyComparisonData,
+  YearlyComparisonFilter,
 } from '@/lib/api/services/metrics-service'
 
 /**
@@ -191,6 +193,24 @@ export function useIncidentTrends(period: 'month' | 'quarter' | 'year' = 'month'
     () => api.metrics.getIncidentTrends(period),
     {
       refreshInterval: 300000,
+    }
+  )
+}
+
+/**
+ * Hook to fetch yearly comparison metrics (REQ-024)
+ * Compares incidents between current year and previous year
+ */
+export function useYearlyComparison(filter?: YearlyComparisonFilter) {
+  const key = filter
+    ? `/metrics/yearly-comparison?${JSON.stringify(filter)}`
+    : '/metrics/yearly-comparison'
+
+  return useSWR<YearlyComparisonData>(
+    key,
+    () => api.metrics.getYearlyComparison(filter),
+    {
+      refreshInterval: 300000, // Refresh every 5 minutes
     }
   )
 }

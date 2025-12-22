@@ -223,12 +223,16 @@ export interface Incident extends BaseEntity {
   area_zona?: string
   empresa?: string
   supervisor?: string
+  // Correlativo único del incidente
+  correlativo?: string
+  descripcion_breve?: string
+  tipo?: string
 }
 
 export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical'
 export type IncidentStatus = 'reported' | 'investigating' | 'in_progress' | 'resolved' | 'closed'
 // Tipos legacy - mantener para compatibilidad
-export type IncidentType = 'safety' | 'security' | 'environmental' | 'quality' | 'operational'
+export type IncidentType = 'accident' | 'incident' | 'near_miss' | 'zero_tolerance' | 'environmental' | 'occupational'
 
 export interface WorkflowState {
   currentStep: string
@@ -261,10 +265,15 @@ export interface CreateIncidentData {
   severity: IncidentSeverity
   type: IncidentType
   location: string
+  date_time: string
   tags?: string[]
   // Nuevos campos de taxonomía de Sucesos
   categoria?: SucesoCategory
   tipoSuceso?: SucesoType
+  // Campos adicionales del Flash Report
+  area_zona?: string
+  empresa?: string
+  supervisor?: string
 }
 
 export interface UpdateIncidentData {
@@ -739,12 +748,12 @@ export interface CreateFlashReportData {
   factores_riesgo?: string
   numero_prodity?: string
   zonal?: string
-  con_baja_il: boolean
-  sin_baja_il: boolean
-  incidente_industrial: boolean
-  incidente_laboral: boolean
+  con_baja_il?: boolean
+  sin_baja_il?: boolean
+  incidente_industrial?: boolean
+  incidente_laboral?: boolean
   // PLGF Classification
-  es_plgf: boolean
+  es_plgf?: boolean
   nivel_plgf?: string
   justificacion_plgf?: string
 }
@@ -803,6 +812,14 @@ export interface ImmediateActionsReport extends BaseEntity {
   porcentaje_avance_plan: number
   estatus_plan: number
   items?: ImmediateActionItem[]
+  // Related incident data (populated when using relations)
+  incident?: {
+    id: string
+    correlativo?: string
+    tipo?: string
+    descripcion_breve?: string
+    title?: string
+  }
   // PLGF Classification (inherited from Flash Report)
   es_plgf: boolean
   nivel_plgf?: string

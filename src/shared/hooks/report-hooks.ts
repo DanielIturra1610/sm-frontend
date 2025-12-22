@@ -423,7 +423,8 @@ export function useDeleteRootCauseReport() {
     async (key, { arg: id }: { arg: string }) => {
       await api.rootCause.delete(id)
       await mutateReports()
-    }
+    },
+    { throwOnError: true }
   )
 }
 

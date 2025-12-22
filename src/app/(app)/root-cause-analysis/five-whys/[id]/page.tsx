@@ -784,14 +784,14 @@ export default function FiveWhysDetailPage() {
               {incident && (
                 <div>
                   <p className="text-sm font-medium">{incident.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {incident.severity && (
                       <Badge variant="outline" className="mr-2 text-xs">
                         {incident.severity.toUpperCase()}
                       </Badge>
                     )}
                     {incident.status?.replace('_', ' ')}
-                  </p>
+                  </div>
                 </div>
               )}
               <Link href={`/incidents/${analysis.incidentId}`}>
