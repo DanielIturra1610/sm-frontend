@@ -9,6 +9,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { useExtractedAnalysisData } from './useExtractedAnalysisData'
 import { usePrefillData, useZeroToleranceReport, useActionPlanReportByIncident } from './report-hooks'
 import { useCalculatedCosts, type CalculatedCost } from './useCalculatedCosts'
+import { useIncidentPhotos } from './attachment-hooks'
 import {
   extractFromZeroTolerance,
   consolidarPersonas,
@@ -25,12 +26,19 @@ import type { Fotografia } from '@/shared/types/api'
 
 export type ReportMode = 'express' | 'complete'
 
+interface ResponsableData {
+  nombre: string
+  cargo: string
+  rol?: string
+}
+
 interface ExpressModeData {
   // From incident/prefill
   empresa: string
   descripcion: string
   lugar: string
   fecha: string
+  supervisor: string
 
   // From analyses
   causasRaiz: Array<{
@@ -50,6 +58,7 @@ interface ExpressModeData {
   // Consolidated data
   personas: PersonaConsolidada[]
   evidencias: EvidenciaConsolidada[]
+  responsables: ResponsableData[]
 
   // Zero Tolerance data
   severidad: string
@@ -114,6 +123,9 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
     actionPlanItems: actionPlanData?.items,
   })
 
+  // Fetch incident photos (including Flash Report attachments)
+  const { data: incidentPhotos, isLoading: isLoadingPhotos } = useIncidentPhotos(incidentId)
+
   // Calculate consolidated data
   const expressData = useMemo<ExpressModeData | null>(() => {
     if (!prefillData) return null
@@ -141,14 +153,48 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       immediateResponsables
     )
 
-    // Consolidate evidence
-    const flashFotos: Fotografia[] = prefillData.final_report_data?.imagenes_evidencia?.map(img => ({
+    // Consolidate evidence from all sources
+    const prefillFotos: Fotografia[] = prefillData.final_report_data?.imagenes_evidencia?.map(img => ({
       url: img.url,
       descripcion: img.descripcion,
+      fecha: img.fecha,
     })) || []
     const ztFotos = zeroToleranceReport?.fotografias || []
 
-    const evidencias = consolidarEvidencias(flashFotos, ztFotos, [])
+    // Convert incident photos to attachment format for consolidation
+    const incidentAttachments = (incidentPhotos || []).map((photo) => ({
+      url: photo.signed_url || '',
+      name: photo.file_name || photo.description || 'Foto del incidente',
+      type: photo.mime_type || 'image/jpeg',
+    }))
+
+    const evidencias = consolidarEvidencias(prefillFotos, ztFotos, incidentAttachments)
+
+    // Extract responsables - supervisor from Flash Report + any from prefill
+    const responsables: ResponsableData[] = []
+
+    // Add supervisor as a responsable
+    if (prefillData.supervisor) {
+      responsables.push({
+        nombre: prefillData.supervisor,
+        cargo: 'Supervisor',
+        rol: 'Supervisor del area',
+      })
+    }
+
+    // Add responsables from prefill if available
+    if (prefillData.final_report_data?.responsables_investigacion) {
+      prefillData.final_report_data.responsables_investigacion.forEach((r) => {
+        // Avoid duplicates
+        if (!responsables.some((existing) => existing.nombre.toLowerCase() === r.nombre.toLowerCase())) {
+          responsables.push({
+            nombre: r.nombre,
+            cargo: r.cargo || 'Investigador',
+            rol: r.rol,
+          })
+        }
+      })
+    }
 
     // Count source reports
     const sr = prefillData.source_reports
@@ -199,6 +245,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       descripcion: prefillData.descripcion || '',
       lugar: prefillData.lugar || '',
       fecha: prefillData.fecha || '',
+      supervisor: prefillData.supervisor || '',
       causasRaiz: causasRaiz.map((c) => ({
         problema: c.problema,
         causa_raiz: c.causa_raiz,
@@ -210,6 +257,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       analysisCount,
       personas,
       evidencias,
+      responsables,
       severidad: ztData?.severidad || '',
       acciones_tomadas: ztData?.acciones_tomadas || '',
       accionesInmediatasResumen,
@@ -220,28 +268,29 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       sourceReportsCount,
       hasEnoughData,
     }
-  }, [prefillData, causasRaiz, extractedConclusiones, analysisCount, zeroToleranceReport, actionPlanData, costosCalculados, totalCostosEstimado])
+  }, [prefillData, causasRaiz, extractedConclusiones, analysisCount, zeroToleranceReport, actionPlanData, costosCalculados, totalCostosEstimado, incidentPhotos])
 
   // Calculate data completeness percentage
   const dataCompleteness = useMemo(() => {
     if (!expressData) return 0
 
     let score = 0
-    const maxScore = 14
+    const maxScore = 15
 
     // Check each data category
     if (expressData.empresa) score += 1
     if (expressData.descripcion) score += 1
+    if (expressData.supervisor) score += 1
     if (expressData.causasRaiz.length > 0) score += 2
     if (expressData.conclusiones) score += 1
     if (expressData.leccionesAprendidas.length > 0) score += 1
     if (expressData.personas.length > 0) score += 2
     if (expressData.evidencias.length > 0) score += 1
+    if (expressData.responsables.length > 0) score += 1
     if (expressData.acciones_tomadas) score += 1
     if (expressData.planAccionResumen) score += 1
     if (expressData.costosCalculados.length > 0) score += 1
     if (expressData.sourceReportsCount >= 3) score += 1
-    if (expressData.planAccionProgreso > 0) score += 1
 
     return Math.round((score / maxScore) * 100)
   }, [expressData])
@@ -258,7 +307,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
     setMode,
     toggleMode,
     expressData,
-    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT || isLoadingAP,
+    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT || isLoadingAP || isLoadingPhotos,
     canUseExpressMode,
     dataCompleteness,
   }

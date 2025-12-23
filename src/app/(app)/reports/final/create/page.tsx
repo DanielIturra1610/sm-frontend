@@ -322,7 +322,11 @@ export default function CreateFinalReportPage() {
           accion_plan: c.accion_plan,
           metodologia: c.metodologia,
         })),
-        costos_tabla: [],
+        costos_tabla: expressData.costosCalculados?.map((c) => ({
+          concepto: c.concepto,
+          monto: c.monto,
+          moneda: c.moneda,
+        })) || [],
         imagenes_evidencia: expressData.evidencias
           .filter((e) => e.seleccionada)
           .map((e) => ({
@@ -330,8 +334,14 @@ export default function CreateFinalReportPage() {
             descripcion: e.descripcion,
             fecha: e.fecha || '',
           })),
-        responsables_investigacion: [],
-        acciones_inmediatas_resumen: expressData.acciones_tomadas,
+        responsables_investigacion: expressData.responsables?.map((r) => ({
+          nombre: r.nombre,
+          cargo: r.cargo,
+          firma: '',
+        })) || [],
+        acciones_inmediatas_resumen: expressData.accionesInmediatasResumen || expressData.acciones_tomadas,
+        plan_accion_resumen: expressData.planAccionResumen,
+        lecciones_aprendidas: expressData.leccionesAprendidas?.join('\n\n') || '',
       }
 
       await createReport(formData)
@@ -385,7 +395,33 @@ export default function CreateFinalReportPage() {
         )
       }
 
-      setValue('acciones_inmediatas_resumen', expressData.acciones_tomadas)
+      // Responsables de investigación (incluye supervisor del Flash Report)
+      if (expressData.responsables && expressData.responsables.length > 0) {
+        replaceResponsables(
+          expressData.responsables.map((r) => ({
+            nombre: r.nombre,
+            cargo: r.cargo,
+            firma: '',
+          }))
+        )
+      }
+
+      // Costos calculados automáticamente
+      if (expressData.costosCalculados && expressData.costosCalculados.length > 0) {
+        replaceCostos(
+          expressData.costosCalculados.map((c) => ({
+            concepto: c.concepto,
+            monto: c.monto,
+            moneda: c.moneda,
+          }))
+        )
+      }
+
+      // Campos de texto
+      setValue('acciones_inmediatas_resumen', expressData.accionesInmediatasResumen || expressData.acciones_tomadas)
+      setValue('plan_accion_resumen', expressData.planAccionResumen || '')
+      setValue('lecciones_aprendidas', expressData.leccionesAprendidas?.join('\n\n') || '')
+
       setHasAutoFilled(true)
     }
 
