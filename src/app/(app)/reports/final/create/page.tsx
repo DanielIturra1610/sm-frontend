@@ -9,7 +9,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useCreateFinalReport, usePrefillData } from '@/shared/hooks/report-hooks'
+import { useCreateFinalReport, usePrefillData, useActionPlanReportByIncident } from '@/shared/hooks/report-hooks'
+import { useExtractedAnalysisData } from '@/shared/hooks/useExtractedAnalysisData'
+import { useExpressMode } from '@/shared/hooks/useExpressMode'
+import { ExpressModeSelector } from '@/shared/components/reports/ExpressModeSelector'
+import { DataPreviewCard } from '@/shared/components/reports/DataPreviewCard'
 import { finalReportSchema, type FinalReportFormData } from '@/lib/validations/report-schemas'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
@@ -24,7 +28,9 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Badge } from '@/shared/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
 import { toast } from 'sonner'
-import { Loader2, Save, Plus, Trash2, FileCheck, CheckCircle2, FileText } from 'lucide-react'
+import { Loader2, Save, Plus, Trash2, FileCheck, CheckCircle2, FileText, Image, Users, Truck, Building2, DollarSign, ClipboardCheck, Info, Link2, Sparkles } from 'lucide-react'
+import { ReportTimeline } from '@/shared/components/reports/ReportTimeline'
+import { LinkedReportsData } from '@/shared/components/reports/LinkedReportsData'
 
 export default function CreateFinalReportPage() {
   const router = useRouter()
@@ -54,18 +60,54 @@ export default function CreateFinalReportPage() {
     },
   })
 
-  const { fields: personas, append: appendPersona, remove: removePersona } = useFieldArray({ control, name: 'personas_involucradas' })
-  const { fields: equipos, append: appendEquipo, remove: removeEquipo } = useFieldArray({ control, name: 'equipos_danados' })
-  const { fields: terceros, append: appendTercero, remove: removeTercero } = useFieldArray({ control, name: 'terceros_identificados' })
+  const { fields: personas, append: appendPersona, remove: removePersona, replace: replacePersonas } = useFieldArray({ control, name: 'personas_involucradas' })
+  const { fields: equipos, append: appendEquipo, remove: removeEquipo, replace: replaceEquipos } = useFieldArray({ control, name: 'equipos_danados' })
+  const { fields: terceros, append: appendTercero, remove: removeTercero, replace: replaceTerceros } = useFieldArray({ control, name: 'terceros_identificados' })
   const { fields: causas, append: appendCausa, remove: removeCausa, replace: replaceCausas } = useFieldArray({ control, name: 'analisis_causas_raiz' })
-  const { fields: costos, append: appendCosto, remove: removeCosto } = useFieldArray({ control, name: 'costos_tabla' })
-  const { fields: evidencias, append: appendEvidencia, remove: removeEvidencia } = useFieldArray({ control, name: 'imagenes_evidencia' })
-  const { fields: responsables, append: appendResponsable, remove: removeResponsable } = useFieldArray({ control, name: 'responsables_investigacion' })
+  const { fields: costos, append: appendCosto, remove: removeCosto, replace: replaceCostos } = useFieldArray({ control, name: 'costos_tabla' })
+  const { fields: evidencias, append: appendEvidencia, remove: removeEvidencia, replace: replaceEvidencias } = useFieldArray({ control, name: 'imagenes_evidencia' })
+  const { fields: responsables, append: appendResponsable, remove: removeResponsable, replace: replaceResponsables } = useFieldArray({ control, name: 'responsables_investigacion' })
 
   const incident_id = watch('incident_id')
 
+  // Express Mode hook
+  const {
+    mode,
+    setMode,
+    expressData,
+    isLoading: isLoadingExpressData,
+    canUseExpressMode,
+    dataCompleteness,
+  } = useExpressMode(incident_id || null)
+
   // Fetch prefill data when incident is selected
   const { data: prefillData, isLoading: isLoadingPrefill } = usePrefillData(incident_id || null, 'final-report')
+
+  // Fetch action plan data to get correct progress percentage
+  const { data: actionPlanData } = useActionPlanReportByIncident(incident_id || null)
+
+  // Extract analysis data from linked reports (Five Whys, Fishbone, Causal Tree, Action Plan)
+  const {
+    causasRaiz: extractedCausas,
+    conclusiones: extractedConclusiones,
+    isLoading: isLoadingAnalysis
+  } = useExtractedAnalysisData(prefillData?.source_reports, incident_id)
+
+  // Handler to auto-fill analysis data from linked reports
+  const handleAutoFillAnalysis = () => {
+    if (extractedCausas.length > 0) {
+      const causasData = extractedCausas.map((c) => ({
+        problema: c.problema,
+        causa_raiz: c.causa_raiz,
+        accion_plan: c.accion_plan || '',
+        metodologia: c.metodologia || '',
+      }))
+      replaceCausas(causasData)
+      toast.success(`Se agregaron ${causasData.length} causas raíz de los análisis`)
+    } else {
+      toast.info('No se encontraron causas raíz en los análisis vinculados')
+    }
+  }
 
   // Auto-fill form when prefill data is available
   useEffect(() => {
@@ -102,7 +144,15 @@ export default function CreateFinalReportPage() {
         if (frd.conclusiones) setValue('conclusiones', frd.conclusiones)
         if (frd.lecciones_aprendidas) setValue('lecciones_aprendidas', frd.lecciones_aprendidas)
         if (frd.acciones_inmediatas_resumen) setValue('acciones_inmediatas_resumen', frd.acciones_inmediatas_resumen)
-        if (frd.plan_accion_resumen) setValue('plan_accion_resumen', frd.plan_accion_resumen)
+        // Generate plan_accion_resumen with correct progress from actual action plan data
+        if (actionPlanData && actionPlanData.items) {
+          const numTareas = actionPlanData.items.length
+          const avance = actionPlanData.porcentaje_avance_plan ??
+            Math.round((actionPlanData.items.filter(i => i.estado === 'completed').length / numTareas) * 100)
+          setValue('plan_accion_resumen', `Plan de acción con ${numTareas} tareas. Avance: ${avance}%.`)
+        } else if (frd.plan_accion_resumen) {
+          setValue('plan_accion_resumen', frd.plan_accion_resumen)
+        }
 
         // Root cause analysis - replace the array
         if (frd.analisis_causas_raiz && frd.analisis_causas_raiz.length > 0) {
@@ -114,6 +164,70 @@ export default function CreateFinalReportPage() {
           }))
           replaceCausas(causasData)
         }
+
+        // Personas involucradas - replace the array
+        if (frd.personas_involucradas && frd.personas_involucradas.length > 0) {
+          const personasData = frd.personas_involucradas.map((p) => ({
+            nombre: p.nombre || '',
+            cargo: p.cargo || '',
+            empresa: p.empresa || '',
+            tipo_lesion: p.tipo_lesion || '',
+          }))
+          replacePersonas(personasData)
+        }
+
+        // Equipos dañados - replace the array
+        if (frd.equipos_danados && frd.equipos_danados.length > 0) {
+          const equiposData = frd.equipos_danados.map((e) => ({
+            nombre: e.nombre || '',
+            tipo: '',
+            marca: '',
+            tipo_dano: e.descripcion || '',
+          }))
+          replaceEquipos(equiposData)
+        }
+
+        // Terceros identificados - replace the array
+        if (frd.terceros_identificados && frd.terceros_identificados.length > 0) {
+          const tercerosData = frd.terceros_identificados.map((t) => ({
+            nombre: t.nombre || '',
+            empresa: t.empresa || '',
+            rol: t.tipo_relacion || '',
+            contacto: '',
+          }))
+          replaceTerceros(tercerosData)
+        }
+
+        // Imágenes de evidencia - replace the array
+        if (frd.imagenes_evidencia && frd.imagenes_evidencia.length > 0) {
+          const imagenesData = frd.imagenes_evidencia.map((img) => ({
+            url: img.url || '',
+            descripcion: img.descripcion || '',
+            fecha: img.fecha || '',
+          }))
+          replaceEvidencias(imagenesData)
+        }
+
+        // Responsables de investigación - replace the array
+        if (frd.responsables_investigacion && frd.responsables_investigacion.length > 0) {
+          const responsablesData = frd.responsables_investigacion.map((r) => ({
+            nombre: r.nombre || '',
+            cargo: r.cargo || '',
+            firma: '',
+          }))
+          replaceResponsables(responsablesData)
+        }
+      }
+
+      // Also check top-level personas_involucradas from incident prefill
+      if (!prefillData.final_report_data?.personas_involucradas?.length && prefillData.personas_involucradas?.length) {
+        const personasData = prefillData.personas_involucradas.map((p) => ({
+          nombre: p.nombre || '',
+          cargo: p.cargo || '',
+          empresa: p.empresa || '',
+          tipo_lesion: p.tipo_lesion || '',
+        }))
+        replacePersonas(personasData)
       }
 
       // Basic description from prefill
@@ -125,7 +239,7 @@ export default function CreateFinalReportPage() {
       setHasAutoFilled(true)
       toast.success('Datos pre-llenados desde reportes anteriores')
     }
-  }, [prefillData, incident_id, hasAutoFilled, setValue, replaceCausas])
+  }, [prefillData, incident_id, hasAutoFilled, setValue, replaceCausas, replacePersonas, replaceEquipos, replaceTerceros, replaceEvidencias, replaceResponsables])
 
   // Reset autofill flag when incident changes
   useEffect(() => {
@@ -133,6 +247,20 @@ export default function CreateFinalReportPage() {
       setHasAutoFilled(false)
     }
   }, [incident_id])
+
+  // Update plan_accion_resumen when action plan data loads (with correct progress)
+  useEffect(() => {
+    if (actionPlanData && actionPlanData.items && actionPlanData.items.length > 0) {
+      const numTareas = actionPlanData.items.length
+      // Calculate average progress: use avance_real, or 100 if completed, or 0
+      const totalAvance = actionPlanData.items.reduce((sum, item) => {
+        if (item.estado === 'completed') return sum + 100
+        return sum + (item.avance_real || 0)
+      }, 0)
+      const avance = actionPlanData.porcentaje_avance_plan || Math.round(totalAvance / numTareas)
+      setValue('plan_accion_resumen', `Plan de acción con ${numTareas} tareas. Avance: ${avance}%.`)
+    }
+  }, [actionPlanData, setValue])
 
   // Count source reports for display
   const getSourceReportsCount = () => {
@@ -163,6 +291,108 @@ export default function CreateFinalReportPage() {
     }
   }
 
+  // Handler for Express Mode confirmation
+  const handleExpressConfirm = async () => {
+    if (!expressData || !incident_id) return
+
+    try {
+      setIsSubmitting(true)
+
+      // Build form data from express data
+      const formData: FinalReportFormData = {
+        incident_id,
+        company_data: {
+          nombre: expressData.empresa,
+        },
+        tipo_accidente_tabla: {},
+        detalles_accidente: expressData.descripcion,
+        descripcion_detallada: expressData.descripcion,
+        conclusiones: expressData.conclusiones,
+        personas_involucradas: expressData.personas.map((p) => ({
+          nombre: p.nombre,
+          cargo: p.cargo,
+          empresa: p.empresa,
+          tipo_lesion: p.tipo_lesion,
+        })),
+        equipos_danados: [],
+        terceros_identificados: [],
+        analisis_causas_raiz: expressData.causasRaiz.map((c) => ({
+          problema: c.problema,
+          causa_raiz: c.causa_raiz,
+          accion_plan: c.accion_plan,
+          metodologia: c.metodologia,
+        })),
+        costos_tabla: [],
+        imagenes_evidencia: expressData.evidencias
+          .filter((e) => e.seleccionada)
+          .map((e) => ({
+            url: e.url,
+            descripcion: e.descripcion,
+            fecha: e.fecha || '',
+          })),
+        responsables_investigacion: [],
+        acciones_inmediatas_resumen: expressData.acciones_tomadas,
+      }
+
+      await createReport(formData)
+      toast.success('Reporte Final creado exitosamente (Modo Express)')
+      router.push('/reports/final')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al crear el reporte')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Handler to switch to Complete mode for editing
+  const handleSwitchToComplete = () => {
+    // Auto-fill the form with express data before switching
+    if (expressData) {
+      setValue('company_data.nombre', expressData.empresa)
+      setValue('detalles_accidente', expressData.descripcion)
+      setValue('descripcion_detallada', expressData.descripcion)
+      setValue('conclusiones', expressData.conclusiones)
+
+      if (expressData.personas.length > 0) {
+        replacePersonas(
+          expressData.personas.map((p) => ({
+            nombre: p.nombre,
+            cargo: p.cargo,
+            empresa: p.empresa,
+            tipo_lesion: p.tipo_lesion,
+          }))
+        )
+      }
+
+      if (expressData.causasRaiz.length > 0) {
+        replaceCausas(
+          expressData.causasRaiz.map((c) => ({
+            problema: c.problema,
+            causa_raiz: c.causa_raiz,
+            accion_plan: c.accion_plan,
+            metodologia: c.metodologia,
+          }))
+        )
+      }
+
+      if (expressData.evidencias.length > 0) {
+        replaceEvidencias(
+          expressData.evidencias.map((e) => ({
+            url: e.url,
+            descripcion: e.descripcion,
+            fecha: e.fecha || '',
+          }))
+        )
+      }
+
+      setValue('acciones_inmediatas_resumen', expressData.acciones_tomadas)
+      setHasAutoFilled(true)
+    }
+
+    setMode('complete')
+    toast.info('Cambiado a Modo Completo. Puede editar todos los campos.')
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <ReportFormHeader
@@ -172,105 +402,138 @@ export default function CreateFinalReportPage() {
       />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Incident Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Selección de Incidente</CardTitle>
-            <CardDescription>
-              Seleccione el incidente para el cual se generará el reporte final.
-              Los datos se pre-llenarán automáticamente desde reportes anteriores.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <IncidentSelector
-              value={incident_id || ''}
-              onChange={(value) => {
-                setValue('incident_id', value)
-                setHasAutoFilled(false)
-              }}
-              error={errors.incident_id?.message}
-              required
-            />
+        {/* Incident Selection and Reports Timeline */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left: Incident Selection */}
+          <Card className="h-fit border-l-4 border-l-primary">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileCheck className="h-5 w-5 text-primary" />
+                </div>
+                Selección de Suceso
+              </CardTitle>
+              <CardDescription>
+                Seleccione el suceso para generar el informe final consolidado
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              <IncidentSelector
+                value={incident_id || ''}
+                onChange={(value) => {
+                  setValue('incident_id', value)
+                  setHasAutoFilled(false)
+                }}
+                error={errors.incident_id?.message}
+                required
+              />
 
-            {/* Prefill Status Indicator */}
-            {incident_id && (
-              <div className="space-y-3">
-                {isLoadingPrefill && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Cargando datos de reportes anteriores...
-                  </div>
-                )}
+              {/* Loading indicator */}
+              {incident_id && isLoadingPrefill && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground p-3 bg-gray-50 rounded-lg">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Cargando datos de reportes anteriores...
+                </div>
+              )}
 
-                {hasAutoFilled && prefillData && (
-                  <Alert>
-                    <CheckCircle2 className="h-4 w-4" />
-                    <AlertTitle>Datos pre-llenados</AlertTitle>
-                    <AlertDescription className="space-y-2">
-                      <p>Se han cargado datos de {getSourceReportsCount()} reporte(s) anterior(es).</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {prefillData.source_reports?.flash_report_id && (
-                          <Badge variant="secondary">
-                            <FileText className="h-3 w-3 mr-1" />
-                            Flash Report
-                          </Badge>
-                        )}
-                        {prefillData.source_reports?.immediate_actions_id && (
-                          <Badge variant="secondary">
-                            <FileText className="h-3 w-3 mr-1" />
-                            Acciones Inmediatas
-                          </Badge>
-                        )}
-                        {prefillData.source_reports?.root_cause_id && (
-                          <Badge variant="secondary">
-                            <FileText className="h-3 w-3 mr-1" />
-                            Causa Raíz
-                          </Badge>
-                        )}
-                        {prefillData.source_reports?.action_plan_id && (
-                          <Badge variant="secondary">
-                            <FileText className="h-3 w-3 mr-1" />
-                            Plan de Acción
-                          </Badge>
-                        )}
-                        {prefillData.source_reports?.zero_tolerance_id && (
-                          <Badge variant="secondary">
-                            <FileText className="h-3 w-3 mr-1" />
-                            Tolerancia Cero
-                          </Badge>
-                        )}
-                        {prefillData.source_reports?.five_whys_ids?.map((id, i) => (
-                          <Badge key={id} variant="outline" className="bg-blue-50">
-                            5 Porqués #{i + 1}
-                          </Badge>
-                        ))}
-                        {prefillData.source_reports?.fishbone_ids?.map((id, i) => (
-                          <Badge key={id} variant="outline" className="bg-green-50">
-                            Ishikawa #{i + 1}
-                          </Badge>
-                        ))}
-                        {prefillData.source_reports?.causal_tree_ids?.map((id, i) => (
-                          <Badge key={id} variant="outline" className="bg-purple-50">
-                            Árbol Causal #{i + 1}
-                          </Badge>
-                        ))}
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              {/* Success indicator */}
+              {hasAutoFilled && prefillData && (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-800">Datos pre-llenados exitosamente</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    Se han cargado datos de {getSourceReportsCount()} reporte(s) anterior(es).
+                    Revise y complete la información en las pestañas inferiores.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-        <Tabs defaultValue="company" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="company">Empresa</TabsTrigger>
-            <TabsTrigger value="accident">Accidente</TabsTrigger>
-            <TabsTrigger value="involved">Involucrados</TabsTrigger>
-            <TabsTrigger value="analysis">Análisis</TabsTrigger>
-            <TabsTrigger value="costs">Costos</TabsTrigger>
+              {/* Info when no incident selected */}
+              {!incident_id && (
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertTitle className="text-blue-800">Información</AlertTitle>
+                  <AlertDescription className="text-blue-700">
+                    Al seleccionar un suceso, se cargarán automáticamente los datos de todos los reportes previos vinculados.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Right: Reports Timeline */}
+          <ReportTimeline
+            prefillData={prefillData}
+            isLoading={isLoadingPrefill}
+            incidentId={incident_id}
+          />
+        </div>
+
+        {/* Express Mode Selector - only show when incident is selected */}
+        {incident_id && !isLoadingPrefill && (
+          <ExpressModeSelector
+            mode={mode}
+            onModeChange={setMode}
+            canUseExpressMode={canUseExpressMode}
+            dataCompleteness={dataCompleteness}
+            sourceReportsCount={expressData?.sourceReportsCount || 0}
+            isLoading={isLoadingExpressData}
+          />
+        )}
+
+        {/* Express Mode Preview - show when in express mode */}
+        {mode === 'express' && expressData && incident_id && (
+          <DataPreviewCard
+            empresa={expressData.empresa}
+            descripcion={expressData.descripcion}
+            causasRaiz={expressData.causasRaiz}
+            conclusiones={expressData.conclusiones}
+            personas={expressData.personas}
+            evidencias={expressData.evidencias}
+            analysisCount={expressData.analysisCount}
+            onConfirm={handleExpressConfirm}
+            onEdit={handleSwitchToComplete}
+            isLoading={isSubmitting}
+          />
+        )}
+
+        {/* Complete Mode - Full Form with Tabs */}
+        {mode === 'complete' && (
+        <Tabs defaultValue="linked-reports" className="w-full">
+          <TabsList className="grid w-full grid-cols-6 h-auto p-1">
+            <TabsTrigger value="linked-reports" className="flex items-center gap-2 py-2.5">
+              <Link2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Reportes</span>
+            </TabsTrigger>
+            <TabsTrigger value="company" className="flex items-center gap-2 py-2.5">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Empresa</span>
+            </TabsTrigger>
+            <TabsTrigger value="accident" className="flex items-center gap-2 py-2.5">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Accidente</span>
+            </TabsTrigger>
+            <TabsTrigger value="involved" className="flex items-center gap-2 py-2.5">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Involucrados</span>
+            </TabsTrigger>
+            <TabsTrigger value="analysis" className="flex items-center gap-2 py-2.5">
+              <ClipboardCheck className="h-4 w-4" />
+              <span className="hidden sm:inline">Análisis</span>
+            </TabsTrigger>
+            <TabsTrigger value="costs" className="flex items-center gap-2 py-2.5">
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Costos</span>
+            </TabsTrigger>
           </TabsList>
+
+          {/* Tab 0: Linked Reports Data */}
+          <TabsContent value="linked-reports">
+            <LinkedReportsData
+              sourceReports={prefillData?.source_reports}
+              isLoading={isLoadingPrefill}
+            />
+          </TabsContent>
 
           {/* Tab 1: Company Data */}
           <TabsContent value="company">
@@ -361,8 +624,16 @@ export default function CreateFinalReportPage() {
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Personas Involucradas</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendPersona({})}>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Personas Involucradas
+                      </CardTitle>
+                      <CardDescription>
+                        Personal afectado o involucrado en el incidente
+                      </CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendPersona({ nombre: '', cargo: '', empresa: '', tipo_lesion: '' })}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar
                     </Button>
@@ -370,23 +641,29 @@ export default function CreateFinalReportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {personas.map((field, index) => (
-                      <Card key={field.id} className="bg-gray-50">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            <div className="flex-1 grid grid-cols-2 gap-3">
-                              <Input {...register(`personas_involucradas.${index}.nombre`)} placeholder="Nombre" />
-                              <Input {...register(`personas_involucradas.${index}.cargo`)} placeholder="Cargo" />
-                              <Input {...register(`personas_involucradas.${index}.empresa`)} placeholder="Empresa" />
-                              <Input {...register(`personas_involucradas.${index}.tipo_lesion`)} placeholder="Tipo de lesión" />
+                    {personas.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay personas registradas. Se cargarán automáticamente al seleccionar un incidente con reportes previos.
+                      </p>
+                    ) : (
+                      personas.map((field, index) => (
+                        <Card key={field.id} className="bg-gray-50">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <div className="flex-1 grid grid-cols-2 gap-3">
+                                <Input {...register(`personas_involucradas.${index}.nombre`)} placeholder="Nombre" />
+                                <Input {...register(`personas_involucradas.${index}.cargo`)} placeholder="Cargo" />
+                                <Input {...register(`personas_involucradas.${index}.empresa`)} placeholder="Empresa" />
+                                <Input {...register(`personas_involucradas.${index}.tipo_lesion`)} placeholder="Tipo de lesión" />
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removePersona(index)}>
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
                             </div>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => removePersona(index)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -395,8 +672,16 @@ export default function CreateFinalReportPage() {
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Equipos Dañados</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendEquipo({})}>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Truck className="h-5 w-5" />
+                        Equipos Dañados
+                      </CardTitle>
+                      <CardDescription>
+                        Maquinaria, vehículos o equipos afectados
+                      </CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendEquipo({ nombre: '', tipo: '', marca: '', tipo_dano: '' })}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar
                     </Button>
@@ -404,23 +689,29 @@ export default function CreateFinalReportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {equipos.map((field, index) => (
-                      <Card key={field.id} className="bg-gray-50">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            <div className="flex-1 grid grid-cols-2 gap-3">
-                              <Input {...register(`equipos_danados.${index}.nombre`)} placeholder="Nombre" />
-                              <Input {...register(`equipos_danados.${index}.tipo`)} placeholder="Tipo" />
-                              <Input {...register(`equipos_danados.${index}.marca`)} placeholder="Marca" />
-                              <Input {...register(`equipos_danados.${index}.tipo_dano`)} placeholder="Tipo de daño" />
+                    {equipos.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay equipos registrados. Agregue los equipos dañados si corresponde.
+                      </p>
+                    ) : (
+                      equipos.map((field, index) => (
+                        <Card key={field.id} className="bg-gray-50">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <div className="flex-1 grid grid-cols-2 gap-3">
+                                <Input {...register(`equipos_danados.${index}.nombre`)} placeholder="Nombre" />
+                                <Input {...register(`equipos_danados.${index}.tipo`)} placeholder="Tipo" />
+                                <Input {...register(`equipos_danados.${index}.marca`)} placeholder="Marca" />
+                                <Input {...register(`equipos_danados.${index}.tipo_dano`)} placeholder="Tipo de daño" />
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeEquipo(index)}>
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
                             </div>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => removeEquipo(index)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -429,8 +720,16 @@ export default function CreateFinalReportPage() {
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Terceros Identificados</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendTercero({})}>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5" />
+                        Terceros Identificados
+                      </CardTitle>
+                      <CardDescription>
+                        Empresas o personas externas relacionadas con el incidente
+                      </CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendTercero({ nombre: '', empresa: '', rol: '', contacto: '' })}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar
                     </Button>
@@ -438,23 +737,29 @@ export default function CreateFinalReportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {terceros.map((field, index) => (
-                      <Card key={field.id} className="bg-gray-50">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            <div className="flex-1 grid grid-cols-2 gap-3">
-                              <Input {...register(`terceros_identificados.${index}.nombre`)} placeholder="Nombre" />
-                              <Input {...register(`terceros_identificados.${index}.empresa`)} placeholder="Empresa" />
-                              <Input {...register(`terceros_identificados.${index}.rol`)} placeholder="Rol" />
-                              <Input {...register(`terceros_identificados.${index}.contacto`)} placeholder="Contacto" />
+                    {terceros.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay terceros registrados. Agregue terceros involucrados si corresponde.
+                      </p>
+                    ) : (
+                      terceros.map((field, index) => (
+                        <Card key={field.id} className="bg-gray-50">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <div className="flex-1 grid grid-cols-2 gap-3">
+                                <Input {...register(`terceros_identificados.${index}.nombre`)} placeholder="Nombre" />
+                                <Input {...register(`terceros_identificados.${index}.empresa`)} placeholder="Empresa" />
+                                <Input {...register(`terceros_identificados.${index}.rol`)} placeholder="Rol" />
+                                <Input {...register(`terceros_identificados.${index}.contacto`)} placeholder="Contacto" />
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeTercero(index)}>
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
                             </div>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => removeTercero(index)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -464,6 +769,38 @@ export default function CreateFinalReportPage() {
           {/* Tab 4: Analysis */}
           <TabsContent value="analysis">
             <div className="space-y-6">
+              {/* Auto-fill from analyses alert */}
+              {prefillData?.source_reports && (
+                prefillData.source_reports.five_whys_ids?.length ||
+                prefillData.source_reports.fishbone_ids?.length ||
+                prefillData.source_reports.causal_tree_ids?.length
+              ) && (
+                <Alert className="border-purple-200 bg-purple-50">
+                  <Sparkles className="h-4 w-4 text-purple-600" />
+                  <AlertTitle className="text-purple-800">Análisis disponibles</AlertTitle>
+                  <AlertDescription className="text-purple-700 flex items-center justify-between">
+                    <span>
+                      Se encontraron análisis vinculados. Puede extraer automáticamente las causas raíz y conclusiones.
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAutoFillAnalysis}
+                      disabled={isLoadingAnalysis}
+                      className="ml-4 border-purple-300 text-purple-700 hover:bg-purple-100"
+                    >
+                      {isLoadingAnalysis ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      Extraer de análisis
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Root Cause Analysis Summary */}
               <Card>
                 <CardHeader>
@@ -474,10 +811,27 @@ export default function CreateFinalReportPage() {
                         Resumen de causas identificadas en los análisis realizados
                       </CardDescription>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendCausa({ problema: '', causa_raiz: '', accion_plan: '', metodologia: '' })}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAutoFillAnalysis}
+                        disabled={isLoadingAnalysis || !prefillData?.source_reports}
+                        title="Extraer causas de análisis vinculados"
+                      >
+                        {isLoadingAnalysis ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4 mr-2" />
+                        )}
+                        Auto-rellenar
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => appendCausa({ problema: '', causa_raiz: '', accion_plan: '', metodologia: '' })}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Agregar
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -577,8 +931,16 @@ export default function CreateFinalReportPage() {
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Costos</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendCosto({})}>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5" />
+                        Costos Asociados
+                      </CardTitle>
+                      <CardDescription>
+                        Estimación de costos directos e indirectos del incidente
+                      </CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendCosto({ concepto: '', monto: 0, moneda: 'CLP' })}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar
                     </Button>
@@ -586,22 +948,75 @@ export default function CreateFinalReportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {costos.map((field, index) => (
-                      <Card key={field.id} className="bg-gray-50">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            <div className="flex-1 grid grid-cols-3 gap-3">
-                              <Input {...register(`costos_tabla.${index}.concepto`)} placeholder="Concepto" />
-                              <Input {...register(`costos_tabla.${index}.monto`, { valueAsNumber: true })} type="number" placeholder="Monto" />
-                              <Input {...register(`costos_tabla.${index}.moneda`)} placeholder="Moneda" />
+                    {costos.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay costos registrados. Agregue los costos asociados al incidente.
+                      </p>
+                    ) : (
+                      costos.map((field, index) => (
+                        <Card key={field.id} className="bg-gray-50">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <div className="flex-1 grid grid-cols-3 gap-3">
+                                <Input {...register(`costos_tabla.${index}.concepto`)} placeholder="Concepto" />
+                                <Input {...register(`costos_tabla.${index}.monto`, { valueAsNumber: true })} type="number" placeholder="Monto" />
+                                <Input {...register(`costos_tabla.${index}.moneda`)} placeholder="Moneda" defaultValue="CLP" />
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeCosto(index)}>
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
                             </div>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => removeCosto(index)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Evidence Images */}
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Image className="h-5 w-5" />
+                        Imágenes de Evidencia
+                      </CardTitle>
+                      <CardDescription>
+                        Fotografías y evidencia visual del incidente
+                      </CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendEvidencia({ url: '', descripcion: '', fecha: '' })}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {evidencias.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay imágenes de evidencia. Agregue imágenes manualmente o seleccione un incidente con reportes previos que contengan fotografías.
+                      </p>
+                    ) : (
+                      evidencias.map((field, index) => (
+                        <Card key={field.id} className="bg-gray-50">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <Input {...register(`imagenes_evidencia.${index}.url`)} placeholder="URL de la imagen" className="md:col-span-2" />
+                                <Input {...register(`imagenes_evidencia.${index}.fecha`)} placeholder="Fecha" type="date" />
+                                <Input {...register(`imagenes_evidencia.${index}.descripcion`)} placeholder="Descripción de la imagen" className="md:col-span-3" />
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeEvidencia(index)}>
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -610,8 +1025,16 @@ export default function CreateFinalReportPage() {
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle>Responsables de Investigación</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendResponsable({})}>
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <ClipboardCheck className="h-5 w-5" />
+                        Responsables de Investigación
+                      </CardTitle>
+                      <CardDescription>
+                        Personal encargado de la investigación del incidente
+                      </CardDescription>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendResponsable({ nombre: '', cargo: '', firma: '' })}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar
                     </Button>
@@ -619,40 +1042,49 @@ export default function CreateFinalReportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {responsables.map((field, index) => (
-                      <Card key={field.id} className="bg-gray-50">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            <div className="flex-1 grid grid-cols-3 gap-3">
-                              <Input {...register(`responsables_investigacion.${index}.nombre`)} placeholder="Nombre" />
-                              <Input {...register(`responsables_investigacion.${index}.cargo`)} placeholder="Cargo" />
-                              <Input {...register(`responsables_investigacion.${index}.firma`)} placeholder="Firma" />
+                    {responsables.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay responsables registrados. Agregue los responsables de la investigación.
+                      </p>
+                    ) : (
+                      responsables.map((field, index) => (
+                        <Card key={field.id} className="bg-gray-50">
+                          <CardContent className="p-4">
+                            <div className="flex gap-4">
+                              <div className="flex-1 grid grid-cols-3 gap-3">
+                                <Input {...register(`responsables_investigacion.${index}.nombre`)} placeholder="Nombre" />
+                                <Input {...register(`responsables_investigacion.${index}.cargo`)} placeholder="Cargo" />
+                                <Input {...register(`responsables_investigacion.${index}.firma`)} placeholder="Firma" />
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeResponsable(index)}>
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
                             </div>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => removeResponsable(index)}>
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
         </Tabs>
+        )}
 
-        {/* Form Actions */}
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => router.push('/reports/final')} disabled={isMutating || isSubmitting}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isMutating || isSubmitting}>
-            {(isMutating || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <Save className="mr-2 h-4 w-4" />
-            Crear Reporte Final
-          </Button>
-        </div>
+        {/* Form Actions - only show in Complete mode */}
+        {mode === 'complete' && (
+          <div className="flex justify-end gap-4">
+            <Button type="button" variant="outline" onClick={() => router.push('/reports/final')} disabled={isMutating || isSubmitting}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isMutating || isSubmitting}>
+              {(isMutating || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="mr-2 h-4 w-4" />
+              Crear Reporte Final
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   )
