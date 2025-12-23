@@ -32,6 +32,14 @@ interface ResponsableData {
   rol?: string
 }
 
+interface ActionPlanItemSummary {
+  tarea: string
+  responsable?: string
+  estado: string
+  avance_real: number
+  fin?: string
+}
+
 interface ExpressModeData {
   // From incident/prefill
   empresa: string
@@ -64,14 +72,23 @@ interface ExpressModeData {
   severidad: string
   acciones_tomadas: string
 
+  // Flash Report / Immediate actions data
+  accionesInmediatas: string
+
   // Action plan data
   accionesInmediatasResumen: string
   planAccionResumen: string
   planAccionProgreso: number
+  planAccionItems: ActionPlanItemSummary[]
 
   // Calculated costs
   costosCalculados: CalculatedCost[]
   totalCostosEstimado: number
+
+  // Analysis IDs for links
+  causalTreeIds: string[]
+  fiveWhysIds: string[]
+  fishboneIds: string[]
 
   // Metadata
   sourceReportsCount: number
@@ -134,12 +151,22 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
     const ztData = extractFromZeroTolerance(zeroToleranceReport)
 
     // Consolidate personas from multiple sources
+    // Check both direct prefill and final_report_data for personas
     const flashPersonas = prefillData.personas_involucradas || []
+    const finalReportPersonas = prefillData.final_report_data?.personas_involucradas || []
     const ztPersonas = ztData?.personas || []
     const immediateResponsables: string[] = [] // Could be extracted from immediate actions if needed
 
+    // Combine flash and final report personas (avoiding duplicates)
+    const allFlashPersonas = [...flashPersonas]
+    finalReportPersonas.forEach((p) => {
+      if (!allFlashPersonas.some((fp) => fp.nombre?.toLowerCase() === p.nombre?.toLowerCase())) {
+        allFlashPersonas.push(p)
+      }
+    })
+
     const personas = consolidarPersonas(
-      flashPersonas.map((p) => ({
+      allFlashPersonas.map((p) => ({
         nombre: p.nombre,
         cargo: p.cargo,
         empresa: p.empresa,
@@ -240,6 +267,20 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       porcentajeAvance: actionPlanData?.porcentaje_avance_plan,
     })
 
+    // Extract action plan items for display
+    const planAccionItems: ActionPlanItemSummary[] = (actionPlanData?.items || []).map((item) => ({
+      tarea: item.tarea,
+      responsable: item.responsable,
+      estado: item.estado,
+      avance_real: item.avance_real,
+      fin: item.fin,
+    }))
+
+    // Get analysis IDs for links (sr already defined above)
+    const causalTreeIds = sr?.causal_tree_ids || []
+    const fiveWhysIds = sr?.five_whys_ids || []
+    const fishboneIds = sr?.fishbone_ids || []
+
     return {
       empresa: prefillData.empresa || '',
       descripcion: prefillData.descripcion || '',
@@ -260,11 +301,16 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       responsables,
       severidad: ztData?.severidad || '',
       acciones_tomadas: ztData?.acciones_tomadas || '',
+      accionesInmediatas: prefillData.acciones_inmediatas || '',
       accionesInmediatasResumen,
       planAccionResumen,
       planAccionProgreso: actionPlanData?.porcentaje_avance_plan || 0,
+      planAccionItems,
       costosCalculados,
       totalCostosEstimado,
+      causalTreeIds,
+      fiveWhysIds,
+      fishboneIds,
       sourceReportsCount,
       hasEnoughData,
     }

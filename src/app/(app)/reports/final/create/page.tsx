@@ -527,6 +527,14 @@ export default function CreateFinalReportPage() {
             personas={expressData.personas}
             evidencias={expressData.evidencias}
             analysisCount={expressData.analysisCount}
+            accionesInmediatas={expressData.accionesInmediatas}
+            planAccionItems={expressData.planAccionItems}
+            planAccionProgreso={expressData.planAccionProgreso}
+            responsables={expressData.responsables}
+            leccionesAprendidas={expressData.leccionesAprendidas}
+            causalTreeIds={expressData.causalTreeIds}
+            fiveWhysIds={expressData.fiveWhysIds}
+            fishboneIds={expressData.fishboneIds}
             onConfirm={handleExpressConfirm}
             onEdit={handleSwitchToComplete}
             isLoading={isSubmitting}
