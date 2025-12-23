@@ -7,7 +7,8 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useExtractedAnalysisData } from './useExtractedAnalysisData'
-import { usePrefillData, useZeroToleranceReport } from './report-hooks'
+import { usePrefillData, useZeroToleranceReport, useActionPlanReportByIncident } from './report-hooks'
+import { useCalculatedCosts, type CalculatedCost } from './useCalculatedCosts'
 import {
   extractFromZeroTolerance,
   consolidarPersonas,
@@ -15,7 +16,12 @@ import {
   type PersonaConsolidada,
   type EvidenciaConsolidada,
 } from '@/shared/utils/finalReportExtractors'
-import type { SourceReportsInfo, Fotografia } from '@/shared/types/api'
+import {
+  generateConclusions,
+  generateLessonsLearned,
+  generateActionsResume,
+} from '@/shared/utils/reportGenerators'
+import type { Fotografia } from '@/shared/types/api'
 
 export type ReportMode = 'express' | 'complete'
 
@@ -34,6 +40,7 @@ interface ExpressModeData {
     metodologia: string
   }>
   conclusiones: string
+  leccionesAprendidas: string[]
   analysisCount: {
     fiveWhys: number
     fishbone: number
@@ -47,6 +54,15 @@ interface ExpressModeData {
   // Zero Tolerance data
   severidad: string
   acciones_tomadas: string
+
+  // Action plan data
+  accionesInmediatasResumen: string
+  planAccionResumen: string
+  planAccionProgreso: number
+
+  // Calculated costs
+  costosCalculados: CalculatedCost[]
+  totalCostosEstimado: number
 
   // Metadata
   sourceReportsCount: number
@@ -77,7 +93,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
 
   const {
     causasRaiz,
-    conclusiones,
+    conclusiones: extractedConclusiones,
     analysisCount,
     isLoading: isLoadingAnalysis,
   } = useExtractedAnalysisData(prefillData?.source_reports, incidentId)
@@ -86,6 +102,17 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
   const zeroToleranceId = prefillData?.source_reports?.zero_tolerance_id || null
   const { data: zeroToleranceReport, isLoading: isLoadingZT } =
     useZeroToleranceReport(zeroToleranceId)
+
+  // Fetch Action Plan if available
+  const { data: actionPlanData, isLoading: isLoadingAP } =
+    useActionPlanReportByIncident(incidentId)
+
+  // Calculate costs
+  const { costos: costosCalculados, totalEstimado: totalCostosEstimado } = useCalculatedCosts({
+    equiposDanados: prefillData?.equipos_danados,
+    personasInvolucradas: prefillData?.personas_involucradas,
+    actionPlanItems: actionPlanData?.items,
+  })
 
   // Calculate consolidated data
   const expressData = useMemo<ExpressModeData | null>(() => {
@@ -142,6 +169,31 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       sourceReportsCount >= 2 && // At least 2 source reports
       (causasRaiz.length > 0 || personas.length > 0) // And some extracted data
 
+    // Generate conclusions if not extracted
+    const conclusiones = extractedConclusiones || generateConclusions({
+      causasRaiz,
+      tipoIncidente: prefillData.tipo || 'incidente',
+      personasAfectadas: personas.length,
+      equiposDanados: prefillData.equipos_danados?.length || 0,
+      severidad: ztData?.severidad,
+      accionesTomadas: ztData?.acciones_tomadas,
+      planAccionProgreso: actionPlanData?.porcentaje_avance_plan,
+    })
+
+    // Generate lessons learned
+    const leccionesAprendidas = generateLessonsLearned({
+      causasRaiz,
+      tipoIncidente: prefillData.tipo,
+      accionesCorrectivas: causasRaiz.map((c) => c.accion_plan).filter(Boolean),
+    })
+
+    // Generate action resumes
+    const { accionesInmediatasResumen, planAccionResumen } = generateActionsResume({
+      accionesInmediatas: ztData?.acciones_tomadas || prefillData.acciones_inmediatas,
+      actionPlanItems: actionPlanData?.items,
+      porcentajeAvance: actionPlanData?.porcentaje_avance_plan,
+    })
+
     return {
       empresa: prefillData.empresa || '',
       descripcion: prefillData.descripcion || '',
@@ -154,32 +206,42 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
         metodologia: c.metodologia,
       })),
       conclusiones,
+      leccionesAprendidas,
       analysisCount,
       personas,
       evidencias,
       severidad: ztData?.severidad || '',
       acciones_tomadas: ztData?.acciones_tomadas || '',
+      accionesInmediatasResumen,
+      planAccionResumen,
+      planAccionProgreso: actionPlanData?.porcentaje_avance_plan || 0,
+      costosCalculados,
+      totalCostosEstimado,
       sourceReportsCount,
       hasEnoughData,
     }
-  }, [prefillData, causasRaiz, conclusiones, analysisCount, zeroToleranceReport])
+  }, [prefillData, causasRaiz, extractedConclusiones, analysisCount, zeroToleranceReport, actionPlanData, costosCalculados, totalCostosEstimado])
 
   // Calculate data completeness percentage
   const dataCompleteness = useMemo(() => {
     if (!expressData) return 0
 
     let score = 0
-    const maxScore = 10
+    const maxScore = 14
 
     // Check each data category
     if (expressData.empresa) score += 1
     if (expressData.descripcion) score += 1
     if (expressData.causasRaiz.length > 0) score += 2
     if (expressData.conclusiones) score += 1
+    if (expressData.leccionesAprendidas.length > 0) score += 1
     if (expressData.personas.length > 0) score += 2
     if (expressData.evidencias.length > 0) score += 1
     if (expressData.acciones_tomadas) score += 1
+    if (expressData.planAccionResumen) score += 1
+    if (expressData.costosCalculados.length > 0) score += 1
     if (expressData.sourceReportsCount >= 3) score += 1
+    if (expressData.planAccionProgreso > 0) score += 1
 
     return Math.round((score / maxScore) * 100)
   }, [expressData])
@@ -196,7 +258,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
     setMode,
     toggleMode,
     expressData,
-    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT,
+    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT || isLoadingAP,
     canUseExpressMode,
     dataCompleteness,
   }
