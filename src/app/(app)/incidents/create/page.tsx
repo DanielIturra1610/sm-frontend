@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateIncident } from '@/shared/hooks/incident-hooks'
@@ -31,10 +31,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { ArrowLeft, Save, Loader2, X, FileText } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, X, FileText, Users, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { SUCESO_CATEGORIES, getSucesoTypesByCategory, getSucesoTypeLabel } from '@/shared/constants/suceso-options'
 import type { SucesoCategory, SucesoType } from '@/shared/types/api'
+
+// Schema para persona involucrada
+const personaInvolucradaSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es requerido'),
+  cargo: z.string().optional(),
+  empresa: z.string().optional(),
+  tipo_lesion: z.string().optional(),
+})
 
 // Schema completo para Suceso + Flash Report
 const incidentWithFlashSchema = z.object({
@@ -53,6 +61,9 @@ const incidentWithFlashSchema = z.object({
   area_zona: z.string().optional(),
   empresa: z.string().optional(),
   supervisor: z.string().optional(),
+
+  // === PERSONAS INVOLUCRADAS ===
+  personas_involucradas: z.array(personaInvolucradaSchema).optional().default([]),
 
   // === DATOS ADICIONALES FLASH REPORT ===
   zonal: z.string().optional(),
@@ -105,7 +116,14 @@ export default function CreateIncidentPage() {
       incidente_industrial: false,
       incidente_laboral: false,
       es_plgf: false,
+      personas_involucradas: [],
     },
+  })
+
+  // Field array para personas involucradas
+  const { fields: personas, append: appendPersona, remove: removePersona } = useFieldArray({
+    control: form.control,
+    name: 'personas_involucradas',
   })
 
   const watchTipoSuceso = form.watch('tipoSuceso')
@@ -161,6 +179,7 @@ export default function CreateIncidentPage() {
         area_zona: data.area_zona,
         empresa: data.empresa,
         supervisor: data.supervisor,
+        personas_involucradas: data.personas_involucradas,
       }
 
       const newIncident = await createIncident(incidentData)
@@ -202,6 +221,7 @@ export default function CreateIncidentPage() {
         es_plgf: data.es_plgf,
         nivel_plgf: data.nivel_plgf,
         justificacion_plgf: data.justificacion_plgf,
+        personas_involucradas: data.personas_involucradas,
       }
 
       await createFlashReport(flashReportData)
@@ -627,7 +647,133 @@ export default function CreateIncidentPage() {
               </CardContent>
             </Card>
 
-            {/* Card 3: Descripción y Acciones */}
+            {/* Card 3: Personas Involucradas */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Personas Involucradas
+                  </CardTitle>
+                  <CardDescription>
+                    Registre las personas afectadas o involucradas en el suceso
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendPersona({ nombre: '', cargo: '', empresa: '', tipo_lesion: '' })}
+                  disabled={isSubmitting}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {personas.length === 0 ? (
+                  <div className="text-center py-6 border rounded-lg bg-gray-50">
+                    <Users className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      No hay personas registradas.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Haga clic en &quot;Agregar&quot; para registrar personas involucradas.
+                    </p>
+                  </div>
+                ) : (
+                  personas.map((field, index) => (
+                    <div key={field.id} className="border rounded-lg p-4 bg-gray-50">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-medium text-sm">Persona {index + 1}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removePersona(index)}
+                          disabled={isSubmitting}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name={`personas_involucradas.${index}.nombre`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nombre *</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Nombre completo"
+                                  {...field}
+                                  disabled={isSubmitting}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`personas_involucradas.${index}.cargo`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Cargo</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Cargo o posición"
+                                  {...field}
+                                  disabled={isSubmitting}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`personas_involucradas.${index}.empresa`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Empresa</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Empresa o contratista"
+                                  {...field}
+                                  disabled={isSubmitting}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`personas_involucradas.${index}.tipo_lesion`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Tipo de Lesión</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Ej: Contusión, fractura, etc."
+                                  {...field}
+                                  disabled={isSubmitting}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card 4: Descripción y Acciones */}
             <Card>
               <CardHeader>
                 <CardTitle>Descripción y Acciones</CardTitle>
@@ -717,7 +863,7 @@ export default function CreateIncidentPage() {
               </CardContent>
             </Card>
 
-            {/* Card 4: Fotografías */}
+            {/* Card 5: Fotografías */}
             <Card>
               <CardHeader>
                 <CardTitle>Fotografías</CardTitle>

@@ -11,13 +11,17 @@ import {
   useSubmitFinalReport,
   useApproveFinalReport,
   useDeleteFinalReport,
+  usePrefillData,
 } from '@/shared/hooks/report-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
 import { useFinalReportPhotos } from '@/shared/hooks/attachment-hooks'
 import { PhotoGallery } from '@/shared/components/attachments'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
+import { ReportTimeline } from '@/shared/components/reports/ReportTimeline'
+import { LinkedReportsData } from '@/shared/components/reports/LinkedReportsData'
 import { ExportButtons } from '@/shared/components/reports/ExportButtons'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Separator } from '@/shared/components/ui/separator'
@@ -35,7 +39,7 @@ import {
 } from '@/shared/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { toast } from 'sonner'
-import { Edit, Send, CheckCircle, Trash2, AlertCircle, Building2, Users, Wrench, DollarSign, FileCheck, Camera } from 'lucide-react'
+import { Edit, Send, CheckCircle, Trash2, AlertCircle, Building2, Users, Wrench, DollarSign, FileCheck, Camera, Calendar, MapPin, Search, Loader2, Link2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -49,6 +53,15 @@ export default function FinalReportDetailPage() {
   const { trigger: approveReport, isMutating: isApproving } = useApproveFinalReport(id)
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteFinalReport()
   const { data: photos, isLoading: photosLoading } = useFinalReportPhotos(report?.incident_id || null)
+
+  // Get incident details
+  const { data: incident } = useIncident(report?.incident_id || '')
+
+  // Get prefill data for timeline
+  const { data: prefillData, isLoading: isLoadingPrefill } = usePrefillData(
+    report?.incident_id || null,
+    'final-report'
+  )
 
   const handleSubmit = async () => {
     try {
@@ -156,19 +169,150 @@ export default function FinalReportDetailPage() {
             reportType="final-reports"
             reportId={id}
             reportStatus={report.report_status}
+            metadata={{
+              empresa: report.company_data?.nombre,
+              tipoIncidente: incident?.tipo,
+              fecha: incident?.fecha_ocurrencia ? new Date(incident.fecha_ocurrencia).toISOString().split('T')[0] : undefined,
+              correlativo: incident?.correlativo,
+            }}
           />
         </div>
       </div>
 
-      <Tabs defaultValue="company" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="company">Empresa</TabsTrigger>
-          <TabsTrigger value="accident">Accidente</TabsTrigger>
-          <TabsTrigger value="involved">Involucrados</TabsTrigger>
-          <TabsTrigger value="analysis">Análisis</TabsTrigger>
-          <TabsTrigger value="costs">Costos</TabsTrigger>
-          <TabsTrigger value="photos">Fotos</TabsTrigger>
+      {/* Incident Info and Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Left: Incident Summary */}
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FileCheck className="h-5 w-5 text-primary" />
+              </div>
+              Información del Suceso
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {incident ? (
+              <>
+                <div>
+                  <h3 className="font-semibold text-lg text-gray-900">
+                    {incident.descripcion_breve || incident.title || 'Suceso'}
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {incident.correlativo && (
+                      <Badge variant="secondary">{incident.correlativo}</Badge>
+                    )}
+                    {incident.tipo && (
+                      <Badge variant="outline">{incident.tipo}</Badge>
+                    )}
+                    {incident.severity && (
+                      <Badge
+                        className={
+                          incident.severity === 'critical' ? 'bg-red-100 text-red-800' :
+                          incident.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                          incident.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }
+                      >
+                        {incident.severity === 'critical' ? 'Crítico' :
+                         incident.severity === 'high' ? 'Alto' :
+                         incident.severity === 'medium' ? 'Medio' : 'Bajo'}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {incident.fecha_ocurrencia && (
+                    <div className="flex items-start gap-2">
+                      <Calendar className="h-4 w-4 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-gray-500">Fecha del suceso</p>
+                        <p className="font-medium">
+                          {format(new Date(incident.fecha_ocurrencia), "d 'de' MMMM, yyyy", { locale: es })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {incident.lugar && (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="text-gray-500">Ubicación</p>
+                        <p className="font-medium">{incident.lugar}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {incident.descripcion && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Descripción</p>
+                      <p className="text-sm text-gray-700 line-clamp-3">{incident.descripcion}</p>
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Cargando información del suceso...</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Right: Reports Timeline */}
+        <ReportTimeline
+          prefillData={prefillData}
+          isLoading={isLoadingPrefill}
+          incidentId={report.incident_id}
+        />
+      </div>
+
+      <Tabs defaultValue="linked-reports" className="w-full">
+        <TabsList className="grid w-full grid-cols-7 h-auto p-1">
+          <TabsTrigger value="linked-reports" className="flex items-center gap-2 py-2.5">
+            <Link2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Reportes</span>
+          </TabsTrigger>
+          <TabsTrigger value="company" className="flex items-center gap-2 py-2.5">
+            <Building2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Empresa</span>
+          </TabsTrigger>
+          <TabsTrigger value="accident" className="flex items-center gap-2 py-2.5">
+            <FileCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Accidente</span>
+          </TabsTrigger>
+          <TabsTrigger value="involved" className="flex items-center gap-2 py-2.5">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Involucrados</span>
+          </TabsTrigger>
+          <TabsTrigger value="analysis" className="flex items-center gap-2 py-2.5">
+            <Search className="h-4 w-4" />
+            <span className="hidden sm:inline">Análisis</span>
+          </TabsTrigger>
+          <TabsTrigger value="costs" className="flex items-center gap-2 py-2.5">
+            <DollarSign className="h-4 w-4" />
+            <span className="hidden sm:inline">Costos</span>
+          </TabsTrigger>
+          <TabsTrigger value="photos" className="flex items-center gap-2 py-2.5">
+            <Camera className="h-4 w-4" />
+            <span className="hidden sm:inline">Fotos</span>
+          </TabsTrigger>
         </TabsList>
+
+        {/* Linked Reports Data - New comprehensive tab */}
+        <TabsContent value="linked-reports">
+          <LinkedReportsData
+            sourceReports={prefillData?.source_reports}
+            isLoading={isLoadingPrefill}
+          />
+        </TabsContent>
 
         {/* Company Data */}
         <TabsContent value="company">

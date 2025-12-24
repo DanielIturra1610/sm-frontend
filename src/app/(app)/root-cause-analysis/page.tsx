@@ -152,11 +152,23 @@ export default function RootCauseAnalysisPage() {
 
   const isLoading = loadingCausalTree || loadingFishbone || loadingFiveWhys
 
+  // Helper to get display title for causal tree: "Árbol Causal - [título/evento]"
+  const getCausalTreeDisplayTitle = (analysis: any): string => {
+    const prefix = 'Árbol Causal'
+    if (analysis.title && analysis.title.trim()) {
+      return `${prefix} - ${analysis.title.trim()}`
+    }
+    if (analysis.finalEvent && analysis.finalEvent.trim()) {
+      return `${prefix} - ${analysis.finalEvent.trim()}`
+    }
+    return prefix
+  }
+
   // Unify all analyses into a single list
   const allAnalyses: UnifiedAnalysis[] = [
     ...(causalTreeData?.analyses || []).map((a: any) => ({
       id: a.id,
-      title: a.title || 'Árbol Causal',
+      title: getCausalTreeDisplayTitle(a),
       methodology: 'causal-tree' as const,
       status: a.status || 'draft',
       incidentId: a.incidentId || '',

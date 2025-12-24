@@ -46,7 +46,10 @@ import {
   MapPin,
   Building2,
   User,
+  Users,
   Camera,
+  Briefcase,
+  HeartPulse,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -320,6 +323,81 @@ export default function FlashReportDetailPage() {
                   <p className="font-medium">{report.zonal}</p>
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Personas Involucradas */}
+      {report.personas_involucradas && report.personas_involucradas.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Personas Involucradas
+              <Badge variant="secondary" className="ml-2">
+                {report.personas_involucradas.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {report.personas_involucradas.map((persona, index) => {
+                const hasInjury = persona.tipo_lesion &&
+                  persona.tipo_lesion.toLowerCase() !== 'sin lesiones' &&
+                  persona.tipo_lesion.toLowerCase() !== 'ninguna' &&
+                  persona.tipo_lesion.trim() !== ''
+
+                return (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border ${
+                      hasInjury
+                        ? 'border-red-200 bg-red-50'
+                        : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-full ${
+                        hasInjury ? 'bg-red-100' : 'bg-gray-200'
+                      }`}>
+                        <User className={`h-4 w-4 ${
+                          hasInjury ? 'text-red-600' : 'text-gray-600'
+                        }`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {persona.nombre || 'Sin nombre'}
+                        </p>
+                        {persona.cargo && (
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <Briefcase className="h-3.5 w-3.5 text-gray-400" />
+                            <p className="text-sm text-gray-600 truncate">{persona.cargo}</p>
+                          </div>
+                        )}
+                        {persona.empresa && (
+                          <div className="flex items-center gap-1.5 mt-1">
+                            <Building2 className="h-3.5 w-3.5 text-gray-400" />
+                            <p className="text-sm text-gray-600 truncate">{persona.empresa}</p>
+                          </div>
+                        )}
+                        {persona.tipo_lesion && (
+                          <div className="flex items-start gap-1.5 mt-2">
+                            <HeartPulse className={`h-3.5 w-3.5 mt-0.5 ${
+                              hasInjury ? 'text-red-500' : 'text-green-500'
+                            }`} />
+                            <p className={`text-sm ${
+                              hasInjury ? 'text-red-700 font-medium' : 'text-green-700'
+                            }`}>
+                              {persona.tipo_lesion}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>

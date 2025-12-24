@@ -12,6 +12,7 @@ import {
   useApproveActionPlanReport,
   useDeleteActionPlanReport,
 } from '@/shared/hooks/report-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { ExportButtons } from '@/shared/components/reports/ExportButtons'
@@ -53,6 +54,7 @@ export default function ActionPlanReportDetailPage() {
   const { trigger: submitReport, isMutating: isSubmitting } = useSubmitActionPlanReport(id)
   const { trigger: approveReport, isMutating: isApproving } = useApproveActionPlanReport(id)
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteActionPlanReport()
+  const { data: incident } = useIncident(report?.incident_id || '')
 
   const handleSubmit = async () => {
     try {
@@ -167,6 +169,11 @@ export default function ActionPlanReportDetailPage() {
             reportType="action-plan"
             reportId={id}
             reportStatus={report.report_status}
+            metadata={{
+              tipoIncidente: incident?.tipo,
+              fecha: incident?.fecha_ocurrencia ? new Date(incident.fecha_ocurrencia).toISOString().split('T')[0] : undefined,
+              correlativo: incident?.correlativo,
+            }}
           />
         </div>
       </div>

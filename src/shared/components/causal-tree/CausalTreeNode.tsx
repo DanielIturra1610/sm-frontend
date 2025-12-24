@@ -112,38 +112,37 @@ const CausalTreeNode = ({ data }: NodeProps<CausalTreeNodeData>) => {
               )}
             </div>
 
-            {!isCircle && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                    <MoreVertical className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(causalNode)}>
-                      <Edit className="h-3 w-3 mr-2" />
-                      Editar
-                    </DropdownMenuItem>
-                  )}
-                  {onMarkAsRootCause && !causalNode.isRootCause && (
-                    <DropdownMenuItem onClick={() => onMarkAsRootCause(causalNode.id)}>
-                      <Flag className="h-3 w-3 mr-2" />
-                      Marcar Raíz
-                    </DropdownMenuItem>
-                  )}
-                  {onDelete && causalNode.nodeType !== 'final_event' && (
-                    <DropdownMenuItem
-                      onClick={() => onDelete(causalNode.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="h-3 w-3 mr-2" />
-                      Eliminar
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            {/* Menú de opciones para TODOS los nodos (círculos y cuadrados) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                  <MoreVertical className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onEdit && (
+                  <DropdownMenuItem onClick={() => onEdit(causalNode)}>
+                    <Edit className="h-3 w-3 mr-2" />
+                    Editar
+                  </DropdownMenuItem>
+                )}
+                {onMarkAsRootCause && !causalNode.isRootCause && causalNode.nodeType !== 'final_event' && (
+                  <DropdownMenuItem onClick={() => onMarkAsRootCause(causalNode.id)}>
+                    <Flag className="h-3 w-3 mr-2" />
+                    Marcar Causa Raíz
+                  </DropdownMenuItem>
+                )}
+                {onDelete && causalNode.nodeType !== 'final_event' && (
+                  <DropdownMenuItem
+                    onClick={() => onDelete(causalNode.id)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Eliminar
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Fact - texto principal */}

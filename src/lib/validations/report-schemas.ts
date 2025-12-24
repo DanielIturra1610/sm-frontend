@@ -169,6 +169,32 @@ export const costoItemSchema = z.object({
   descripcion: z.string().optional(),
 })
 
+export const terceroIdentificadoSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es requerido'),
+  empresa: z.string().optional(),
+  rol: z.string().optional(),
+  contacto: z.string().optional(),
+})
+
+export const imagenEvidenciaSchema = z.object({
+  url: z.string().min(1, 'La URL es requerida'),
+  descripcion: z.string().optional(),
+  fecha: z.string().optional(),
+})
+
+export const responsableInvestigacionSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es requerido'),
+  cargo: z.string().optional(),
+  firma: z.string().optional(),
+})
+
+export const causaRaizSummarySchema = z.object({
+  problema: z.string().min(1, 'El problema es requerido'),
+  causa_raiz: z.string().min(1, 'La causa raíz es requerida'),
+  accion_plan: z.string().optional(),
+  metodologia: z.string().optional(),
+})
+
 export const finalReportSchema = z.object({
   incident_id: z.string().uuid('Debe ser un UUID válido'),
   company_data: companyDataSchema.optional(),
@@ -183,13 +209,17 @@ export const finalReportSchema = z.object({
   }).optional(),
   personas_involucradas: z.array(personaInvolucradaSchema).optional(),
   equipos_danados: z.array(equipoDanadoSchema).optional(),
+  terceros_identificados: z.array(terceroIdentificadoSchema).optional(),
   detalles_accidente: z.string().optional(),
+  analisis_causas_raiz: z.array(causaRaizSummarySchema).optional(),
   descripcion_detallada: z.string().optional(),
   conclusiones: z.string().optional(),
   lecciones_aprendidas: z.string().optional(),
   acciones_inmediatas_resumen: z.string().optional(),
   plan_accion_resumen: z.string().optional(),
   costos_tabla: z.array(costoItemSchema).optional(),
+  imagenes_evidencia: z.array(imagenEvidenciaSchema).optional(),
+  responsables_investigacion: z.array(responsableInvestigacionSchema).optional(),
 })
 
 export type FinalReportFormData = z.infer<typeof finalReportSchema>

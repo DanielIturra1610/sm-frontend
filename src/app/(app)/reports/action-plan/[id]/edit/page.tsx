@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,15 +20,9 @@ import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { toast } from 'sonner'
-import { Loader2, Save, Plus, Trash2, Copy, Calendar, CheckCircle2 } from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/components/ui/table'
+import { Loader2, Save, Plus, Trash2, Copy, Calendar, CheckCircle2, TrendingUp } from 'lucide-react'
+import { Separator } from '@/shared/components/ui/separator'
+import { addDays, format, differenceInDays } from 'date-fns'
 
 const TASK_ESTADOS = [
   { value: 'pending', label: 'Pendiente' },
@@ -37,6 +31,15 @@ const TASK_ESTADOS = [
   { value: 'cancelled', label: 'Cancelada' },
   { value: 'delayed', label: 'Retrasada' },
 ]
+
+// Helper to convert date string to ISO format for backend
+const toISODate = (dateStr: string | undefined): string | undefined => {
+  if (!dateStr) return undefined
+  // If already in ISO format, return as-is
+  if (dateStr.includes('T')) return dateStr
+  // Convert YYYY-MM-DD to ISO format
+  return `${dateStr}T00:00:00Z`
+}
 
 export default function EditActionPlanReportPage() {
   const router = useRouter()
@@ -65,6 +68,12 @@ export default function EditActionPlanReportPage() {
   })
 
   const items = watch('items')
+  const fecha_inicio = watch('fecha_inicio')
+  const duracion_dias = watch('duracion_dias')
+  const fecha_fin_estimada = watch('fecha_fin_estimada')
+
+  // Ref to track which field triggered the change (to avoid infinite loops)
+  const dateChangeSource = useRef<'inicio' | 'duracion' | 'fin' | null>(null)
 
   // Load existing report data
   useEffect(() => {
@@ -92,11 +101,62 @@ export default function EditActionPlanReportPage() {
     }
   }, [report, reset])
 
+  // Auto-calculate dates bidirectionally
+  // When fecha_inicio changes → recalculate fecha_fin (keeping duracion)
+  useEffect(() => {
+    if (dateChangeSource.current === 'inicio') {
+      if (fecha_inicio && duracion_dias) {
+        const endDate = addDays(new Date(fecha_inicio), duracion_dias)
+        setValue('fecha_fin_estimada', format(endDate, 'yyyy-MM-dd'))
+      }
+    }
+    dateChangeSource.current = null
+  }, [fecha_inicio, setValue])
+
+  // When duracion_dias changes → recalculate fecha_fin
+  useEffect(() => {
+    if (dateChangeSource.current === 'duracion') {
+      if (fecha_inicio && duracion_dias) {
+        const endDate = addDays(new Date(fecha_inicio), duracion_dias)
+        setValue('fecha_fin_estimada', format(endDate, 'yyyy-MM-dd'))
+      }
+    }
+    dateChangeSource.current = null
+  }, [duracion_dias, setValue])
+
+  // When fecha_fin_estimada changes → recalculate duracion_dias
+  useEffect(() => {
+    if (dateChangeSource.current === 'fin') {
+      if (fecha_inicio && fecha_fin_estimada) {
+        const startDate = new Date(fecha_inicio)
+        const endDate = new Date(fecha_fin_estimada)
+        const days = differenceInDays(endDate, startDate)
+        if (days >= 0) {
+          setValue('duracion_dias', days)
+        }
+      }
+    }
+    dateChangeSource.current = null
+  }, [fecha_fin_estimada, setValue])
+
   const onSubmit = async (data: ActionPlanReportFormData) => {
     try {
       setIsSubmitting(true)
+
+      // Convert all dates to ISO format for backend
+      const formattedData = {
+        ...data,
+        fecha_inicio: toISODate(data.fecha_inicio),
+        fecha_fin_estimada: toISODate(data.fecha_fin_estimada),
+        items: data.items?.map(item => ({
+          ...item,
+          inicio: toISODate(item.inicio),
+          fin: toISODate(item.fin),
+        })),
+      }
+
       // @ts-expect-error - useSWRMutation type signature issue
-      await updateReport(data)
+      await updateReport(formattedData)
       toast.success('Plan de Acción actualizado exitosamente')
       router.push(`/reports/action-plan/${id}`)
     } catch (error) {
@@ -207,7 +267,9 @@ export default function EditActionPlanReportPage() {
                 <Input
                   id="fecha_inicio"
                   type="date"
-                  {...register('fecha_inicio')}
+                  {...register('fecha_inicio', {
+                    onChange: () => { dateChangeSource.current = 'inicio' }
+                  })}
                 />
                 {errors.fecha_inicio && (
                   <p className="text-sm text-red-600">{errors.fecha_inicio.message}</p>
@@ -220,7 +282,10 @@ export default function EditActionPlanReportPage() {
                   id="duracion_dias"
                   type="number"
                   min="1"
-                  {...register('duracion_dias', { valueAsNumber: true })}
+                  {...register('duracion_dias', {
+                    valueAsNumber: true,
+                    onChange: () => { dateChangeSource.current = 'duracion' }
+                  })}
                 />
                 {errors.duracion_dias && (
                   <p className="text-sm text-red-600">{errors.duracion_dias.message}</p>
@@ -232,17 +297,17 @@ export default function EditActionPlanReportPage() {
                 <Input
                   id="fecha_fin_estimada"
                   type="date"
-                  {...register('fecha_fin_estimada')}
+                  {...register('fecha_fin_estimada', {
+                    onChange: () => { dateChangeSource.current = 'fin' }
+                  })}
                 />
-                {errors.fecha_fin_estimada && (
-                  <p className="text-sm text-red-600">{errors.fecha_fin_estimada.message}</p>
-                )}
+                <p className="text-xs text-gray-500">Se actualiza automáticamente al cambiar otros campos</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Tasks Table */}
+        {/* Tasks Cards */}
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -254,8 +319,11 @@ export default function EditActionPlanReportPage() {
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-500">Avance General</div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {calculateOverallProgress()}%
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <span className="text-2xl font-bold text-blue-600">
+                    {calculateOverallProgress()}%
+                  </span>
                 </div>
               </div>
             </div>
@@ -287,16 +355,235 @@ export default function EditActionPlanReportPage() {
                   Llenar 100% en Todos
                 </Button>
                 <div className="text-xs text-gray-500 flex items-center ml-2">
-                  💡 Tip: Use los íconos en cada fila para copiar responsable/cliente a todas las tareas
+                  💡 Tip: Use los íconos en cada tarjeta para copiar responsable/cliente a todas las tareas
                 </div>
               </div>
             </div>
 
-            <div className="mb-4">
+            {/* Task Cards */}
+            <div className="space-y-4">
+              {fields.map((field, index) => {
+                const taskStatus = watch(`items.${index}.estado`) || 'pending'
+                const statusConfig = {
+                  pending: { color: 'border-l-yellow-500 bg-yellow-50/30', badge: 'bg-yellow-100 text-yellow-800' },
+                  in_progress: { color: 'border-l-blue-500 bg-blue-50/30', badge: 'bg-blue-100 text-blue-800' },
+                  completed: { color: 'border-l-green-500 bg-green-50/30', badge: 'bg-green-100 text-green-800' },
+                  cancelled: { color: 'border-l-gray-500 bg-gray-50/30', badge: 'bg-gray-100 text-gray-800' },
+                  delayed: { color: 'border-l-red-500 bg-red-50/30', badge: 'bg-red-100 text-red-800' },
+                }
+                const currentStatus = statusConfig[taskStatus as keyof typeof statusConfig] || statusConfig.pending
+
+                return (
+                  <div
+                    key={field.id}
+                    className={`border rounded-lg border-l-4 ${currentStatus.color} p-4 transition-all hover:shadow-md`}
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+                          {index + 1}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={taskStatus}
+                            onValueChange={(value) => setValue(`items.${index}.estado`, value as 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'delayed')}
+                          >
+                            <SelectTrigger className={`w-36 h-8 text-xs ${currentStatus.badge}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TASK_ESTADOS.map((estado) => (
+                                <SelectItem key={estado.value} value={estado.value}>
+                                  {estado.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        disabled={fields.length <= 1}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Main Content Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Left Column */}
+                      <div className="space-y-4">
+                        {/* Tarea */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-gray-600">Tarea *</Label>
+                          <Input
+                            {...register(`items.${index}.tarea`)}
+                            placeholder="Descripción de la tarea"
+                            className="w-full"
+                          />
+                          {errors.items?.[index]?.tarea && (
+                            <p className="text-xs text-red-600">
+                              {errors.items[index]?.tarea?.message}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Subtarea */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-gray-600">Subtarea</Label>
+                          <Input
+                            {...register(`items.${index}.subtarea`)}
+                            placeholder="Detalle o subtarea (opcional)"
+                            className="w-full"
+                          />
+                        </div>
+
+                        {/* Fechas */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-600">Fecha Inicio</Label>
+                            <Input
+                              type="date"
+                              {...register(`items.${index}.inicio`)}
+                              className="w-full"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-600">Fecha Fin</Label>
+                            <Input
+                              type="date"
+                              {...register(`items.${index}.fin`)}
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Column */}
+                      <div className="space-y-4">
+                        {/* Responsable y Cliente */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-600 flex items-center justify-between">
+                              Responsable
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyResponsableToAll(index)}
+                                disabled={!items?.[index]?.responsable}
+                                title="Copiar a todas las tareas"
+                                className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </Label>
+                            <SuggestionInput
+                              suggestionType="responsables"
+                              {...register(`items.${index}.responsable`)}
+                              placeholder="Nombre del responsable"
+                              className="w-full"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-600 flex items-center justify-between">
+                              Cliente
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyClienteToAll(index)}
+                                disabled={!items?.[index]?.cliente}
+                                title="Copiar a todas las tareas"
+                                className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </Label>
+                            <SuggestionInput
+                              suggestionType="clientes"
+                              {...register(`items.${index}.cliente`)}
+                              placeholder="Nombre del cliente"
+                              className="w-full"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Avances */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-600">Avance Real (%)</Label>
+                            <div className="space-y-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                {...register(`items.${index}.avance_real`, {
+                                  valueAsNumber: true,
+                                })}
+                                className="w-full"
+                              />
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full transition-all"
+                                  style={{ width: `${items?.[index]?.avance_real || 0}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-medium text-gray-600">Avance Programado (%)</Label>
+                            <div className="space-y-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                {...register(`items.${index}.avance_programado`, {
+                                  valueAsNumber: true,
+                                })}
+                                className="w-full"
+                              />
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="bg-green-600 h-2 rounded-full transition-all"
+                                  style={{ width: `${items?.[index]?.avance_programado || 0}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Comentario */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-gray-600">Comentario</Label>
+                          <Textarea
+                            {...register(`items.${index}.comentario`)}
+                            placeholder="Notas o comentarios adicionales..."
+                            rows={2}
+                            className="w-full resize-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                {fields.length} / 25 tareas
+              </div>
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => append({
                   numero: (items?.length || 0) + 1,
                   tarea: '',
@@ -314,183 +601,14 @@ export default function EditActionPlanReportPage() {
                 disabled={(items?.length || 0) >= 25}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Agregar Tarea {(items?.length || 0) >= 25 && '(Máximo alcanzado)'}
+                Agregar Tarea
               </Button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead className="min-w-[200px]">Tarea</TableHead>
-                    <TableHead className="min-w-[150px]">Subtarea</TableHead>
-                    <TableHead>Inicio</TableHead>
-                    <TableHead>Fin</TableHead>
-                    <TableHead>Responsable</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead className="w-24">Estado</TableHead>
-                    <TableHead className="w-28">Avance Real</TableHead>
-                    <TableHead className="w-28">Avance Prog.</TableHead>
-                    <TableHead>Comentario</TableHead>
-                    <TableHead className="w-20">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fields.map((field, index) => (
-                    <TableRow key={field.id}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>
-                        <Textarea
-                          {...register(`items.${index}.tarea`)}
-                          placeholder="Descripción de la tarea"
-                          rows={2}
-                          className="min-w-[200px]"
-                        />
-                        {errors.items?.[index]?.tarea && (
-                          <p className="text-xs text-red-600 mt-1">
-                            {errors.items[index]?.tarea?.message}
-                          </p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          {...register(`items.${index}.subtarea`)}
-                          placeholder="Subtarea (opcional)"
-                          className="min-w-[150px]"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="date"
-                          {...register(`items.${index}.inicio`)}
-                          className="w-36"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="date"
-                          {...register(`items.${index}.fin`)}
-                          className="w-36"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <SuggestionInput
-                            suggestionType="responsables"
-                            {...register(`items.${index}.responsable`)}
-                            placeholder="Responsable"
-                            className="flex-1 min-w-[120px]"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyResponsableToAll(index)}
-                            disabled={!items?.[index]?.responsable}
-                            title="Copiar a todas las filas"
-                            className="h-8 w-8 p-0"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <SuggestionInput
-                            suggestionType="clientes"
-                            {...register(`items.${index}.cliente`)}
-                            placeholder="Cliente"
-                            className="flex-1 min-w-[120px]"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyClienteToAll(index)}
-                            disabled={!items?.[index]?.cliente}
-                            title="Copiar a todas las filas"
-                            className="h-8 w-8 p-0"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={watch(`items.${index}.estado`)}
-                          onValueChange={(value) => setValue(`items.${index}.estado`, value as 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'delayed')}
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TASK_ESTADOS.map((estado) => (
-                              <SelectItem key={estado.value} value={estado.value}>
-                                {estado.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            {...register(`items.${index}.avance_real`, {
-                              valueAsNumber: true,
-                            })}
-                            className="w-20"
-                          />
-                          <span className="text-sm text-gray-500">%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            {...register(`items.${index}.avance_programado`, {
-                              valueAsNumber: true,
-                            })}
-                            className="w-20"
-                          />
-                          <span className="text-sm text-gray-500">%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Textarea
-                          {...register(`items.${index}.comentario`)}
-                          placeholder="Comentarios"
-                          rows={2}
-                          className="min-w-[150px]"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => remove(index)}
-                          disabled={fields.length <= 1}
-                          title="Eliminar tarea"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </div>
 
             {errors.items && (
               <p className="text-sm text-red-600 mt-2">
-                {typeof errors.items === 'object' && 'message' in errors.items 
-                  ? errors.items.message 
+                {typeof errors.items === 'object' && 'message' in errors.items
+                  ? errors.items.message
                   : 'Por favor verifica los datos de las tareas'}
               </p>
             )}

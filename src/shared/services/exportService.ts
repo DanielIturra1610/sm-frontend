@@ -10,6 +10,13 @@ export type ReportType =
   | 'zero-tolerance'
   | 'final-reports';
 
+export interface ReportMetadata {
+  empresa?: string;
+  tipoIncidente?: string;
+  fecha?: string;
+  correlativo?: string;
+}
+
 class ExportService {
   private baseURL = env.NEXT_PUBLIC_API_URL;
 
@@ -59,19 +66,19 @@ class ExportService {
    * @param reportType - The type of report
    * @param reportId - The ID of the report
    * @param format - The export format
-   * @param filename - Optional custom filename (will be generated if not provided)
+   * @param metadata - Optional metadata for filename generation
    */
   async downloadReport(
     reportType: ReportType,
     reportId: string,
     format: ExportFormat,
-    filename?: string
+    metadata?: ReportMetadata
   ): Promise<void> {
     try {
       const blob = await this.exportReport(reportType, reportId, format);
 
-      // Generate filename if not provided
-      const finalFilename = filename || this.generateFilename(reportType, reportId, format);
+      // Generate filename using metadata
+      const finalFilename = this.generateFilename(reportType, format, metadata);
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -91,16 +98,64 @@ class ExportService {
   }
 
   /**
+   * Get the Spanish label for report type
+   */
+  private getReportTypeLabel(reportType: ReportType): string {
+    const labels: Record<ReportType, string> = {
+      'flash-reports': 'Flash',
+      'immediate-actions': 'Acciones Inmediatas',
+      'root-cause': 'Causa Raiz',
+      'action-plan': 'Plan de Accion',
+      'zero-tolerance': 'Tolerancia Cero',
+      'final-reports': 'Final',
+    };
+    return labels[reportType] || reportType;
+  }
+
+  /**
+   * Sanitize a string for use in filename (remove invalid characters)
+   */
+  private sanitizeForFilename(str: string): string {
+    return str
+      .replace(/[<>:"/\\|?*]/g, '') // Remove invalid filename characters
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim();
+  }
+
+  /**
    * Generate a filename for the export
+   * Format: [Empresa] Reporte [Tipo] [Tipo Incidente] [Fecha] [Correlativo].[Extension]
    */
   private generateFilename(
     reportType: ReportType,
-    reportId: string,
-    format: ExportFormat
+    format: ExportFormat,
+    metadata?: ReportMetadata
   ): string {
-    const typeLabel = reportType.replace(/-/g, '_');
-    const timestamp = new Date().toISOString().split('T')[0];
-    return `${typeLabel}_${reportId}_${timestamp}.${format}`;
+    const parts: string[] = [];
+
+    // Empresa
+    if (metadata?.empresa) {
+      parts.push(this.sanitizeForFilename(metadata.empresa));
+    }
+
+    // "Reporte" + Tipo
+    parts.push(`Reporte ${this.getReportTypeLabel(reportType)}`);
+
+    // Tipo Incidente
+    if (metadata?.tipoIncidente) {
+      parts.push(this.sanitizeForFilename(metadata.tipoIncidente));
+    }
+
+    // Fecha (from metadata or current date)
+    const fecha = metadata?.fecha || new Date().toISOString().split('T')[0];
+    parts.push(fecha);
+
+    // Correlativo
+    if (metadata?.correlativo) {
+      parts.push(this.sanitizeForFilename(metadata.correlativo));
+    }
+
+    return `${parts.join(' ')}.${format}`;
   }
 }
 

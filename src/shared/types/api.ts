@@ -227,6 +227,8 @@ export interface Incident extends BaseEntity {
   correlativo?: string
   descripcion_breve?: string
   tipo?: string
+  // Personas involucradas en el suceso
+  personas_involucradas?: PersonaInvolucrada[]
 }
 
 export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical'
@@ -274,6 +276,8 @@ export interface CreateIncidentData {
   area_zona?: string
   empresa?: string
   supervisor?: string
+  // Personas involucradas en el suceso
+  personas_involucradas?: PersonaInvolucrada[]
 }
 
 export interface UpdateIncidentData {
@@ -728,6 +732,9 @@ export interface FlashReport extends BaseEntity {
   sla_status?: string | null
   sla_hours?: number
 
+  // Personas involucradas
+  personas_involucradas?: PersonaInvolucrada[]
+
   created_at: string
   updated_at: string
 }
@@ -756,6 +763,8 @@ export interface CreateFlashReportData {
   es_plgf?: boolean
   nivel_plgf?: string
   justificacion_plgf?: string
+  // Personas involucradas
+  personas_involucradas?: PersonaInvolucrada[]
 }
 
 export interface UpdateFlashReportData {
@@ -781,6 +790,8 @@ export interface UpdateFlashReportData {
   es_plgf?: boolean
   nivel_plgf?: string
   justificacion_plgf?: string
+  // Personas involucradas
+  personas_involucradas?: PersonaInvolucrada[]
 }
 
 // ============================================================================
@@ -819,6 +830,8 @@ export interface ImmediateActionsReport extends BaseEntity {
     tipo?: string
     descripcion_breve?: string
     title?: string
+    severity?: 'low' | 'medium' | 'high' | 'critical'
+    location?: string
   }
   // PLGF Classification (inherited from Flash Report)
   es_plgf: boolean
@@ -965,6 +978,14 @@ export interface ActionPlanReport extends BaseEntity {
   fecha_fin_estimada?: string
   porcentaje_avance_plan: number
   items?: ActionPlanItem[]
+  // Related incident data (populated when using relations)
+  incident?: {
+    id: string
+    correlativo?: string
+    tipo?: string
+    descripcion_breve?: string
+    title?: string
+  }
   report_status: ReportStatus
   submitted_at?: string
   approved_at?: string

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Download, CheckCircle2, List, GitBranch, Circle, Square, Flag, Edit, Trash2, ChevronRight, FileSpreadsheet, FileText, FileDown } from 'lucide-react'
+import { ArrowLeft, Download, CheckCircle2, List, GitBranch, Circle, Square, Flag, Edit, Trash2, ChevronRight, FileSpreadsheet, FileText, FileDown, ImageIcon, Loader2 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -26,6 +26,9 @@ import {
   useCompleteCausalTreeAnalysis,
   useAddPreventiveMeasure,
 } from '@/shared/hooks/causal-tree-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
+import { useAttachmentMutations, useCausalTreeImageByAnalysis } from '@/shared/hooks/attachment-hooks'
+import type { ExportIncidentInfo } from '@/shared/utils/causal-tree-export'
 import CausalTreeDiagram from '@/shared/components/causal-tree/CausalTreeDiagram'
 import { EditNodeDialog } from '@/shared/components/causal-tree/EditNodeDialog'
 import type { AddCausalNodeDTO, AddPreventiveMeasureDTO, UpdateCausalNodeDTO, CausalNode } from '@/shared/types/causal-tree'
@@ -39,11 +42,30 @@ export default function CausalTreeDetailPage() {
   const analysisId = params.id as string
 
   const { data: analysis, isLoading, error } = useCausalTreeAnalysis(analysisId)
+  const { data: incident } = useIncident(analysis?.incidentId || null)
   const addNodeMutation = useAddCausalNode()
   const updateNodeMutation = useUpdateCausalNode()
   const deleteNodeMutation = useDeleteCausalNode()
   const markRootCauseMutation = useMarkAsRootCause()
   const completeMutation = useCompleteCausalTreeAnalysis()
+  const { upload: uploadAttachment } = useAttachmentMutations()
+
+  // Check if diagram image already exists for this analysis
+  const { data: existingImage, mutate: refreshImage } = useCausalTreeImageByAnalysis(
+    analysis?.incidentId || null,
+    analysisId
+  )
+  const [isSavingImage, setIsSavingImage] = useState(false)
+
+  // Build incident info for export filenames
+  const exportIncidentInfo: ExportIncidentInfo | undefined = incident
+    ? {
+        empresa: incident.empresa,
+        tipo: incident.tipo || incident.type,
+        fecha: incident.reportedAt,
+        correlativo: incident.correlativo,
+      }
+    : undefined
 
   const [activeTab, setActiveTab] = useState('diagram')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
@@ -140,6 +162,63 @@ export default function CausalTreeDetailPage() {
     }
   }
 
+  // Handler to save diagram image for Final Report
+  const handleSaveImageForFinalReport = async () => {
+    if (!analysis?.incidentId || existingImage || isSavingImage) return
+
+    setIsSavingImage(true)
+    try {
+      const diagramImage = await getDiagramImageForExport()
+      if (!diagramImage) {
+        toast({
+          title: 'Error',
+          description: 'No se pudo capturar la imagen del diagrama.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const filename = `arbol-causal-${analysisId}-${Date.now()}.png`
+      const imageFile = dataURLtoFile(diagramImage, filename)
+
+      await uploadAttachment(analysis.incidentId, imageFile, {
+        description: `Diagrama del Árbol Causal: ${analysis.title}`,
+        reportId: analysisId,
+        reportType: 'causal_tree',
+      })
+
+      // Refresh the existing image check
+      await refreshImage()
+
+      toast({
+        title: 'Imagen guardada',
+        description: 'El diagrama ha sido guardado para el Reporte Final.',
+      })
+    } catch (error) {
+      console.error('Error saving diagram image:', error)
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar la imagen del diagrama.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSavingImage(false)
+    }
+  }
+
+  // Helper to convert base64 data URL to File
+  const dataURLtoFile = useCallback((dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(',')
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png'
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new File([u8arr], filename, { type: mime })
+  }, [])
+
   const handleCompleteAnalysis = async () => {
     if (!analysis) return
 
@@ -153,6 +232,37 @@ export default function CausalTreeDetailPage() {
     }
 
     try {
+      // First, capture and upload the diagram image
+      if (analysis.incidentId) {
+        const diagramImage = await getDiagramImageForExport()
+        if (diagramImage) {
+          try {
+            const filename = `arbol-causal-${analysisId}-${Date.now()}.png`
+            const imageFile = dataURLtoFile(diagramImage, filename)
+
+            await uploadAttachment(analysis.incidentId, imageFile, {
+              description: `Diagrama del Árbol Causal: ${analysis.title}`,
+              reportId: analysisId,
+              reportType: 'causal_tree',
+            })
+
+            toast({
+              title: 'Imagen guardada',
+              description: 'El diagrama del árbol causal ha sido guardado.',
+            })
+          } catch (uploadError) {
+            console.error('Error uploading diagram image:', uploadError)
+            // Continue with completion even if image upload fails
+            toast({
+              title: 'Advertencia',
+              description: 'No se pudo guardar la imagen del diagrama, pero el análisis continuará.',
+              variant: 'default',
+            })
+          }
+        }
+      }
+
+      // Complete the analysis
       await completeMutation.mutateAsync({
         analysisId,
         rootCauses: analysis.rootCauses,
@@ -242,7 +352,7 @@ export default function CausalTreeDetailPage() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => {
-                    exportToExcel(analysis)
+                    exportToExcel(analysis, exportIncidentInfo)
                     toast({
                       title: 'Exportación exitosa',
                       description: 'El archivo Excel ha sido descargado.',
@@ -256,7 +366,7 @@ export default function CausalTreeDetailPage() {
                 <DropdownMenuItem
                   onClick={async () => {
                     const diagramImage = await getDiagramImageForExport()
-                    await exportToWord(analysis, diagramImage || undefined)
+                    await exportToWord(analysis, diagramImage || undefined, exportIncidentInfo)
                     toast({
                       title: 'Exportación exitosa',
                       description: 'El archivo Word ha sido descargado.',
@@ -270,7 +380,7 @@ export default function CausalTreeDetailPage() {
                 <DropdownMenuItem
                   onClick={async () => {
                     const diagramImage = await getDiagramImageForExport()
-                    exportToPDF(analysis, diagramImage || undefined)
+                    exportToPDF(analysis, diagramImage || undefined, exportIncidentInfo)
                     toast({
                       title: 'Vista de impresión',
                       description: 'Se ha abierto la vista previa para imprimir/guardar como PDF.',
@@ -281,6 +391,25 @@ export default function CausalTreeDetailPage() {
                   <FileDown className="h-4 w-4 mr-2 text-red-600" />
                   PDF (Imprimir)
                 </DropdownMenuItem>
+                {analysis.incidentId && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleSaveImageForFinalReport}
+                      disabled={!!existingImage || isSavingImage || !analysis.incidentId}
+                      className="cursor-pointer"
+                    >
+                      {isSavingImage ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : existingImage ? (
+                        <CheckCircle2 className="h-4 w-4 mr-2 text-green-600" />
+                      ) : (
+                        <ImageIcon className="h-4 w-4 mr-2 text-purple-600" />
+                      )}
+                      {existingImage ? 'Imagen ya guardada' : 'Guardar para Reporte Final'}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

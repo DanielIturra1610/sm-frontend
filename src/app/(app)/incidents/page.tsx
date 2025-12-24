@@ -199,9 +199,9 @@ export default function IncidentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-blue-600">Total Sucesos</p>
-                <p className="text-3xl font-bold text-blue-900">
+                <div className="text-3xl font-bold text-blue-900">
                   {statsLoading ? <Skeleton className="h-9 w-12" /> : stats?.totalIncidents ?? 0}
-                </p>
+                </div>
               </div>
               <AlertTriangle className="h-10 w-10 text-blue-500 opacity-80" />
             </div>
@@ -213,9 +213,9 @@ export default function IncidentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-orange-600">Abiertos</p>
-                <p className="text-3xl font-bold text-orange-900">
+                <div className="text-3xl font-bold text-orange-900">
                   {statsLoading ? <Skeleton className="h-9 w-12" /> : stats?.openIncidents ?? 0}
-                </p>
+                </div>
               </div>
               <Clock className="h-10 w-10 text-orange-500 opacity-80" />
             </div>
@@ -227,9 +227,9 @@ export default function IncidentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-red-600">Críticos</p>
-                <p className="text-3xl font-bold text-red-900">
+                <div className="text-3xl font-bold text-red-900">
                   {statsLoading ? <Skeleton className="h-9 w-12" /> : stats?.severityDistribution?.critical ?? 0}
-                </p>
+                </div>
               </div>
               <AlertTriangle className="h-10 w-10 text-red-500 opacity-80" />
             </div>
@@ -241,9 +241,9 @@ export default function IncidentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-green-600">Resueltos</p>
-                <p className="text-3xl font-bold text-green-900">
+                <div className="text-3xl font-bold text-green-900">
                   {statsLoading ? <Skeleton className="h-9 w-12" /> : stats?.statusDistribution?.resolved ?? 0}
-                </p>
+                </div>
               </div>
               <CheckCircle2 className="h-10 w-10 text-green-500 opacity-80" />
             </div>

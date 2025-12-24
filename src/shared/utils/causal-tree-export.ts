@@ -4,6 +4,14 @@ import { saveAs } from 'file-saver'
 import type { CausalTreeAnalysis, CausalNode } from '@/shared/types/causal-tree'
 import { NODE_TYPE_LABELS, FACT_TYPE_LABELS, RELATION_TYPE_LABELS } from '@/shared/types/causal-tree'
 
+// Incident info for export filename
+export interface ExportIncidentInfo {
+  empresa?: string
+  tipo?: string
+  fecha?: string
+  correlativo?: string
+}
+
 // Helper to format date
 function formatDate(date: string | Date): string {
   const d = new Date(date)
@@ -12,6 +20,59 @@ function formatDate(date: string | Date): string {
     month: 'long',
     day: 'numeric',
   })
+}
+
+// Helper to format date for filename (short format)
+function formatDateForFilename(date: string | Date): string {
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Helper to generate export filename
+// Format: [Empresa] Reporte Árbol Causal [Tipo Incidente] [Fecha] [Correlativo].[ext]
+function generateExportFilename(
+  incidentInfo: ExportIncidentInfo | undefined,
+  extension: string
+): string {
+  const parts: string[] = []
+
+  // Empresa
+  if (incidentInfo?.empresa) {
+    parts.push(incidentInfo.empresa.trim())
+  }
+
+  // Tipo de reporte
+  parts.push('Reporte Árbol Causal')
+
+  // Tipo de incidente
+  if (incidentInfo?.tipo) {
+    parts.push(incidentInfo.tipo.trim())
+  }
+
+  // Fecha
+  if (incidentInfo?.fecha) {
+    parts.push(formatDateForFilename(incidentInfo.fecha))
+  } else {
+    parts.push(formatDateForFilename(new Date()))
+  }
+
+  // Correlativo
+  if (incidentInfo?.correlativo) {
+    parts.push(incidentInfo.correlativo.trim())
+  }
+
+  // Clean and join parts, replace spaces with underscores for filename safety
+  const filename = parts
+    .filter(Boolean)
+    .join(' ')
+    .replace(/[<>:"/\\|?*]/g, '') // Remove invalid filename characters
+    .replace(/\s+/g, ' ') // Normalize spaces
+    .trim()
+
+  return `${filename}.${extension}`
 }
 
 // Helper to get node type label
@@ -108,7 +169,10 @@ function buildTreeLevels(analysis: CausalTreeAnalysis): Map<number, CausalNode[]
 // ============================================
 // EXCEL EXPORT - Template format
 // ============================================
-export async function exportToExcel(analysis: CausalTreeAnalysis): Promise<void> {
+export async function exportToExcel(
+  analysis: CausalTreeAnalysis,
+  incidentInfo?: ExportIncidentInfo
+): Promise<void> {
   const workbook = XLSX.utils.book_new()
   const sortedNodes = [...analysis.nodes].sort((a, b) => a.numero - b.numero)
   const treeLevels = buildTreeLevels(analysis)
@@ -119,7 +183,7 @@ export async function exportToExcel(analysis: CausalTreeAnalysis): Promise<void>
 
   // Header section - Construcción del Árbol
   mainData.push(['Construcción del Árbol', '', 'Método Lógico-Gráfico', '', '', '', '', '', 'SIMBOLOGÍA'])
-  mainData.push(['¿Cuál es el último hecho?', analysis.finalEvent, '', '', '', '', '', '', '○ Hecho o Variación'])
+  mainData.push(['¿Cuál es el último hecho?', getFinalEvent(analysis), '', '', '', '', '', '', '○ Hecho o Variación'])
   mainData.push(['¿Qué antecedente fué necesario para', '', '', '', '', '', '', '', '□ Hecho Permanente'])
   mainData.push(['que se produjera el último hecho?', '', '', '', '', '', '', '', ''])
   mainData.push(['¿Fue necesario otro antecedente?', '', '', '', '', '', '', '', '→ Vinculación Confirmada'])
@@ -302,8 +366,8 @@ export async function exportToExcel(analysis: CausalTreeAnalysis): Promise<void>
     ['RESUMEN DEL ANÁLISIS'],
     [],
     ['Información General'],
-    ['Título:', analysis.title || 'Sin título'],
-    ['Evento Final (Lesión):', analysis.finalEvent],
+    ['Título:', getDisplayTitle(analysis)],
+    ['Evento Final (Lesión):', getFinalEvent(analysis)],
     ['Descripción:', analysis.description || '-'],
     ['Estado:', getStatusLabel(analysis.status)],
     ['Fecha de Inicio:', formatDate(analysis.createdAt)],
@@ -323,13 +387,18 @@ export async function exportToExcel(analysis: CausalTreeAnalysis): Promise<void>
   // Generate and download
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
   const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  saveAs(blob, `investigacion-causas-${analysis.id}.xlsx`)
+  const filename = generateExportFilename(incidentInfo, 'xlsx')
+  saveAs(blob, filename)
 }
 
 // ============================================
 // WORD EXPORT
 // ============================================
-export async function exportToWord(analysis: CausalTreeAnalysis, diagramImage?: string): Promise<void> {
+export async function exportToWord(
+  analysis: CausalTreeAnalysis,
+  diagramImage?: string,
+  incidentInfo?: ExportIncidentInfo
+): Promise<void> {
   const doc = new Document({
     sections: [
       {
@@ -354,8 +423,8 @@ export async function exportToWord(analysis: CausalTreeAnalysis, diagramImage?: 
             heading: HeadingLevel.HEADING_2,
           }),
           createInfoTable([
-            ['Título:', analysis.title || 'Sin título'],
-            ['Evento Final (Lesión):', analysis.finalEvent],
+            ['Título:', getDisplayTitle(analysis)],
+            ['Evento Final (Lesión):', getFinalEvent(analysis)],
             ['Descripción:', analysis.description || '-'],
             ['Estado:', getStatusLabel(analysis.status)],
             ['Fecha de Inicio:', formatDate(analysis.createdAt)],
@@ -404,7 +473,8 @@ export async function exportToWord(analysis: CausalTreeAnalysis, diagramImage?: 
   })
 
   const blob = await Packer.toBlob(doc)
-  saveAs(blob, `investigacion-causas-${analysis.id}.docx`)
+  const filename = generateExportFilename(incidentInfo, 'docx')
+  saveAs(blob, filename)
 }
 
 function createInfoTable(rows: string[][]): Table {
@@ -522,30 +592,44 @@ function createMeasuresList(analysis: CausalTreeAnalysis): Paragraph[] {
 // ============================================
 // PDF EXPORT (Print-friendly HTML)
 // ============================================
-export function exportToPDF(analysis: CausalTreeAnalysis, diagramImage?: string): void {
+export function exportToPDF(
+  analysis: CausalTreeAnalysis,
+  diagramImage?: string,
+  incidentInfo?: ExportIncidentInfo
+): void {
   const printWindow = window.open('', '_blank')
   if (!printWindow) {
     alert('Por favor permite las ventanas emergentes para exportar a PDF')
     return
   }
 
-  const htmlContent = generatePrintHTML(analysis, diagramImage)
+  const htmlContent = generatePrintHTML(analysis, diagramImage, incidentInfo)
   printWindow.document.write(htmlContent)
   printWindow.document.close()
   printWindow.onload = () => {
+    // Set document title for save as PDF filename
+    const suggestedFilename = generateExportFilename(incidentInfo, 'pdf').replace('.pdf', '')
+    printWindow.document.title = suggestedFilename
     printWindow.print()
   }
 }
 
-function generatePrintHTML(analysis: CausalTreeAnalysis, diagramImage?: string): string {
+function generatePrintHTML(
+  analysis: CausalTreeAnalysis,
+  diagramImage?: string,
+  incidentInfo?: ExportIncidentInfo
+): string {
   const sortedNodes = [...analysis.nodes].sort((a, b) => a.numero - b.numero)
+  const documentTitle = incidentInfo
+    ? generateExportFilename(incidentInfo, 'pdf').replace('.pdf', '')
+    : `Investigación de Causas - ${getDisplayTitle(analysis)}`
 
   return `
     <!DOCTYPE html>
     <html lang="es">
     <head>
       <meta charset="UTF-8">
-      <title>Investigación de Causas - ${analysis.title || 'Árbol Causal'}</title>
+      <title>${documentTitle}</title>
       <style>
         * { box-sizing: border-box; }
         body {
@@ -646,8 +730,8 @@ function generatePrintHTML(analysis: CausalTreeAnalysis, diagramImage?: string):
 
       <h2>1. Información General</h2>
       <table class="info-table">
-        <tr><td>Título:</td><td>${analysis.title || 'Sin título'}</td></tr>
-        <tr><td>Evento Final (Lesión):</td><td>${analysis.finalEvent}</td></tr>
+        <tr><td>Título:</td><td>${getDisplayTitle(analysis)}</td></tr>
+        <tr><td>Evento Final (Lesión):</td><td>${getFinalEvent(analysis)}</td></tr>
         <tr><td>Descripción:</td><td>${analysis.description || '-'}</td></tr>
         <tr><td>Estado:</td><td>${getStatusLabel(analysis.status)}</td></tr>
         <tr><td>Fecha de Inicio:</td><td>${formatDate(analysis.createdAt)}</td></tr>
@@ -787,7 +871,9 @@ function createDiagramSection(diagramImage?: string): (Paragraph)[] {
   ]
 }
 
-function getStatusLabel(status: string): string {
+function getStatusLabel(status: string | undefined | null): string {
+  if (!status) return 'Sin estado'
+
   const labels: Record<string, string> = {
     draft: 'Borrador',
     in_progress: 'En Progreso',
@@ -796,4 +882,20 @@ function getStatusLabel(status: string): string {
     archived: 'Archivado',
   }
   return labels[status] || status
+}
+
+// Helper to get a display title (title or fallback to finalEvent)
+function getDisplayTitle(analysis: CausalTreeAnalysis): string {
+  if (analysis.title && analysis.title.trim()) {
+    return analysis.title.trim()
+  }
+  if (analysis.finalEvent && analysis.finalEvent.trim()) {
+    return analysis.finalEvent.trim()
+  }
+  return 'Sin título'
+}
+
+// Helper to get final event (with fallback)
+function getFinalEvent(analysis: CausalTreeAnalysis): string {
+  return (analysis.finalEvent && analysis.finalEvent.trim()) || 'No especificado'
 }

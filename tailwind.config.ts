@@ -127,6 +127,8 @@ const config: Config = {
         'slide-in-right': 'slideInRight 0.4s ease-out forwards',
         'bounce-gentle': 'bounceGentle 2s ease-in-out infinite',
         'shimmer': 'shimmer 1.5s infinite',
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
       },
 
       // Custom Keyframes
@@ -172,6 +174,14 @@ const config: Config = {
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
+        },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
 

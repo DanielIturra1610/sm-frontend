@@ -12,6 +12,7 @@ import {
   useApproveImmediateActionsReport,
   useDeleteImmediateActionsReport,
 } from '@/shared/hooks/report-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { ExportButtons } from '@/shared/components/reports/ExportButtons'
@@ -61,6 +62,7 @@ export default function ImmediateActionsReportDetailPage() {
   const { trigger: submitReport, isMutating: isSubmitting } = useSubmitImmediateActionsReport(id)
   const { trigger: approveReport, isMutating: isApproving } = useApproveImmediateActionsReport(id)
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteImmediateActionsReport()
+  const { data: incident } = useIncident(report?.incident_id || '')
 
   const handleSubmit = async () => {
     try {
@@ -188,6 +190,11 @@ export default function ImmediateActionsReportDetailPage() {
             reportType="immediate-actions"
             reportId={id}
             reportStatus={report.report_status}
+            metadata={{
+              tipoIncidente: incident?.tipo,
+              fecha: incident?.fecha_ocurrencia ? new Date(incident.fecha_ocurrencia).toISOString().split('T')[0] : undefined,
+              correlativo: incident?.correlativo,
+            }}
           />
         </div>
       </div>

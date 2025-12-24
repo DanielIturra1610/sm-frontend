@@ -6,9 +6,10 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useImmediateActionsReports, useDeleteImmediateActionsReport } from '@/shared/hooks/report-hooks'
+import { useIncidents } from '@/shared/hooks/incident-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
@@ -34,11 +35,12 @@ import {
   ClipboardList,
   CheckCircle2,
   Clock,
-  MoreHorizontal
+  MoreHorizontal,
+  MapPin
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import type { ReportStatus, ImmediateActionsReport } from '@/shared/types/api'
+import type { ReportStatus, ImmediateActionsReport, Incident } from '@/shared/types/api'
 import { api } from '@/lib/api'
 import {
   DropdownMenu,
@@ -79,32 +81,32 @@ const getProgressColor = (progress: number): string => {
   return 'bg-red-500'
 }
 
-// Get report title/name
-const getReportTitle = (report: ImmediateActionsReport): string => {
-  if (report.incident?.correlativo) {
-    return `Acciones Inmediatas - ${report.incident.correlativo}`
+// Get incident title/name (the main name of the suceso) - uses incident from map
+const getIncidentTitle = (incident: Incident | undefined, report: ImmediateActionsReport): string => {
+  if (incident?.descripcion_breve) {
+    return incident.descripcion_breve.substring(0, 60) + (incident.descripcion_breve.length > 60 ? '...' : '')
   }
-  if (report.incident?.title) {
-    return `Acciones Inmediatas - ${report.incident.title.substring(0, 30)}${report.incident.title.length > 30 ? '...' : ''}`
+  if (incident?.title) {
+    return incident.title
   }
-  // Fallback: generate from dates
+  // Fallback
   if (report.fecha_inicio) {
     return `Acciones Inmediatas - ${format(new Date(report.fecha_inicio), 'dd/MM/yyyy', { locale: es })}`
   }
-  return `Reporte de Acciones Inmediatas`
+  return 'Reporte de Acciones Inmediatas'
 }
 
 // Generate filename for export
 // Format: [Empresa] Reporte [Tipo] [Tipo Incidente] [Fecha] [Correlativo].[Extension]
 // Example: "Origix Reporte Acciones Inmediatas Incidente Laboral 17-11-2025 00042.pdf"
-const generateExportFilename = (report: ImmediateActionsReport, extension: 'pdf' | 'docx'): string => {
+const generateExportFilename = (report: ImmediateActionsReport, incident: Incident | undefined, extension: 'pdf' | 'docx'): string => {
   const empresa = 'Origix' // TODO: Get from tenant/company settings
   const tipoReporte = 'Acciones Inmediatas'
-  const tipoIncidente = report.incident?.tipo || 'Incidente'
+  const tipoIncidente = incident?.tipo || 'Incidente'
   const fecha = report.fecha_inicio
     ? format(new Date(report.fecha_inicio), 'dd-MM-yyyy')
     : format(new Date(report.created_at), 'dd-MM-yyyy')
-  const correlativo = report.incident?.correlativo || report.id.substring(0, 8)
+  const correlativo = incident?.correlativo || report.id.substring(0, 8)
 
   return `${empresa} Reporte ${tipoReporte} ${tipoIncidente} ${fecha} ${correlativo}.${extension}`
 }
@@ -112,16 +114,32 @@ const generateExportFilename = (report: ImmediateActionsReport, extension: 'pdf'
 export default function ImmediateActionsReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useImmediateActionsReports()
+  const { data: incidentsData, isLoading: isLoadingIncidents } = useIncidents({ limit: 1000 })
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteImmediateActionsReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
   const [reportToDelete, setReportToDelete] = useState<string | null>(null)
 
+  // Create a map of incidents by ID for quick lookup
+  const incidentsMap = useMemo(() => {
+    const map = new Map<string, Incident>()
+    incidentsData?.data?.forEach((incident) => {
+      map.set(incident.id, incident)
+    })
+    return map
+  }, [incidentsData])
+
+  // Helper to get incident details
+  const getIncident = (incidentId: string) => {
+    return incidentsMap.get(incidentId)
+  }
+
   const handleExport = async (report: ImmediateActionsReport, exportFormat: 'pdf' | 'docx') => {
     try {
       toast.info(`Descargando reporte en formato ${exportFormat.toUpperCase()}...`)
 
-      const filename = generateExportFilename(report, exportFormat)
+      const incident = getIncident(report.incident_id)
+      const filename = generateExportFilename(report, incident, exportFormat)
       await api.immediateActions.export(report.id, exportFormat, filename)
 
       toast.success(`Reporte descargado: ${filename}`)
@@ -146,13 +164,16 @@ export default function ImmediateActionsReportsPage() {
   }
 
   const filteredReports = reports?.filter((report) => {
-    const title = getReportTitle(report).toLowerCase()
-    const correlativo = report.incident?.correlativo?.toLowerCase() || ''
+    const incident = getIncident(report.incident_id)
+    const title = getIncidentTitle(incident, report).toLowerCase()
+    const correlativo = incident?.correlativo?.toLowerCase() || ''
+    const tipo = incident?.tipo?.toLowerCase() || ''
     const searchLower = searchTerm.toLowerCase()
 
     const matchesSearch =
       title.includes(searchLower) ||
       correlativo.includes(searchLower) ||
+      tipo.includes(searchLower) ||
       report.id.toLowerCase().includes(searchLower)
     const matchesStatus = statusFilter === 'all' || report.report_status === statusFilter
     return matchesSearch && matchesStatus
@@ -169,7 +190,7 @@ export default function ImmediateActionsReportsPage() {
     pending: reports?.filter(r => calculateProgress(r) === 0).length || 0,
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingIncidents) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -334,9 +355,10 @@ export default function ImmediateActionsReportsPage() {
           ) : (
             <div className="divide-y">
               {filteredReports.map((report) => {
+                const incident = getIncident(report.incident_id)
                 const progress = calculateProgress(report)
                 const progressColor = getProgressColor(progress)
-                const title = getReportTitle(report)
+                const incidentTitle = getIncidentTitle(incident, report)
                 const itemsCount = report.items?.length || 0
                 const completedItems = report.items?.filter(item => (item.avance_real || 0) >= 100).length || 0
 
@@ -350,35 +372,51 @@ export default function ImmediateActionsReportsPage() {
                       {/* Left: Title and info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${
-                            progress >= 100 ? 'bg-green-100' : progress > 0 ? 'bg-blue-100' : 'bg-gray-100'
+                          <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+                            progress >= 100 ? 'bg-green-100' : progress > 0 ? 'bg-blue-100' : 'bg-orange-100'
                           }`}>
                             {progress >= 100 ? (
-                              <CheckCircle2 className="h-6 w-6 text-green-600" />
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
                             ) : (
-                              <ClipboardList className="h-6 w-6 text-blue-600" />
+                              <ClipboardList className="h-5 w-5 text-orange-600" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="font-semibold text-gray-900 truncate">
-                              {title}
+                              {incidentTitle}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {report.incident?.correlativo && (
-                                <Badge variant="outline" className="text-xs">
-                                  {report.incident.correlativo}
+                              {incident?.correlativo && (
+                                <Badge variant="outline" className="text-xs font-medium">
+                                  {incident.correlativo}
                                 </Badge>
                               )}
-                              {report.incident?.tipo && (
+                              {incident?.tipo && (
                                 <Badge variant="secondary" className="text-xs">
-                                  {report.incident.tipo}
+                                  {incident.tipo}
+                                </Badge>
+                              )}
+                              {incident?.severity && (
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs ${
+                                    incident.severity === 'critical' ? 'border-red-300 text-red-700 bg-red-50' :
+                                    incident.severity === 'high' ? 'border-orange-300 text-orange-700 bg-orange-50' :
+                                    incident.severity === 'medium' ? 'border-yellow-300 text-yellow-700 bg-yellow-50' :
+                                    'border-green-300 text-green-700 bg-green-50'
+                                  }`}
+                                >
+                                  {incident.severity === 'critical' ? 'Critico' :
+                                   incident.severity === 'high' ? 'Alto' :
+                                   incident.severity === 'medium' ? 'Medio' : 'Bajo'}
                                 </Badge>
                               )}
                               <ReportStatusBadge status={report.report_status} />
                             </div>
-                            {report.incident?.descripcion_breve && (
-                              <p className="text-sm text-gray-500 mt-1 truncate">
-                                {report.incident.descripcion_breve}
+                            {incident?.location && (
+                              <p className="text-sm text-gray-500 mt-1 truncate flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {incident.location}
                               </p>
                             )}
                           </div>

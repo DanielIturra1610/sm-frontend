@@ -10,24 +10,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
-import { exportService, ReportType, ExportFormat } from '@/shared/services/exportService';
+import { exportService, ReportType, ExportFormat, ReportMetadata } from '@/shared/services/exportService';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { FileSpreadsheet, Presentation } from 'lucide-react';
+
+export type { ReportMetadata } from '@/shared/services/exportService';
 
 interface ExportButtonsProps {
   reportType: ReportType;
   reportId: string;
   reportStatus?: string;
+  metadata?: ReportMetadata;
 }
 
-export function ExportButtons({ reportType, reportId, reportStatus }: ExportButtonsProps) {
+export function ExportButtons({ reportType, reportId, reportStatus, metadata }: ExportButtonsProps) {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async (format: ExportFormat) => {
     setIsExporting(true);
     try {
-      await exportService.downloadReport(reportType, reportId, format);
+      await exportService.downloadReport(reportType, reportId, format, metadata);
       toast.success(`Reporte exportado como ${format.toUpperCase()} exitosamente`);
     } catch (error) {
       console.error('Error exporting report:', error);

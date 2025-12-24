@@ -112,58 +112,58 @@ Este documento contiene datos de prueba mapeados exactamente a los campos de los
 
 ## 4. ANÁLISIS DE CAUSA RAÍZ (5 Por Qués)
 
-**Ruta:** `/root-cause-analysis/five-whys/create`
+**Ruta:** `/analysis/five-whys/create` → luego agregar los "Por Qués" en la página de detalle
 
 ### Configuración Inicial
 
 | Campo | Valor |
 |-------|-------|
 | **incident_id** | (Seleccionar el suceso) |
+| **title** | Análisis de caída desde andamio en área de mantención |
+| **problemStatement** | Trabajador cayó desde andamio de 4.5 metros de altura mientras realizaba trabajos de pintura, sufriendo fractura de muñeca derecha y contusiones múltiples. |
 
 ### Por Qué #1
 
 | Campo | Valor |
 |-------|-------|
-| **Pregunta** | ¿Por qué ocurrió esto? |
-| **Respuesta** | Porque el trabajador perdió el equilibrio al inclinarse excesivamente fuera de la plataforma del andamio para alcanzar una zona de difícil acceso. |
-| **Evidencias** | `Documento #INV-001` `Foto de la escena` `Testimonio de operador` |
-| **Notas o comentarios** | Según testigos, el trabajador se estiró más de 50cm fuera de la plataforma de trabajo. |
+| **Respuesta** * | Porque el trabajador perdió el equilibrio al inclinarse excesivamente fuera de la plataforma del andamio para alcanzar una zona de difícil acceso. |
+| **Evidencias** (opcional) | `Documento #INV-001` `Foto de la escena` `Testimonio de operador` |
+| **Notas** (opcional) | Según testigos, el trabajador se estiró más de 50cm fuera de la plataforma de trabajo. |
 
 ### Por Qué #2
 
 | Campo | Valor |
 |-------|-------|
-| **Pregunta** | ¿Por qué ocurrió esto? |
-| **Respuesta** | Porque el trabajador necesitaba alcanzar una zona que no era accesible desde la posición actual del andamio y decidió no reposicionarlo. |
-| **Evidencias** | `Documento #PROC-045` `Foto del andamio` |
-| **Notas o comentarios** | El procedimiento de trabajo no especificaba la frecuencia de reposicionamiento del andamio. |
+| **Respuesta** * | Porque el trabajador necesitaba alcanzar una zona que no era accesible desde la posición actual del andamio y decidió no reposicionarlo. |
+| **Evidencias** (opcional) | `Documento #PROC-045` `Foto del andamio` |
+| **Notas** (opcional) | El procedimiento de trabajo no especificaba la frecuencia de reposicionamiento del andamio. |
 
 ### Por Qué #3
 
 | Campo | Valor |
 |-------|-------|
-| **Pregunta** | ¿Por qué ocurrió esto? |
-| **Respuesta** | Porque el trabajador consideró que era más rápido estirarse que mover el andamio completo, priorizando rapidez sobre seguridad. |
-| **Evidencias** | `Testimonio de operador` `Testimonio de compañero` |
-| **Notas o comentarios** | Existía presión implícita por cumplir con el plazo de entrega del trabajo de pintura. |
+| **Respuesta** * | Porque el trabajador consideró que era más rápido estirarse que mover el andamio completo, priorizando rapidez sobre seguridad. |
+| **Evidencias** (opcional) | `Testimonio de operador` `Testimonio de compañero` |
+| **Notas** (opcional) | Existía presión implícita por cumplir con el plazo de entrega del trabajo de pintura. |
 
 ### Por Qué #4
 
 | Campo | Valor |
 |-------|-------|
-| **Pregunta** | ¿Por qué ocurrió esto? |
-| **Respuesta** | Porque no había supervisión directa en ese momento que pudiera corregir la conducta insegura del trabajador. |
-| **Evidencias** | `Documento #REG-SUP-12` `Registro de asistencia` |
-| **Notas o comentarios** | El supervisor estaba atendiendo otro frente de trabajo a 200 metros de distancia. |
+| **Respuesta** * | Porque no había supervisión directa en ese momento que pudiera corregir la conducta insegura del trabajador. |
+| **Evidencias** (opcional) | `Documento #REG-SUP-12` `Registro de asistencia` |
+| **Notas** (opcional) | El supervisor estaba atendiendo otro frente de trabajo a 200 metros de distancia. |
 
 ### Por Qué #5 (Causa Raíz)
 
 | Campo | Valor |
 |-------|-------|
-| **Pregunta** | ¿Por qué ocurrió esto? |
-| **Respuesta** | Porque el supervisor atendía múltiples frentes de trabajo simultáneamente debido a un ratio inadecuado de supervisor/trabajadores (1:12 en lugar del recomendado 1:5 para tareas de alto riesgo). |
-| **Evidencias** | `Documento #ORG-2024` `Planilla de turnos` `Informe de dotación` |
-| **Notas o comentarios** | La empresa no había definido ratios específicos de supervisión para trabajos de alto riesgo.
+| **Respuesta** * | Porque el supervisor atendía múltiples frentes de trabajo simultáneamente debido a un ratio inadecuado de supervisor/trabajadores (1:12 en lugar del recomendado 1:5 para tareas de alto riesgo). |
+| **Evidencias** (opcional) | `Documento #ORG-2024` `Planilla de turnos` `Informe de dotación` |
+| **Notas** (opcional) | La empresa no había definido ratios específicos de supervisión para trabajos de alto riesgo. |
+| **Marcar como causa raíz** | ✓ |
+
+> **Nota:** La pregunta "¿Por qué ocurrió esto?" se auto-completa automáticamente. Solo es necesario escribir la respuesta.
 
 ---
 

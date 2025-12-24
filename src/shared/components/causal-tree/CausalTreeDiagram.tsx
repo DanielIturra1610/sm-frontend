@@ -263,17 +263,20 @@ export default function CausalTreeDiagram({
   }, [analysis.nodes, analysis.relations])
 
   // Convert CausalNodes to ReactFlow nodes with calculated positions
-  // Priority: 1) User-moved position (from drag), 2) Calculated tree position (always recalculated)
-  // NOTE: We intentionally ignore stored positions from backend to ensure proper tree layout
+  // Priority: 1) User-moved position (from drag this session), 2) Stored position from backend, 3) Calculated tree position
   const initialNodes: Node[] = useMemo(() => {
     return analysis.nodes.map((node) => {
       // Check for user-moved position first (only from explicit drag during this session)
       const userPosition = userPositionsRef.current.get(node.id)
-      // Always use calculated tree position as the default for proper hierarchical layout
+      // Check for stored position from backend (persisted from previous sessions)
+      const storedPosition = node.position && (node.position.x !== 0 || node.position.y !== 0)
+        ? node.position
+        : null
+      // Calculate tree position as fallback for proper hierarchical layout
       const calculatedPosition = treePositions.get(node.id) || { x: 0, y: 0 }
 
-      // Only use user position if they explicitly dragged the node
-      const position = userPosition || calculatedPosition
+      // Priority: userPosition > storedPosition > calculatedPosition
+      const position = userPosition || storedPosition || calculatedPosition
 
       return {
         id: node.id,
@@ -349,12 +352,19 @@ export default function CausalTreeDiagram({
             strokeWidth: 2,
             strokeDasharray: isConfirmed ? '0' : '5,5',
           },
-          label: causeNode?.relationType === 'conjunctive' ? '∧' :
-                 causeNode?.relationType === 'disjunctive' ? '∨' : '',
+          label: causeNode?.relationType === 'conjunctive' ? 'Y' :
+                 causeNode?.relationType === 'disjunctive' ? 'O' : '',
           labelStyle: {
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: 'bold',
+            fill: edgeColor,
           },
+          labelBgStyle: {
+            fill: '#ffffff',
+            fillOpacity: 0.9,
+          },
+          labelBgPadding: [4, 4] as [number, number],
+          labelBgBorderRadius: 4,
           data: {
             linkType,
           },
@@ -548,6 +558,7 @@ export default function CausalTreeDiagram({
     }
   }, [analysis.id])
 // Function to get diagram image as data URL (for export)
+  // This captures the current visual state of the diagram preserving user positions
   const getDiagramImage = useCallback(async (): Promise<string | null> => {
     try {
       const { toPng } = await import('html-to-image')
@@ -560,33 +571,61 @@ export default function CausalTreeDiagram({
 
       const viewport = flowContainer.querySelector('.react-flow__viewport') as HTMLElement
       const nodesContainer = flowContainer.querySelector('.react-flow__nodes') as HTMLElement
+      const edgesContainer = flowContainer.querySelector('.react-flow__edges') as HTMLElement
 
       if (!viewport || !nodesContainer) {
         console.error('getDiagramImage: viewport or nodesContainer not found')
         return null
       }
 
-      // Calculate bounds of all nodes
-      const nodeElements = nodesContainer.querySelectorAll('.react-flow__node')
+      // Get current viewport transform to understand scale/pan
+      const viewportTransform = viewport.style.transform
+      const viewportMatch = viewportTransform.match(/translate\(([^,]+)px,\s*([^,]+)px\)\s*scale\(([^)]+)\)/)
+      const currentScale = viewportMatch ? parseFloat(viewportMatch[3]) : 1
+      const currentTranslateX = viewportMatch ? parseFloat(viewportMatch[1]) : 0
+      const currentTranslateY = viewportMatch ? parseFloat(viewportMatch[2]) : 0
+
+      console.log('getDiagramImage: Current viewport', { currentScale, currentTranslateX, currentTranslateY })
+
+      // Calculate bounds using the current React Flow nodes state (most accurate)
+      // These are the actual positions the user sees
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
 
-      nodeElements.forEach((node) => {
-        const nodeEl = node as HTMLElement
-        const transform = nodeEl.style.transform
-        // Fixed regex with properly escaped parentheses
-        const match = transform.match(/translate\(([^,]+)px,\s*([^)]+)px\)/)
-        if (match) {
-          const x = parseFloat(match[1])
-          const y = parseFloat(match[2])
-          const width = nodeEl.offsetWidth
-          const height = nodeEl.offsetHeight
+      // Use nodes state directly - these are the actual current positions
+      nodes.forEach((node) => {
+        const x = node.position.x
+        const y = node.position.y
+        // Estimate node dimensions (default ReactFlow node sizes)
+        const nodeEl = document.querySelector(`[data-id="${node.id}"]`) as HTMLElement
+        const width = nodeEl?.offsetWidth || 180
+        const height = nodeEl?.offsetHeight || 180
 
-          minX = Math.min(minX, x)
-          minY = Math.min(minY, y)
-          maxX = Math.max(maxX, x + width)
-          maxY = Math.max(maxY, y + height)
-        }
+        minX = Math.min(minX, x)
+        minY = Math.min(minY, y)
+        maxX = Math.max(maxX, x + width)
+        maxY = Math.max(maxY, y + height)
       })
+
+      // Fallback: If no nodes in state, read from DOM
+      if (minX === Infinity) {
+        const nodeElements = nodesContainer.querySelectorAll('.react-flow__node')
+        nodeElements.forEach((node) => {
+          const nodeEl = node as HTMLElement
+          const transform = nodeEl.style.transform
+          const match = transform.match(/translate\(([^,]+)px,\s*([^)]+)px\)/)
+          if (match) {
+            const x = parseFloat(match[1])
+            const y = parseFloat(match[2])
+            const width = nodeEl.offsetWidth
+            const height = nodeEl.offsetHeight
+
+            minX = Math.min(minX, x)
+            minY = Math.min(minY, y)
+            maxX = Math.max(maxX, x + width)
+            maxY = Math.max(maxY, y + height)
+          }
+        })
+      }
 
       // Check if we found any nodes
       if (minX === Infinity) {
@@ -595,7 +634,7 @@ export default function CausalTreeDiagram({
       }
 
       // Add padding for edges and arrows
-      const padding = 120
+      const padding = 100
       minX -= padding
       minY -= padding
       maxX += padding
@@ -611,12 +650,15 @@ export default function CausalTreeDiagram({
       const originalContainerWidth = flowContainer.style.width
       const originalContainerHeight = flowContainer.style.height
       const originalContainerOverflow = flowContainer.style.overflow
+      const originalContainerPosition = flowContainer.style.position
 
-      // Prepare for capture: set viewport to show all content
+      // Important: Set viewport to show all content at scale 1 for consistent capture
+      // This translates the view so all nodes are visible starting from 0,0
       viewport.style.transform = `translate(${-minX}px, ${-minY}px) scale(1)`
       flowContainer.style.width = `${contentWidth}px`
       flowContainer.style.height = `${contentHeight}px`
       flowContainer.style.overflow = 'visible'
+      flowContainer.style.position = 'relative'
 
       // Hide controls and panels for clean export
       const controls = flowContainer.querySelector('.react-flow__controls') as HTMLElement
@@ -637,15 +679,30 @@ export default function CausalTreeDiagram({
         ;(panel as HTMLElement).style.display = 'none'
       })
 
-      // Wait for styles to apply
-      await new Promise(resolve => setTimeout(resolve, 150))
+      // Wait for styles to apply and DOM to update
+      await new Promise(resolve => setTimeout(resolve, 200))
+
+      // Force a reflow to ensure styles are applied
+      flowContainer.offsetHeight
 
       // Capture with html-to-image
       const dataUrl = await toPng(flowContainer, {
         backgroundColor: '#ffffff',
-        pixelRatio: 2,
+        pixelRatio: 2, // Good quality without being too large
         width: contentWidth,
         height: contentHeight,
+        style: {
+          width: `${contentWidth}px`,
+          height: `${contentHeight}px`,
+        },
+        filter: (node) => {
+          // Exclude any hidden or non-relevant elements
+          const el = node as HTMLElement
+          if (el.classList?.contains('react-flow__minimap')) return false
+          if (el.classList?.contains('react-flow__controls')) return false
+          if (el.classList?.contains('react-flow__attribution')) return false
+          return true
+        },
       })
 
       // Restore original styles
@@ -653,6 +710,7 @@ export default function CausalTreeDiagram({
       flowContainer.style.width = originalContainerWidth
       flowContainer.style.height = originalContainerHeight
       flowContainer.style.overflow = originalContainerOverflow
+      flowContainer.style.position = originalContainerPosition
 
       if (controls) controls.style.display = originalControlsDisplay || ''
       if (attribution) attribution.style.display = originalAttributionDisplay || ''
@@ -667,7 +725,7 @@ export default function CausalTreeDiagram({
       console.error('Error capturing diagram:', error)
       return null
     }
-  }, [])
+  }, [nodes])
 
   // Expose the getDiagramImage function to parent
   useEffect(() => {
@@ -780,11 +838,13 @@ export default function CausalTreeDiagram({
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-0.5 bg-blue-500"></div>
-                <span>∧ Conjuntiva (Y)</span>
+                <span className="font-bold text-blue-500">Y</span>
+                <span>Conjuntiva (AND)</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-0.5 bg-amber-500"></div>
-                <span>∨ Disyuntiva (O)</span>
+                <span className="font-bold text-amber-500">O</span>
+                <span>Disyuntiva (OR)</span>
               </div>
             </div>
 

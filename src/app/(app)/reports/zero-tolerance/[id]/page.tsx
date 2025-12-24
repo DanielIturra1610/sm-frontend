@@ -170,6 +170,12 @@ export default function ZeroToleranceReportDetailPage() {
             reportType="zero-tolerance"
             reportId={id}
             reportStatus={report.report_status}
+            metadata={{
+              empresa: report.empresa,
+              tipoIncidente: report.tipo,
+              fecha: report.fecha_hora ? new Date(report.fecha_hora).toISOString().split('T')[0] : undefined,
+              correlativo: report.numero_documento,
+            }}
           />
         </div>
       </div>

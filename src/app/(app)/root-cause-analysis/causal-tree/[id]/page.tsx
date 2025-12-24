@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Download, CheckCircle2, List, GitBranch, Circle, Square, Flag, Trash2, ChevronRight } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
@@ -17,6 +17,9 @@ import {
   useCompleteCausalTreeAnalysis,
   useUpdateCausalNode,
 } from '@/shared/hooks/causal-tree-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
+import { useAttachmentMutations, useCausalTreeImageByAnalysis } from '@/shared/hooks/attachment-hooks'
+import type { ExportIncidentInfo } from '@/shared/utils/causal-tree-export'
 import CausalTreeDiagram from '@/shared/components/causal-tree/CausalTreeDiagram'
 import { EditNodeDialog } from '@/shared/components/causal-tree/EditNodeDialog'
 import { ExportDialog } from '@/shared/components/causal-tree/ExportDialog'
@@ -30,11 +33,30 @@ export default function CausalTreeDetailPage() {
   const analysisId = params.id as string
 
   const { data: analysis, isLoading, error } = useCausalTreeAnalysis(analysisId)
+  const { data: incident } = useIncident(analysis?.incidentId || null)
   const addNodeMutation = useAddCausalNode()
   const deleteNodeMutation = useDeleteCausalNode()
   const markRootCauseMutation = useMarkAsRootCause()
   const completeMutation = useCompleteCausalTreeAnalysis()
   const updateNodeMutation = useUpdateCausalNode()
+  const { upload: uploadAttachment } = useAttachmentMutations()
+
+  // Check if diagram image already exists for this analysis
+  const { data: existingImage, mutate: refreshImage } = useCausalTreeImageByAnalysis(
+    analysis?.incidentId || null,
+    analysisId
+  )
+  const [isSavingImage, setIsSavingImage] = useState(false)
+
+  // Build incident info for export filenames
+  const exportIncidentInfo: ExportIncidentInfo | undefined = incident
+    ? {
+        empresa: incident.empresa,
+        tipo: incident.tipo || incident.type,
+        fecha: incident.reportedAt,
+        correlativo: incident.correlativo,
+      }
+    : undefined
 
   const [activeTab, setActiveTab] = useState('diagram')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
@@ -117,6 +139,15 @@ export default function CausalTreeDetailPage() {
     }
   }
 
+  // Handler specifically for position updates (silent - no toast)
+  const handleUpdateNodePosition = async (nodeId: string, data: Partial<CausalNode>) => {
+    try {
+      await updateNodeMutation.mutateAsync({ analysisId, nodeId, data })
+    } catch (error) {
+      console.error('Error saving node position:', error)
+    }
+  }
+
   const handleCompleteAnalysis = async () => {
     if (!analysis) return
 
@@ -146,6 +177,67 @@ export default function CausalTreeDetailPage() {
       })
     }
   }
+
+  // Helper to convert base64 data URL to File
+  const dataURLtoFile = useCallback((dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(',')
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png'
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new File([u8arr], filename, { type: mime })
+  }, [])
+
+  // Handler to save diagram image for Final Report
+  const handleSaveImageForFinalReport = useCallback(async () => {
+    if (!analysis?.incidentId || existingImage || isSavingImage) return
+
+    setIsSavingImage(true)
+    try {
+      // Get diagram image
+      const diagramImage = diagramImageCaptureRef.current
+        ? await diagramImageCaptureRef.current()
+        : null
+
+      if (!diagramImage) {
+        toast({
+          title: 'Error',
+          description: 'No se pudo capturar la imagen del diagrama.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      const filename = `arbol-causal-${analysisId}-${Date.now()}.png`
+      const imageFile = dataURLtoFile(diagramImage, filename)
+
+      await uploadAttachment(analysis.incidentId, imageFile, {
+        description: `Diagrama del Árbol Causal: ${analysis.title}`,
+        reportId: analysisId,
+        reportType: 'causal_tree',
+      })
+
+      // Refresh the existing image check
+      await refreshImage()
+
+      toast({
+        title: 'Imagen guardada',
+        description: 'El diagrama ha sido guardado para el Reporte Final.',
+      })
+    } catch (error) {
+      console.error('Error saving diagram image:', error)
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar la imagen del diagrama.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSavingImage(false)
+    }
+  }, [analysis, analysisId, existingImage, isSavingImage, dataURLtoFile, uploadAttachment, refreshImage, toast])
 
   if (isLoading) {
     return (
@@ -364,6 +456,7 @@ export default function CausalTreeDetailPage() {
                 <CausalTreeDiagram
                   analysis={analysis}
                   onAddNode={handleAddNode}
+                  onUpdateNode={handleUpdateNodePosition}
                   onDeleteNode={handleDeleteNode}
                   onMarkAsRootCause={handleMarkAsRootCause}
                   onEditNode={handleEditNode}
@@ -515,6 +608,7 @@ export default function CausalTreeDetailPage() {
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
         analysis={analysis}
+        incidentInfo={exportIncidentInfo}
         onGetDiagramImage={async () => {
           if (diagramImageCaptureRef.current) {
             return await diagramImageCaptureRef.current()
@@ -528,6 +622,10 @@ export default function CausalTreeDetailPage() {
             downloadBtn.click()
           }
         }}
+        onSaveForFinalReport={handleSaveImageForFinalReport}
+        isSavingForFinalReport={isSavingImage}
+        isImageAlreadySaved={!!existingImage}
+        hasIncidentId={!!analysis.incidentId}
       />
     </div>
   )

@@ -17,10 +17,12 @@ import {
   File,
   Download,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  FileCheck,
 } from 'lucide-react'
+import { Separator } from '@/shared/components/ui/separator'
 import type { CausalTreeAnalysis } from '@/shared/types/causal-tree'
-import { exportToExcel, exportToWord, exportToPDF } from '@/shared/utils/causal-tree-export'
+import { exportToExcel, exportToWord, exportToPDF, type ExportIncidentInfo } from '@/shared/utils/causal-tree-export'
 
 type ExportFormat = 'excel' | 'word' | 'pdf' | 'image'
 
@@ -67,16 +69,27 @@ interface ExportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   analysis: CausalTreeAnalysis
+  incidentInfo?: ExportIncidentInfo
   onExportImage?: () => Promise<void>
   onGetDiagramImage?: () => Promise<string | null>
+  // Props for saving to Final Report
+  onSaveForFinalReport?: () => Promise<void>
+  isSavingForFinalReport?: boolean
+  isImageAlreadySaved?: boolean
+  hasIncidentId?: boolean
 }
 
 export function ExportDialog({
   open,
   onOpenChange,
   analysis,
+  incidentInfo,
   onExportImage,
   onGetDiagramImage,
+  onSaveForFinalReport,
+  isSavingForFinalReport = false,
+  isImageAlreadySaved = false,
+  hasIncidentId = false,
 }: ExportDialogProps) {
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('excel')
   const [isExporting, setIsExporting] = useState(false)
@@ -89,16 +102,16 @@ export function ExportDialog({
     try {
       switch (selectedFormat) {
         case 'excel':
-          await exportToExcel(analysis)
+          await exportToExcel(analysis, incidentInfo)
           break
         case 'word': {
           const wordImage = onGetDiagramImage ? await onGetDiagramImage() : null
-          await exportToWord(analysis, wordImage || undefined)
+          await exportToWord(analysis, wordImage || undefined, incidentInfo)
           break
         }
         case 'pdf': {
           const pdfImage = onGetDiagramImage ? await onGetDiagramImage() : null
-          exportToPDF(analysis, pdfImage || undefined)
+          exportToPDF(analysis, pdfImage || undefined, incidentInfo)
           break
         }
         case 'image':
@@ -172,6 +185,58 @@ export function ExportDialog({
               </div>
             </button>
           ))}
+        </div>
+
+        {/* Save for Final Report */}
+        <Separator className="my-2" />
+        <div className="py-2">
+          <p className="text-sm font-medium mb-2">Guardar para Reporte Final</p>
+          <button
+            type="button"
+            onClick={async () => {
+              if (onSaveForFinalReport && !isImageAlreadySaved && !isSavingForFinalReport && hasIncidentId) {
+                await onSaveForFinalReport()
+              }
+            }}
+            disabled={isImageAlreadySaved || isSavingForFinalReport || !hasIncidentId}
+            className={`
+              flex items-start gap-3 p-3 rounded-lg border-2 transition-all text-left w-full
+              ${isImageAlreadySaved
+                ? 'border-green-500 bg-green-50 cursor-not-allowed'
+                : !hasIncidentId
+                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                : 'border-purple-200 hover:border-purple-400 hover:bg-purple-50 cursor-pointer'
+              }
+              ${isSavingForFinalReport ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+          >
+            <div className="flex-shrink-0 mt-0.5">
+              {isSavingForFinalReport ? (
+                <Loader2 className="h-6 w-6 text-purple-600 animate-spin" />
+              ) : isImageAlreadySaved ? (
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              ) : (
+                <FileCheck className={`h-6 w-6 ${hasIncidentId ? 'text-purple-600' : 'text-gray-400'}`} />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-medium">
+                {isImageAlreadySaved
+                  ? 'Imagen ya guardada'
+                  : !hasIncidentId
+                  ? 'Sin suceso asociado'
+                  : 'Guardar diagrama'}
+              </span>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {isImageAlreadySaved
+                  ? 'El diagrama ya está disponible para el Reporte Final'
+                  : !hasIncidentId
+                  ? 'Este análisis no está vinculado a un suceso. Vincúlalo primero para guardar la imagen.'
+                  : 'Guarda la imagen del diagrama para incluirla en el Reporte Final'
+                }
+              </p>
+            </div>
+          </button>
         </div>
 
         {/* Info about export content */}
