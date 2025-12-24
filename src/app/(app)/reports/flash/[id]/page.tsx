@@ -179,6 +179,11 @@ export default function FlashReportDetailPage() {
             reportType="flash-reports"
             reportId={id}
             reportStatus={report.report_status}
+            metadata={{
+              empresa: report.empresa,
+              tipoIncidente: report.tipo,
+              fecha: report.fecha ? new Date(report.fecha).toISOString().split('T')[0] : undefined,
+            }}
           />
         </div>
       </div>
@@ -320,7 +325,24 @@ export default function FlashReportDetailPage() {
         </Card>
       )}
 
-      {/* Photos from Incident */}      {incidentPhotos && incidentPhotos.length > 0 && (        <Card className="mt-6">          <CardHeader>            <CardTitle className="flex items-center gap-2">              <Camera className="h-5 w-5" />              Fotos del Incidente            </CardTitle>          </CardHeader>          <CardContent>            <PhotoGallery              photos={incidentPhotos}              loading={photosLoading}              showFinalReportToggle={false}            />          </CardContent>        </Card>      )}
+      {/* Photos from Incident - Exclude causal tree diagrams */}
+      {incidentPhotos && incidentPhotos.filter(p => p.report_type !== 'causal_tree').length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Fotos del Incidente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PhotoGallery
+              photos={incidentPhotos.filter(p => p.report_type !== 'causal_tree')}
+              loading={photosLoading}
+              showFinalReportToggle={false}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

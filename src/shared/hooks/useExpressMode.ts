@@ -9,7 +9,8 @@ import { useState, useMemo, useCallback } from 'react'
 import { useExtractedAnalysisData } from './useExtractedAnalysisData'
 import { usePrefillData, useZeroToleranceReport, useActionPlanReportByIncident } from './report-hooks'
 import { useCalculatedCosts, type CalculatedCost } from './useCalculatedCosts'
-import { useIncidentPhotos } from './attachment-hooks'
+import { useIncidentPhotos, useCausalTreeImages } from './attachment-hooks'
+import type { EnhancedAttachment } from '@/lib/api/services/attachment-service'
 import {
   extractFromZeroTolerance,
   consolidarPersonas,
@@ -32,6 +33,12 @@ interface ResponsableData {
   rol?: string
 }
 
+interface TerceroData {
+  nombre: string
+  empresa?: string
+  rol: string
+}
+
 interface ActionPlanItemSummary {
   tarea: string
   responsable?: string
@@ -47,6 +54,10 @@ interface ExpressModeData {
   lugar: string
   fecha: string
   supervisor: string
+  // Additional Flash Report identifiers
+  areaZona: string
+  numeroProdity: string
+  zonal: string
 
   // From analyses
   causasRaiz: Array<{
@@ -67,6 +78,7 @@ interface ExpressModeData {
   personas: PersonaConsolidada[]
   evidencias: EvidenciaConsolidada[]
   responsables: ResponsableData[]
+  terceros: TerceroData[]
 
   // Zero Tolerance data
   severidad: string
@@ -89,6 +101,9 @@ interface ExpressModeData {
   causalTreeIds: string[]
   fiveWhysIds: string[]
   fishboneIds: string[]
+
+  // Causal tree diagram images
+  causalTreeImages: EnhancedAttachment[]
 
   // Metadata
   sourceReportsCount: number
@@ -143,6 +158,9 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
   // Fetch incident photos (including Flash Report attachments)
   const { data: incidentPhotos, isLoading: isLoadingPhotos } = useIncidentPhotos(incidentId)
 
+  // Fetch causal tree diagram images
+  const { data: causalTreeImages, isLoading: isLoadingCausalImages } = useCausalTreeImages(incidentId)
+
   // Calculate consolidated data
   const expressData = useMemo<ExpressModeData | null>(() => {
     if (!prefillData) return null
@@ -189,11 +207,14 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
     const ztFotos = zeroToleranceReport?.fotografias || []
 
     // Convert incident photos to attachment format for consolidation
-    const incidentAttachments = (incidentPhotos || []).map((photo) => ({
-      url: photo.signed_url || '',
-      name: photo.file_name || photo.description || 'Foto del incidente',
-      type: photo.mime_type || 'image/jpeg',
-    }))
+    // Exclude causal tree diagrams from evidence - they are displayed separately
+    const incidentAttachments = (incidentPhotos || [])
+      .filter((photo) => photo.report_type !== 'causal_tree')
+      .map((photo) => ({
+        url: photo.signed_url || '',
+        name: photo.file_name || photo.description || 'Foto del incidente',
+        type: photo.mime_type || 'image/jpeg',
+      }))
 
     const evidencias = consolidarEvidencias(prefillFotos, ztFotos, incidentAttachments)
 
@@ -220,6 +241,25 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
             rol: r.rol,
           })
         }
+      })
+    }
+
+    // Extract terceros (clients) from Action Plan items
+    const terceros: TerceroData[] = []
+    if (actionPlanData?.items) {
+      // Get unique clients from action plan items
+      const uniqueClients = new Set<string>()
+      actionPlanData.items.forEach((item) => {
+        if (item.cliente && item.cliente.trim()) {
+          uniqueClients.add(item.cliente.trim())
+        }
+      })
+      // Add each unique client as a tercero
+      uniqueClients.forEach((cliente) => {
+        terceros.push({
+          nombre: cliente,
+          rol: 'Cliente',
+        })
       })
     }
 
@@ -287,6 +327,10 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       lugar: prefillData.lugar || '',
       fecha: prefillData.fecha || '',
       supervisor: prefillData.supervisor || '',
+      // Additional Flash Report identifiers
+      areaZona: prefillData.area_zona || '',
+      numeroProdity: prefillData.numero_prodity || '',
+      zonal: prefillData.zonal || '',
       causasRaiz: causasRaiz.map((c) => ({
         problema: c.problema,
         causa_raiz: c.causa_raiz,
@@ -299,6 +343,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       personas,
       evidencias,
       responsables,
+      terceros,
       severidad: ztData?.severidad || '',
       acciones_tomadas: ztData?.acciones_tomadas || '',
       accionesInmediatas: prefillData.acciones_inmediatas || '',
@@ -311,10 +356,11 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       causalTreeIds,
       fiveWhysIds,
       fishboneIds,
+      causalTreeImages: causalTreeImages || [],
       sourceReportsCount,
       hasEnoughData,
     }
-  }, [prefillData, causasRaiz, extractedConclusiones, analysisCount, zeroToleranceReport, actionPlanData, costosCalculados, totalCostosEstimado, incidentPhotos])
+  }, [prefillData, causasRaiz, extractedConclusiones, analysisCount, zeroToleranceReport, actionPlanData, costosCalculados, totalCostosEstimado, incidentPhotos, causalTreeImages])
 
   // Calculate data completeness percentage
   const dataCompleteness = useMemo(() => {
@@ -353,7 +399,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
     setMode,
     toggleMode,
     expressData,
-    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT || isLoadingAP || isLoadingPhotos,
+    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT || isLoadingAP || isLoadingPhotos || isLoadingCausalImages,
     canUseExpressMode,
     dataCompleteness,
   }

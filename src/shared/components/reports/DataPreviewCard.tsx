@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/sha
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
-import { ScrollArea } from '@/shared/components/ui/scroll-area'
 import { Progress } from '@/shared/components/ui/progress'
 import {
   Accordion,
@@ -36,8 +35,11 @@ import {
   Lightbulb,
   Clock,
   User,
+  MapPin,
+  Hash,
 } from 'lucide-react'
 import type { PersonaConsolidada, EvidenciaConsolidada } from '@/shared/utils/finalReportExtractors'
+import type { EnhancedAttachment } from '@/lib/api/services/attachment-service'
 
 interface CausaRaiz {
   problema: string
@@ -52,6 +54,12 @@ interface ResponsableData {
   rol?: string
 }
 
+interface TerceroData {
+  nombre: string
+  empresa?: string
+  rol: string
+}
+
 interface ActionPlanItemSummary {
   tarea: string
   responsable?: string
@@ -63,6 +71,10 @@ interface ActionPlanItemSummary {
 interface DataPreviewCardProps {
   empresa: string
   descripcion: string
+  lugar?: string
+  areaZona?: string
+  numeroProdity?: string
+  zonal?: string
   causasRaiz: CausaRaiz[]
   conclusiones: string
   personas: PersonaConsolidada[]
@@ -77,10 +89,12 @@ interface DataPreviewCardProps {
   planAccionItems?: ActionPlanItemSummary[]
   planAccionProgreso?: number
   responsables?: ResponsableData[]
+  terceros?: TerceroData[]
   leccionesAprendidas?: string[]
   causalTreeIds?: string[]
   fiveWhysIds?: string[]
   fishboneIds?: string[]
+  causalTreeImages?: EnhancedAttachment[]
   onConfirm: () => void
   onEdit: () => void
   isLoading?: boolean
@@ -89,6 +103,10 @@ interface DataPreviewCardProps {
 export function DataPreviewCard({
   empresa,
   descripcion,
+  lugar,
+  areaZona,
+  numeroProdity,
+  zonal,
   causasRaiz,
   conclusiones,
   personas,
@@ -98,10 +116,12 @@ export function DataPreviewCard({
   planAccionItems = [],
   planAccionProgreso = 0,
   responsables = [],
+  terceros = [],
   leccionesAprendidas = [],
   causalTreeIds = [],
   fiveWhysIds = [],
   fishboneIds = [],
+  causalTreeImages = [],
   onConfirm,
   onEdit,
   isLoading = false,
@@ -155,7 +175,7 @@ export function DataPreviewCard({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <Accordion type="multiple" defaultValue={['empresa', 'causas', 'personas', 'planAccion']} className="w-full">
+        <Accordion type="multiple" defaultValue={['empresa', 'ubicacion', 'causas', 'personas', 'planAccion']} className="w-full">
           {/* Company Info */}
           <AccordionItem value="empresa">
             <AccordionTrigger className="hover:no-underline">
@@ -179,6 +199,52 @@ export function DataPreviewCard({
             </AccordionContent>
           </AccordionItem>
 
+          {/* Location & Identifiers */}
+          {(lugar || areaZona || numeroProdity || zonal) && (
+            <AccordionItem value="ubicacion">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span>Ubicacion e Identificadores</span>
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pl-6 space-y-3">
+                  {lugar && (
+                    <div className="p-2 bg-white rounded border">
+                      <p className="text-xs text-muted-foreground">Lugar</p>
+                      <p className="text-sm font-medium">{lugar}</p>
+                    </div>
+                  )}
+                  {areaZona && (
+                    <div className="p-2 bg-white rounded border">
+                      <p className="text-xs text-muted-foreground">Area / Zona</p>
+                      <p className="text-sm font-medium">{areaZona}</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    {numeroProdity && (
+                      <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                        <div className="flex items-center gap-1 text-xs text-blue-600">
+                          <Hash className="h-3 w-3" />
+                          <span>Numero Prodity</span>
+                        </div>
+                        <p className="text-sm font-medium">{numeroProdity}</p>
+                      </div>
+                    )}
+                    {zonal && (
+                      <div className="p-2 bg-purple-50 rounded border border-purple-200">
+                        <p className="text-xs text-purple-600">Zonal</p>
+                        <p className="text-sm font-medium">{zonal}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
           {/* Root Causes */}
           <AccordionItem value="causas">
             <AccordionTrigger className="hover:no-underline">
@@ -197,25 +263,23 @@ export function DataPreviewCard({
                     <span className="text-sm">No se encontraron causas raiz en los analisis</span>
                   </div>
                 ) : (
-                  <ScrollArea className="max-h-60">
-                    <div className="space-y-2">
-                      {causasRaiz.map((causa, idx) => (
-                        <div key={idx} className="p-3 bg-white rounded-lg border space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge className={getBadgeColor(causa.metodologia)}>
-                              {causa.metodologia}
-                            </Badge>
-                          </div>
-                          <p className="text-sm font-medium">{causa.causa_raiz}</p>
-                          {causa.accion_plan && (
-                            <p className="text-xs text-muted-foreground">
-                              <strong>Accion:</strong> {causa.accion_plan}
-                            </p>
-                          )}
+                  <div className="max-h-60 overflow-y-auto pr-2 space-y-2">
+                    {causasRaiz.map((causa, idx) => (
+                      <div key={idx} className="p-3 bg-white rounded-lg border space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Badge className={getBadgeColor(causa.metodologia)}>
+                            {causa.metodologia}
+                          </Badge>
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                        <p className="text-sm font-medium">{causa.causa_raiz}</p>
+                        {causa.accion_plan && (
+                          <p className="text-xs text-muted-foreground">
+                            <strong>Accion:</strong> {causa.accion_plan}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
 
                 {/* Analysis count summary */}
@@ -267,6 +331,31 @@ export function DataPreviewCard({
                     ))}
                   </div>
                 )}
+
+                {/* Causal Tree Diagram Images */}
+                {causalTreeImages.length > 0 && (
+                  <div className="pt-3 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Diagramas del Arbol Causal:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {causalTreeImages.map((img, idx) => (
+                        <div
+                          key={img.id}
+                          className="relative group cursor-pointer"
+                          onClick={() => img.signed_url && window.open(img.signed_url, '_blank')}
+                        >
+                          <img
+                            src={img.signed_url}
+                            alt={img.description || `Arbol Causal ${idx + 1}`}
+                            className="w-full h-32 object-contain bg-gray-50 rounded-lg border hover:border-primary transition-colors"
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
+                            <span className="text-white text-xs">Click para ampliar</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -314,37 +403,35 @@ export function DataPreviewCard({
                   </div>
 
                   {/* Task list */}
-                  <ScrollArea className="max-h-48">
-                    <div className="space-y-2">
-                      {planAccionItems.map((item, idx) => (
-                        <div key={idx} className="p-3 bg-white rounded-lg border">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{item.tarea}</p>
-                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                {item.responsable && (
-                                  <span className="flex items-center gap-1">
-                                    <User className="h-3 w-3" />
-                                    {item.responsable}
-                                  </span>
-                                )}
-                                {item.fin && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {new Date(item.fin).toLocaleDateString('es-CL')}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              {getEstadoBadge(item.estado)}
-                              <span className="text-xs text-muted-foreground">{item.avance_real}%</span>
+                  <div className="max-h-48 overflow-y-auto pr-2 space-y-2">
+                    {planAccionItems.map((item, idx) => (
+                      <div key={idx} className="p-3 bg-white rounded-lg border">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.tarea}</p>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                              {item.responsable && (
+                                <span className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {item.responsable}
+                                </span>
+                              )}
+                              {item.fin && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(item.fin).toLocaleDateString('es-CL')}
+                                </span>
+                              )}
                             </div>
                           </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {getEstadoBadge(item.estado)}
+                            <span className="text-xs text-muted-foreground">{item.avance_real}%</span>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -365,30 +452,28 @@ export function DataPreviewCard({
                 {personas.length === 0 ? (
                   <p className="text-sm text-muted-foreground italic">Sin personas registradas</p>
                 ) : (
-                  <ScrollArea className="max-h-40">
-                    <div className="space-y-2">
-                      {personas.map((persona, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border">
-                          <div>
-                            <p className="text-sm font-medium">{persona.nombre}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {persona.cargo}{persona.empresa && ` - ${persona.empresa}`}
-                            </p>
-                            {persona.tipo_lesion && (
-                              <p className="text-xs text-red-600">Lesion: {persona.tipo_lesion}</p>
-                            )}
-                          </div>
-                          <div className="flex gap-1 flex-wrap justify-end">
-                            {persona.fuentes.map((fuente, fIdx) => (
-                              <Badge key={fIdx} variant="outline" className="text-xs">
-                                {fuente}
-                              </Badge>
-                            ))}
-                          </div>
+                  <div className="max-h-40 overflow-y-auto pr-2 space-y-2">
+                    {personas.map((persona, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border">
+                        <div>
+                          <p className="text-sm font-medium">{persona.nombre}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {persona.cargo}{persona.empresa && ` - ${persona.empresa}`}
+                          </p>
+                          {persona.tipo_lesion && (
+                            <p className="text-xs text-red-600">Lesion: {persona.tipo_lesion}</p>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                        <div className="flex gap-1 flex-wrap justify-end">
+                          {persona.fuentes.map((fuente, fIdx) => (
+                            <Badge key={fIdx} variant="outline" className="text-xs">
+                              {fuente}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </AccordionContent>
@@ -413,6 +498,33 @@ export function DataPreviewCard({
                         <p className="text-sm font-medium">{resp.nombre}</p>
                         <p className="text-xs text-muted-foreground">{resp.cargo}</p>
                         {resp.rol && <p className="text-xs text-blue-600">{resp.rol}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+
+          {/* Terceros (Clients from Action Plan) */}
+          {terceros.length > 0 && (
+            <AccordionItem value="terceros">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span>Terceros Identificados</span>
+                  <Badge variant="secondary" className="ml-2">{terceros.length}</Badge>
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pl-6">
+                  <div className="grid grid-cols-2 gap-2">
+                    {terceros.map((tercero, idx) => (
+                      <div key={idx} className="p-2 bg-blue-50 rounded border border-blue-200">
+                        <p className="text-sm font-medium">{tercero.nombre}</p>
+                        <p className="text-xs text-blue-600">{tercero.rol}</p>
+                        {tercero.empresa && <p className="text-xs text-muted-foreground">{tercero.empresa}</p>}
                       </div>
                     ))}
                   </div>

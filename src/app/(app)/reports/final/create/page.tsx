@@ -315,7 +315,12 @@ export default function CreateFinalReportPage() {
           tipo_lesion: p.tipo_lesion,
         })),
         equipos_danados: [],
-        terceros_identificados: [],
+        terceros_identificados: expressData.terceros?.map((t) => ({
+          nombre: t.nombre,
+          empresa: t.empresa || '',
+          rol: t.rol,
+          contacto: '',
+        })) || [],
         analisis_causas_raiz: expressData.causasRaiz.map((c) => ({
           problema: c.problema,
           causa_raiz: c.causa_raiz,
@@ -402,6 +407,18 @@ export default function CreateFinalReportPage() {
             nombre: r.nombre,
             cargo: r.cargo,
             firma: '',
+          }))
+        )
+      }
+
+      // Terceros identificados (clientes del Plan de Acción)
+      if (expressData.terceros && expressData.terceros.length > 0) {
+        replaceTerceros(
+          expressData.terceros.map((t) => ({
+            nombre: t.nombre,
+            empresa: t.empresa || '',
+            rol: t.rol,
+            contacto: '',
           }))
         )
       }
@@ -522,6 +539,10 @@ export default function CreateFinalReportPage() {
           <DataPreviewCard
             empresa={expressData.empresa}
             descripcion={expressData.descripcion}
+            lugar={expressData.lugar}
+            areaZona={expressData.areaZona}
+            numeroProdity={expressData.numeroProdity}
+            zonal={expressData.zonal}
             causasRaiz={expressData.causasRaiz}
             conclusiones={expressData.conclusiones}
             personas={expressData.personas}
@@ -531,10 +552,12 @@ export default function CreateFinalReportPage() {
             planAccionItems={expressData.planAccionItems}
             planAccionProgreso={expressData.planAccionProgreso}
             responsables={expressData.responsables}
+            terceros={expressData.terceros}
             leccionesAprendidas={expressData.leccionesAprendidas}
             causalTreeIds={expressData.causalTreeIds}
             fiveWhysIds={expressData.fiveWhysIds}
             fishboneIds={expressData.fishboneIds}
+            causalTreeImages={expressData.causalTreeImages}
             onConfirm={handleExpressConfirm}
             onEdit={handleSwitchToComplete}
             isLoading={isSubmitting}

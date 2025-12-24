@@ -397,6 +397,73 @@ export function useIncidentPhotoManager(incidentId: string | null) {
 }
 
 // ============================================================================
+// CAUSAL TREE DIAGRAM IMAGES
+// ============================================================================
+
+/**
+ * Get causal tree diagram images for an incident
+ * Filters attachments by report_type='causal_tree'
+ */
+export function useCausalTreeImages(
+  incidentId: string | null,
+  config?: SWRConfiguration
+): UseApiListResponse<EnhancedAttachment[]> {
+  const { data, error, isLoading, isValidating, mutate } = useSWR<EnhancedAttachment[]>(
+    incidentId ? `/attachments/incident/${incidentId}/causal-tree` : null,
+    incidentId ? async () => {
+      // Get all attachments and filter by report_type
+      const allAttachments = await api.attachments.getByIncidentId(incidentId)
+      return allAttachments.filter(att => att.report_type === 'causal_tree')
+    } : null,
+    {
+      revalidateOnFocus: false,
+      ...config,
+    }
+  )
+
+  return {
+    data,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+    refresh: () => mutate(),
+  }
+}
+
+/**
+ * Get a specific causal tree diagram image by analysis ID
+ */
+export function useCausalTreeImageByAnalysis(
+  incidentId: string | null,
+  analysisId: string | null,
+  config?: SWRConfiguration
+): UseApiResponse<EnhancedAttachment | null> {
+  const { data, error, isLoading, isValidating, mutate } = useSWR<EnhancedAttachment | null>(
+    incidentId && analysisId ? `/attachments/incident/${incidentId}/causal-tree/${analysisId}` : null,
+    incidentId && analysisId ? async () => {
+      const allAttachments = await api.attachments.getByIncidentId(incidentId)
+      const found = allAttachments.find(
+        att => att.report_type === 'causal_tree' && att.report_id === analysisId
+      )
+      return found || null
+    } : null,
+    {
+      revalidateOnFocus: false,
+      ...config,
+    }
+  )
+
+  return {
+    data,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  }
+}
+
+// ============================================================================
 // UTILITIES
 // ============================================================================
 
