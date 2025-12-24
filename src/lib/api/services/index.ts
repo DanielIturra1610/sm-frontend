@@ -18,6 +18,5 @@ export {
   FinalReportService,
   ZeroToleranceService
 } from './report-service';
-export { SLAService } from './sla-service';
 export { AttachmentService } from './attachment-service';
 export { MetricsService } from './metrics-service';

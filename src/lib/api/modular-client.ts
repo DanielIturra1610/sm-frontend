@@ -17,7 +17,6 @@ import {
   ActionPlanService,
   FinalReportService,
   ZeroToleranceService,
-  SLAService,
   AttachmentService,
   MetricsService,
 } from './services';
@@ -37,7 +36,6 @@ class ModularApiClient {
   actionPlan: ActionPlanService;
   finalReport: FinalReportService;
   zeroTolerance: ZeroToleranceService;
-  sla: SLAService;
   attachments: AttachmentService;
   metrics: MetricsService;
 
@@ -59,7 +57,6 @@ class ModularApiClient {
     this.actionPlan = new ActionPlanService(serviceConfig);
     this.finalReport = new FinalReportService(serviceConfig);
     this.zeroTolerance = new ZeroToleranceService(serviceConfig);
-    this.sla = new SLAService(serviceConfig);
     this.attachments = new AttachmentService(serviceConfig);
     this.metrics = new MetricsService(serviceConfig);
   }
