@@ -826,6 +826,20 @@ export function useZeroToleranceReport(id: string | null, config?: SWRConfigurat
 }
 
 /**
+ * Get zero tolerance report by incident ID
+ */
+export function useZeroToleranceReportByIncident(incidentId: string | null, config?: SWRConfiguration) {
+  return useSWR<ZeroToleranceReport>(
+    incidentId ? `/zero-tolerance/incident/${incidentId}` : null,
+    incidentId ? () => api.zeroTolerance.getByIncidentId(incidentId) : null,
+    {
+      revalidateOnFocus: false,
+      ...config,
+    }
+  )
+}
+
+/**
  * Create zero tolerance report
  */
 export function useCreateZeroToleranceReport() {

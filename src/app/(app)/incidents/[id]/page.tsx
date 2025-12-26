@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useIncident } from '@/shared/hooks/incident-hooks'
 import { useIncidentPhotoManager } from '@/shared/hooks/attachment-hooks'
+import { useFlashReportByIncident, useZeroToleranceReportByIncident } from '@/shared/hooks/report-hooks'
 import { Button } from '@/shared/components/ui/button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -22,6 +23,15 @@ export default function IncidentDetailPage() {
   const [showUploader, setShowUploader] = useState(false)
 
   const { data: incident, error, isLoading } = useIncident(incidentId)
+
+  // Cargar el reporte asociado según el tipo de incidente
+  const isZeroToleranceIncident = incident?.type === 'zero_tolerance'
+  const { data: flashReport, isLoading: flashReportLoading } = useFlashReportByIncident(
+    !isZeroToleranceIncident && incidentId ? incidentId : null
+  )
+  const { data: zeroToleranceReport, isLoading: zeroToleranceLoading } = useZeroToleranceReportByIncident(
+    isZeroToleranceIncident && incidentId ? incidentId : null
+  )
 
   const {
     photos,
@@ -124,6 +134,15 @@ export default function IncidentDetailPage() {
     return colors[status as keyof typeof colors] || colors.reported
   }
 
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      accident: 'Accidente',
+      incident: 'Incidente',
+      zero_tolerance: 'Tolerancia Cero',
+    }
+    return labels[type] || type
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -154,7 +173,7 @@ export default function IncidentDetailPage() {
         <Badge className={getStatusColor(incident.status)}>
           {incident.status.replace('_', ' ').toUpperCase()}
         </Badge>
-        <Badge variant="outline">{incident.type}</Badge>
+        <Badge variant="outline">{getTypeLabel(incident.type)}</Badge>
       </div>
 
       {/* Main Content */}
@@ -256,6 +275,50 @@ export default function IncidentDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Reporte Asociado */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Reporte Asociado</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {(flashReportLoading || zeroToleranceLoading) ? (
+                <Skeleton className="h-10 w-full" />
+              ) : isZeroToleranceIncident ? (
+                zeroToleranceReport ? (
+                  <Link href={`/reports/zero-tolerance/${zeroToleranceReport.id}`}>
+                    <Button variant="outline" className="w-full justify-start">
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span className="flex-1 text-left">Reporte Tolerancia Cero</span>
+                      <Badge variant="secondary" className="ml-2">
+                        {zeroToleranceReport.report_status}
+                      </Badge>
+                    </Button>
+                  </Link>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No se encontró el Reporte de Tolerancia Cero
+                  </p>
+                )
+              ) : (
+                flashReport ? (
+                  <Link href={`/reports/flash/${flashReport.id}`}>
+                    <Button variant="outline" className="w-full justify-start">
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span className="flex-1 text-left">Flash Report</span>
+                      <Badge variant="secondary" className="ml-2">
+                        {flashReport.report_status}
+                      </Badge>
+                    </Button>
+                  </Link>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No se encontró el Flash Report
+                  </p>
+                )
+              )}
+            </CardContent>
+          </Card>
 
           {/* Actions */}
           <Card>

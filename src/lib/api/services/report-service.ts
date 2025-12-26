@@ -610,6 +610,13 @@ export class ZeroToleranceService extends BaseService {
   }
 
   /**
+   * Get zero tolerance report by incident ID
+   */
+  async getByIncidentId(incidentId: string): Promise<ZeroToleranceReport> {
+    return this.request<ZeroToleranceReport>(`/zero-tolerance/incident/${incidentId}`);
+  }
+
+  /**
    * List all zero tolerance reports
    */
   async list(): Promise<ZeroToleranceReport[]> {
