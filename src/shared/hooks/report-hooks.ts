@@ -15,6 +15,7 @@ import type {
   ActionPlanReport,
   FinalReport,
   ZeroToleranceReport,
+  CreateZeroToleranceReportData,
   PrefillData,
   PrefillReportType,
 } from '@/shared/types/api'
@@ -830,7 +831,7 @@ export function useZeroToleranceReport(id: string | null, config?: SWRConfigurat
 export function useCreateZeroToleranceReport() {
   const { mutate: mutateReports } = useZeroToleranceReports()
 
-  return useSWRMutation('/zero-tolerance',
+  return useSWRMutation<ZeroToleranceReport, Error, string, CreateZeroToleranceReportData>('/zero-tolerance',
     async (key, { arg }) => {
       const newReport = await api.zeroTolerance.create(arg)
       await mutateReports()

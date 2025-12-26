@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useCreateIncident } from '@/shared/hooks/incident-hooks'
-import { useCreateFlashReport } from '@/shared/hooks/report-hooks'
+import { useCreateFlashReport, useCreateZeroToleranceReport } from '@/shared/hooks/report-hooks'
 import { useAttachmentMutations } from '@/shared/hooks/attachment-hooks'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -91,6 +91,7 @@ export default function CreateIncidentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { trigger: createIncident } = useCreateIncident()
   const { trigger: createFlashReport } = useCreateFlashReport()
+  const { trigger: createZeroToleranceReport } = useCreateZeroToleranceReport()
   const { uploadMultiple } = useAttachmentMutations()
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [selectedCategoria, setSelectedCategoria] = useState<SucesoCategory | undefined>()
@@ -193,41 +194,73 @@ export default function CreateIncidentPage() {
         }
       }
 
-      // 3. Crear Flash Report automáticamente
+      // 3. Crear reporte automáticamente según la categoría
       const dateTime = new Date(data.date_time)
       const fecha = dateTime.toISOString().split('T')[0]
       const hora = dateTime.toTimeString().slice(0, 5)
 
-      const flashReportData = {
-        incident_id: newIncident.id,
-        suceso: data.title,
-        tipo: getSucesoTypeLabel(data.tipoSuceso),
-        fecha,
-        hora,
-        lugar: data.location,
-        area_zona: data.area_zona,
-        empresa: data.empresa,
-        supervisor: data.supervisor,
-        descripcion: data.description,
-        zonal: data.zonal,
-        numero_prodity: data.numero_prodity,
-        acciones_inmediatas: data.acciones_inmediatas,
-        controles_inmediatos: data.controles_inmediatos,
-        factores_riesgo: data.factores_riesgo,
-        con_baja_il: data.con_baja_il,
-        sin_baja_il: data.sin_baja_il,
-        incidente_industrial: data.incidente_industrial,
-        incidente_laboral: data.incidente_laboral,
-        es_plgf: data.es_plgf,
-        nivel_plgf: data.nivel_plgf,
-        justificacion_plgf: data.justificacion_plgf,
-        personas_involucradas: data.personas_involucradas,
+      let reportType = 'Flash Report'
+
+      if (data.categoria === 'tolerancia_0') {
+        // Crear Zero Tolerance Report
+        // Mapear personas_involucradas (remover tipo_lesion que no aplica para ZT)
+        const personasZT = data.personas_involucradas?.map(p => ({
+          nombre: p.nombre,
+          cargo: p.cargo,
+          empresa: p.empresa,
+        }))
+
+        const zeroToleranceData = {
+          incident_id: newIncident.id,
+          suceso: data.title,
+          tipo: data.tipoSuceso, // t0_accion_insegura | t0_condicion_insegura | t0_stop_work
+          lugar: data.location,
+          fecha_hora: dateTime.toISOString(),
+          area_zona: data.area_zona,
+          empresa: data.empresa,
+          supervisor_cge: data.supervisor, // Mapeo: supervisor → supervisor_cge
+          descripcion: data.description,
+          numero_prodity: data.numero_prodity,
+          acciones_tomadas: data.acciones_inmediatas, // Mapeo: acciones_inmediatas → acciones_tomadas
+          personas_involucradas: personasZT,
+          severidad: data.severity,
+        }
+
+        await createZeroToleranceReport(zeroToleranceData)
+        reportType = 'Reporte Tolerancia Cero'
+      } else {
+        // Crear Flash Report (para accidentes e incidentes)
+        const flashReportData = {
+          incident_id: newIncident.id,
+          suceso: data.title,
+          tipo: getSucesoTypeLabel(data.tipoSuceso),
+          fecha,
+          hora,
+          lugar: data.location,
+          area_zona: data.area_zona,
+          empresa: data.empresa,
+          supervisor: data.supervisor,
+          descripcion: data.description,
+          zonal: data.zonal,
+          numero_prodity: data.numero_prodity,
+          acciones_inmediatas: data.acciones_inmediatas,
+          controles_inmediatos: data.controles_inmediatos,
+          factores_riesgo: data.factores_riesgo,
+          con_baja_il: data.con_baja_il,
+          sin_baja_il: data.sin_baja_il,
+          incidente_industrial: data.incidente_industrial,
+          incidente_laboral: data.incidente_laboral,
+          es_plgf: data.es_plgf,
+          nivel_plgf: data.nivel_plgf,
+          justificacion_plgf: data.justificacion_plgf,
+          personas_involucradas: data.personas_involucradas,
+        }
+
+        await createFlashReport(flashReportData)
       }
 
-      await createFlashReport(flashReportData)
-
       toast.success(
-        `Suceso y Flash Report creados exitosamente${pendingFiles.length > 0 ? ` con ${pendingFiles.length} foto(s)` : ''}`
+        `Suceso y ${reportType} creados exitosamente${pendingFiles.length > 0 ? ` con ${pendingFiles.length} foto(s)` : ''}`
       )
       router.push(`/incidents/${newIncident.id}`)
     } catch (error) {
@@ -255,7 +288,9 @@ export default function CreateIncidentPage() {
             <h1 className="text-3xl font-bold text-gray-900">Reportar Suceso</h1>
             <p className="text-gray-600 mt-1 flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Se creará automáticamente el Suceso y su Flash Report
+              {selectedCategoria === 'tolerancia_0'
+                ? 'Se creará automáticamente el Suceso y su Reporte Tolerancia Cero'
+                : 'Se creará automáticamente el Suceso y su Flash Report'}
             </p>
           </div>
         </div>
@@ -311,23 +346,25 @@ export default function CreateIncidentPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="zonal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Zonal</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Ej: O'Higgins, Metropolitana"
-                            {...field}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {selectedCategoria !== 'tolerancia_0' && (
+                    <FormField
+                      control={form.control}
+                      name="zonal"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Zonal</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ej: O'Higgins, Metropolitana"
+                              {...field}
+                              disabled={isSubmitting}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
@@ -526,124 +563,128 @@ export default function CreateIncidentPage() {
                   />
                 </div>
 
-                {/* Checkboxes Tipo Incidente */}
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <Label className="text-sm font-medium mb-3 block">Tipo de Incidente/Accidente</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="con_baja_il"
-                        checked={form.watch('con_baja_il') || false}
-                        onCheckedChange={(checked) => form.setValue('con_baja_il', Boolean(checked))}
-                        disabled={isSubmitting}
-                      />
-                      <Label htmlFor="con_baja_il" className="text-sm font-normal cursor-pointer">
-                        Con Baja IL
-                      </Label>
-                    </div>
+                {/* Checkboxes Tipo Incidente - Solo para accidentes e incidentes */}
+                {selectedCategoria !== 'tolerancia_0' && (
+                  <div className="border rounded-lg p-4 bg-gray-50">
+                    <Label className="text-sm font-medium mb-3 block">Tipo de Incidente/Accidente</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="con_baja_il"
+                          checked={form.watch('con_baja_il') || false}
+                          onCheckedChange={(checked) => form.setValue('con_baja_il', Boolean(checked))}
+                          disabled={isSubmitting}
+                        />
+                        <Label htmlFor="con_baja_il" className="text-sm font-normal cursor-pointer">
+                          Con Baja IL
+                        </Label>
+                      </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="sin_baja_il"
-                        checked={form.watch('sin_baja_il') || false}
-                        onCheckedChange={(checked) => form.setValue('sin_baja_il', Boolean(checked))}
-                        disabled={isSubmitting}
-                      />
-                      <Label htmlFor="sin_baja_il" className="text-sm font-normal cursor-pointer">
-                        Sin Baja IL
-                      </Label>
-                    </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="sin_baja_il"
+                          checked={form.watch('sin_baja_il') || false}
+                          onCheckedChange={(checked) => form.setValue('sin_baja_il', Boolean(checked))}
+                          disabled={isSubmitting}
+                        />
+                        <Label htmlFor="sin_baja_il" className="text-sm font-normal cursor-pointer">
+                          Sin Baja IL
+                        </Label>
+                      </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="incidente_industrial"
-                        checked={form.watch('incidente_industrial') || false}
-                        onCheckedChange={(checked) => form.setValue('incidente_industrial', Boolean(checked))}
-                        disabled={isSubmitting}
-                      />
-                      <Label htmlFor="incidente_industrial" className="text-sm font-normal cursor-pointer">
-                        Incidente Industrial
-                      </Label>
-                    </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="incidente_industrial"
+                          checked={form.watch('incidente_industrial') || false}
+                          onCheckedChange={(checked) => form.setValue('incidente_industrial', Boolean(checked))}
+                          disabled={isSubmitting}
+                        />
+                        <Label htmlFor="incidente_industrial" className="text-sm font-normal cursor-pointer">
+                          Incidente Industrial
+                        </Label>
+                      </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="incidente_laboral"
-                        checked={form.watch('incidente_laboral') || false}
-                        onCheckedChange={(checked) => form.setValue('incidente_laboral', Boolean(checked))}
-                        disabled={isSubmitting}
-                      />
-                      <Label htmlFor="incidente_laboral" className="text-sm font-normal cursor-pointer">
-                        Incidente Laboral
-                      </Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="incidente_laboral"
+                          checked={form.watch('incidente_laboral') || false}
+                          onCheckedChange={(checked) => form.setValue('incidente_laboral', Boolean(checked))}
+                          disabled={isSubmitting}
+                        />
+                        <Label htmlFor="incidente_laboral" className="text-sm font-normal cursor-pointer">
+                          Incidente Laboral
+                        </Label>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* PLGF */}
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Checkbox
-                      id="es_plgf"
-                      checked={watchEsPlgf || false}
-                      onCheckedChange={(checked) => form.setValue('es_plgf', Boolean(checked))}
-                      disabled={isSubmitting}
-                    />
-                    <Label htmlFor="es_plgf" className="text-sm font-medium cursor-pointer">
-                      ¿Es un evento PLGF (Potencial de Lesión Grave o Fatal)?
-                    </Label>
-                  </div>
-
-                  {watchEsPlgf && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 pt-2 border-t">
-                      <FormField
-                        control={form.control}
-                        name="nivel_plgf"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nivel PLGF</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              disabled={isSubmitting}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar nivel" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="potencial">Potencial</SelectItem>
-                                <SelectItem value="real">Real</SelectItem>
-                                <SelectItem value="fatal">Fatal</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                {/* PLGF - Solo para accidentes e incidentes */}
+                {selectedCategoria !== 'tolerancia_0' && (
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <Checkbox
+                        id="es_plgf"
+                        checked={watchEsPlgf || false}
+                        onCheckedChange={(checked) => form.setValue('es_plgf', Boolean(checked))}
+                        disabled={isSubmitting}
                       />
+                      <Label htmlFor="es_plgf" className="text-sm font-medium cursor-pointer">
+                        ¿Es un evento PLGF (Potencial de Lesión Grave o Fatal)?
+                      </Label>
+                    </div>
 
-                      <FormField
-                        control={form.control}
-                        name="justificacion_plgf"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Justificación PLGF</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Justifique la clasificación PLGF..."
-                                rows={2}
-                                {...field}
+                    {watchEsPlgf && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 pt-2 border-t">
+                        <FormField
+                          control={form.control}
+                          name="nivel_plgf"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nivel PLGF</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
                                 disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  )}
-                </div>
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccionar nivel" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="potencial">Potencial</SelectItem>
+                                  <SelectItem value="real">Real</SelectItem>
+                                  <SelectItem value="fatal">Fatal</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="justificacion_plgf"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Justificación PLGF</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Justifique la clasificación PLGF..."
+                                  rows={2}
+                                  {...field}
+                                  disabled={isSubmitting}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -804,34 +845,41 @@ export default function CreateIncidentPage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="controles_inmediatos"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Controles Inmediatos</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Controles implementados inmediatamente..."
-                          rows={3}
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Controles Inmediatos - Solo para accidentes e incidentes */}
+                {selectedCategoria !== 'tolerancia_0' && (
+                  <FormField
+                    control={form.control}
+                    name="controles_inmediatos"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Controles Inmediatos</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Controles implementados inmediatamente..."
+                            rows={3}
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
                   name="acciones_inmediatas"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Acciones Inmediatas</FormLabel>
+                      <FormLabel>
+                        {selectedCategoria === 'tolerancia_0' ? 'Acciones Tomadas' : 'Acciones Inmediatas'}
+                      </FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Acciones tomadas inmediatamente después del suceso..."
+                          placeholder={selectedCategoria === 'tolerancia_0'
+                            ? 'Acciones tomadas para corregir la situación...'
+                            : 'Acciones tomadas inmediatamente después del suceso...'}
                           rows={3}
                           {...field}
                           disabled={isSubmitting}
@@ -842,24 +890,27 @@ export default function CreateIncidentPage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="factores_riesgo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Factores de Riesgo</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Factores de riesgo identificados..."
-                          rows={3}
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Factores de Riesgo - Solo para accidentes e incidentes */}
+                {selectedCategoria !== 'tolerancia_0' && (
+                  <FormField
+                    control={form.control}
+                    name="factores_riesgo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Factores de Riesgo</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Factores de riesgo identificados..."
+                            rows={3}
+                            {...field}
+                            disabled={isSubmitting}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -935,7 +986,9 @@ export default function CreateIncidentPage() {
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Crear Suceso + Flash Report
+                    {selectedCategoria === 'tolerancia_0'
+                      ? 'Crear Suceso + Reporte Tolerancia Cero'
+                      : 'Crear Suceso + Flash Report'}
                   </>
                 )}
               </Button>
