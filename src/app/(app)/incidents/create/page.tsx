@@ -23,6 +23,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Label } from '@/shared/components/ui/label'
+import { Alert, AlertDescription } from '@/shared/components/ui/alert'
 import { PhotoUploader } from '@/shared/components/attachments/PhotoUploader'
 import {
   Select,
@@ -31,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { ArrowLeft, Save, Loader2, X, FileText, Users, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, X, FileText, Users, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { SUCESO_CATEGORIES, getSucesoTypesByCategory, getSucesoTypeLabel } from '@/shared/constants/suceso-options'
 import type { SucesoCategory, SucesoType } from '@/shared/types/api'
@@ -563,6 +564,16 @@ export default function CreateIncidentPage() {
                   />
                 </div>
 
+                {/* Alerta visual para Tolerancia Cero */}
+                {selectedCategoria === 'tolerancia_0' && (
+                  <Alert className="border-amber-500 bg-amber-50">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800">
+                      <strong>Evento de Tolerancia Cero:</strong> Este tipo de suceso requiere atención inmediata y genera un Reporte de Tolerancia Cero en lugar de Flash Report.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 {/* Checkboxes Tipo Incidente - Solo para accidentes e incidentes */}
                 {selectedCategoria !== 'tolerancia_0' && (
                   <div className="border rounded-lg p-4 bg-gray-50">
@@ -790,6 +801,7 @@ export default function CreateIncidentPage() {
                             </FormItem>
                           )}
                         />
+                        {selectedCategoria !== 'tolerancia_0' && (
                         <FormField
                           control={form.control}
                           name={`personas_involucradas.${index}.tipo_lesion`}
@@ -807,6 +819,7 @@ export default function CreateIncidentPage() {
                             </FormItem>
                           )}
                         />
+                        )}
                       </div>
                     </div>
                   ))
