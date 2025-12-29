@@ -7,11 +7,11 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useFinalReports, useDeleteFinalReport } from '@/shared/hooks/report-hooks'
+import { useFinalReports, useDeleteFinalReport, useFlashReports } from '@/shared/hooks/report-hooks'
 import { useIncidents } from '@/shared/hooks/incident-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
-import { api } from '@/lib/api'
-import type { FinalReport, Incident, ReportStatus } from '@/shared/types/api'
+import type { FinalReport, Incident, ReportStatus, FlashReport } from '@/shared/types/api'
+import { exportFinalReportToWord, exportFinalReportToPDF } from '@/shared/utils/final-report-export'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -40,6 +40,7 @@ import {
   Users,
   Truck,
   Building2,
+  Hash,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -66,6 +67,7 @@ export default function FinalReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useFinalReports()
   const { data: incidentsData, isLoading: isLoadingIncidents } = useIncidents({ limit: 1000 })
+  const { data: flashReports, isLoading: isLoadingFlash } = useFlashReports()
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteFinalReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
@@ -80,8 +82,27 @@ export default function FinalReportsPage() {
     return map
   }, [incidentsData])
 
+  // Create a map of flash reports by incident_id for empresa lookup
+  const flashReportsMap = useMemo(() => {
+    const map = new Map<string, FlashReport>()
+    flashReports?.forEach((report) => {
+      map.set(report.incident_id, report)
+    })
+    return map
+  }, [flashReports])
+
   const getIncident = (incidentId: string) => {
     return incidentsMap.get(incidentId)
+  }
+
+  // Helper to get empresa from flash report
+  const getEmpresa = (incidentId: string): string | undefined => {
+    return flashReportsMap.get(incidentId)?.empresa
+  }
+
+  // Get correlativo number for display and search
+  const getCorrelativo = (incident: Incident | undefined): string => {
+    return incident?.incidentNumber || incident?.correlativo || ''
   }
 
   /**
@@ -101,52 +122,26 @@ export default function FinalReportsPage() {
     return 'Informe Final de Incidente'
   }
 
-  /**
-   * Get incident type abbreviation for filename
-   */
-  const getIncidentTypeAbbrev = (report: FinalReport): string => {
-    const parts: string[] = []
-    const tipo = report.tipo_accidente_tabla
-
-    if (tipo?.con_baja_il) parts.push('CB')
-    if (tipo?.sin_baja_il) parts.push('SB')
-    if (tipo?.incidente_industrial) parts.push('IND')
-    if (tipo?.incidente_laboral) parts.push('LAB')
-    if (tipo?.es_plgf && tipo?.nivel_plgf) parts.push(tipo.nivel_plgf)
-
-    return parts.length > 0 ? parts.join(' ') : 'INC'
-  }
-
-  /**
-   * Generate filename for export
-   * Format: 5. Informe Final DD-MM-YYYY [TIPO] [EMPRESA] [CORRELATIVO].[ext]
-   * Example: "5. Informe Final 05-11-2025 INC IND PYT TX OH.docx"
-   */
-  const generateExportFilename = (report: FinalReport, exportFormat: 'pdf' | 'docx'): string => {
-    const incident = getIncident(report.incident_id)
-    const fecha = report.created_at
-      ? format(new Date(report.created_at), 'dd-MM-yyyy')
-      : format(new Date(), 'dd-MM-yyyy')
-    const tipoIncidente = getIncidentTypeAbbrev(report)
-    const empresa = report.company_data?.nombre?.substring(0, 15) || incident?.empresa?.substring(0, 15) || ''
-    const correlativo = incident?.numero_prodity || report.id.substring(0, 5).toUpperCase()
-
-    const nameParts = ['5. Informe Final', fecha, tipoIncidente]
-    if (empresa) nameParts.push(empresa)
-    if (correlativo) nameParts.push(correlativo)
-
-    return `${nameParts.join(' ')}.${exportFormat}`
-  }
-
   const handleExport = async (report: FinalReport, exportFormat: 'pdf' | 'docx') => {
     try {
-      toast.info(`Descargando informe en formato ${exportFormat.toUpperCase()}...`)
-      const filename = generateExportFilename(report, exportFormat)
-      await api.finalReport.export(report.id, exportFormat, filename)
-      toast.success(`Informe descargado: ${filename}`)
+      toast.info(`Generando informe en formato ${exportFormat.toUpperCase()}...`)
+      const incident = getIncident(report.incident_id)
+      const correlativo = getCorrelativo(incident)
+      const metadata = {
+        empresa: report.company_data?.nombre || getEmpresa(report.incident_id),
+        fecha: report.created_at,
+        correlativo: correlativo || incident?.numero_prodity,
+      }
+
+      if (exportFormat === 'docx') {
+        await exportFinalReportToWord(report, metadata)
+      } else {
+        await exportFinalReportToPDF(report, metadata)
+      }
+      toast.success('Informe generado exitosamente')
     } catch (error) {
-      console.error('Error al descargar el informe:', error)
-      toast.error('Error al descargar el informe')
+      console.error('Error al generar el informe:', error)
+      toast.error('Error al generar el informe')
     }
   }
 
@@ -167,7 +162,7 @@ export default function FinalReportsPage() {
     const incident = getIncident(report.incident_id)
     const suceso = incident?.descripcion_breve?.toLowerCase() || ''
     const empresa = report.company_data?.nombre?.toLowerCase() || incident?.empresa?.toLowerCase() || ''
-    const correlativo = incident?.numero_prodity?.toLowerCase() || ''
+    const correlativo = getCorrelativo(incident).toLowerCase()
     const searchLower = searchTerm.toLowerCase()
 
     const matchesSearch =
@@ -189,7 +184,7 @@ export default function FinalReportsPage() {
     totalEquipos: reports?.reduce((sum, r) => sum + (r.equipos_danados?.length || 0), 0) || 0,
   }
 
-  if (isLoading || isLoadingIncidents) {
+  if (isLoading || isLoadingIncidents || isLoadingFlash) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -296,9 +291,9 @@ export default function FinalReportsPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por suceso, empresa o correlativo..."
+                  placeholder="Buscar por correlativo (ej: 00042), suceso o empresa..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -361,11 +356,19 @@ export default function FinalReportsPage() {
                     onClick={() => router.push(`/reports/final/${report.id}`)}
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      {/* Left: Title and info */}
+                      {/* Left: Correlativo + Title and info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                            <FileCheck className="h-5 w-5 text-indigo-600" />
+                          {/* Icon and Correlativo Badge */}
+                          <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                            <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                              <FileCheck className="h-5 w-5 text-indigo-600" />
+                            </div>
+                            {getCorrelativo(incident) && (
+                              <Badge variant="secondary" className="font-mono text-xs font-bold bg-slate-800 text-white hover:bg-slate-700">
+                                #{getCorrelativo(incident)}
+                              </Badge>
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="font-semibold text-gray-900 truncate">
@@ -376,11 +379,6 @@ export default function FinalReportsPage() {
                                 <Badge variant="outline" className="text-xs">
                                   <Building2 className="h-3 w-3 mr-1" />
                                   {report.company_data.nombre}
-                                </Badge>
-                              )}
-                              {incident?.numero_prodity && (
-                                <Badge variant="secondary" className="text-xs">
-                                  Prodity: {incident.numero_prodity}
                                 </Badge>
                               )}
                               <ReportStatusBadge status={report.report_status} />

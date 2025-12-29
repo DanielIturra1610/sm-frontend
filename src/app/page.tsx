@@ -4,25 +4,35 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/shared/components/ui/button'
 import { Logo } from '@/shared/components/ui/logo'
-import { 
-  Shield,
-  FileText,
-  BarChart3,
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/shared/components/ui/accordion'
+import {
   Workflow,
-  Users,
   CheckCircle,
   Star,
   ArrowRight,
   Menu,
   X,
-  TrendingUp,
-  Activity,
+  TrendingDown,
   Zap,
+  Target,
+  Clock,
+  Mail,
+  Phone,
+  AlertTriangle,
+  PieChart,
+  GitBranch,
+  FileCheck,
+  Sparkles,
   Award,
-  Globe,
-  Lock,
-  ChevronDown,
-  Play
+  BadgeCheck,
+  Rocket,
+  Eye,
+  MousePointerClick
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -35,47 +45,92 @@ export default function LandingPage() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10)
     }
-    
+
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const features = [
+  const coreFeatures = [
     {
-      icon: Shield,
-      title: 'Gestión de Incidentes',
-      description: 'Reporte, seguimiento y análisis completo de incidentes de seguridad en tiempo real',
-      gradient: 'from-red-500 to-red-600'
+      icon: AlertTriangle,
+      title: 'Registro de Incidentes',
+      description: 'Captura cada detalle crítico en segundos. Formularios inteligentes que se adaptan al tipo de incidente.',
+      highlight: 'Reduce tiempo de registro en 70%',
+      color: 'text-red-500',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200'
     },
     {
-      icon: BarChart3,
-      title: 'Análisis de Causas Raíz',
-      description: 'Herramientas avanzadas de 5 porqués y espina de pescado para investigación profunda',
-      gradient: 'from-blue-500 to-cyan-500'
+      icon: GitBranch,
+      title: 'Análisis de Causa Raíz',
+      description: '5 Porqués, Ishikawa y Árbol Causal integrados. Llega al origen real de cada problema.',
+      highlight: 'Metodologías probadas ISO',
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
     },
     {
-      icon: FileText,
-      title: 'Documentos y Reportes',
-      description: 'Generación automática de documentos de cumplimiento y reportes personalizados',
-      gradient: 'from-green-500 to-emerald-500'
+      icon: FileCheck,
+      title: 'Reportes Automáticos',
+      description: 'Flash Reports, Investigaciones y Planes de Acción. Generación automática con un click.',
+      highlight: 'Ahorra 5+ horas semanales',
+      color: 'text-green-500',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200'
     },
     {
       icon: Workflow,
       title: 'Flujos de Trabajo',
-      description: 'Automatización de procesos y notificaciones con seguimiento de tareas',
-      gradient: 'from-purple-500 to-indigo-500'
+      description: 'Automatiza aprobaciones, notificaciones y seguimiento. Nada se pierde, todo se rastrea.',
+      highlight: '100% trazabilidad',
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200'
     },
     {
-      icon: Users,
-      title: 'Gestión de Equipos',
-      description: 'Coordina y direcciona de manera más precisa las decisiones estratégicas de la organización para la operatividad diaria',
-      gradient: 'from-amber-500 to-orange-500'
+      icon: PieChart,
+      title: 'Dashboard en Tiempo Real',
+      description: 'KPIs, tendencias y métricas de seguridad. Toma decisiones basadas en datos reales.',
+      highlight: 'Visibilidad total 24/7',
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200'
     },
     {
-      icon: CheckCircle,
-      title: 'Cumplimiento',
-      description: 'Seguimiento de estándares ISO 45001 y regulaciones locales',
-      gradient: 'from-teal-500 to-cyan-600'
+      icon: BadgeCheck,
+      title: 'Cumplimiento ISO 45001',
+      description: 'Preparado para auditorías. Documentación completa y evidencia trazable siempre disponible.',
+      highlight: 'Auditorías sin estrés',
+      color: 'text-teal-500',
+      bgColor: 'bg-teal-50',
+      borderColor: 'border-teal-200'
+    }
+  ]
+
+  const benefits = [
+    {
+      icon: TrendingDown,
+      stat: '40%',
+      label: 'Reducción de incidentes',
+      description: 'en los primeros 6 meses de implementación'
+    },
+    {
+      icon: Clock,
+      stat: '70%',
+      label: 'Menos tiempo en reportes',
+      description: 'automatización de documentación'
+    },
+    {
+      icon: Eye,
+      stat: '100%',
+      label: 'Visibilidad operacional',
+      description: 'seguimiento en tiempo real'
+    },
+    {
+      icon: Award,
+      stat: '99%',
+      label: 'Satisfacción en auditorías',
+      description: 'cumplimiento normativo garantizado'
     }
   ]
 
@@ -84,113 +139,64 @@ export default function LandingPage() {
       name: 'María González',
       role: 'Jefa de Seguridad',
       company: 'Industrias ACME',
-      content: 'La plataforma ha reducido nuestros incidentes en un 40% en los primeros 6 meses. La trazabilidad y los análisis han sido fundamentales para nuestra transformación digital en seguridad.',
+      content: 'Antes perdíamos horas en papeleo. Ahora todo está digitalizado y podemos enfocarnos en lo que importa: prevenir incidentes. La plataforma transformó nuestra cultura de seguridad.',
       rating: 5,
-      avatar: 'MG'
+      avatar: 'MG',
+      result: '40% menos incidentes'
     },
     {
       name: 'Carlos Rodríguez',
       role: 'Gerente de Operaciones',
-      company: 'Construcciones Ltda.',
-      content: 'La facilidad de uso y la rapidez para investigar incidentes es impresionante. Nuestro equipo de seguridad ahora puede enfocarse en la prevención en lugar de la documentación.',
+      company: 'Construcciones del Sur',
+      content: 'Las herramientas de análisis de causa raíz son increíbles. Por fin entendemos por qué ocurren los problemas y podemos prevenirlos. El ROI fue inmediato.',
       rating: 5,
-      avatar: 'CR'
+      avatar: 'CR',
+      result: 'ROI en 3 meses'
     },
     {
       name: 'Ana Martínez',
-      role: 'Supervisora de Calidad',
+      role: 'Supervisora HSE',
       company: 'Minera del Norte',
-      content: 'La trazabilidad de acciones correctivas es muy útil para auditorías. La integración con nuestros sistemas existentes ha sido perfecta, ahorrando horas de trabajo manual.',
-      rating: 4,
-      avatar: 'AM'
-    }
-  ]
-
-  const stats = [
-    { value: '99.9%', label: 'Tiempo de Operación', icon: Activity },
-    { value: '500+', label: 'Clientes', icon: Globe },
-    { value: '2M+', label: 'Incidentes gestionados', icon: TrendingUp },
-    { value: '24/7', label: 'Soporte', icon: Shield }
-  ]
-
-  const integrations = [
-    { name: 'ISO 45001', icon: Award },
-    { name: 'SAP', icon: Workflow },
-    { name: 'Microsoft 365', icon: Globe },
-    { name: 'Salesforce', icon: Zap },
-    { name: 'Google Workspace', icon: Globe },
-    { name: 'Slack', icon: Zap }
-  ]
-
-  const pricingPlans = [
-    {
-      name: 'Básico',
-      price: '$29',
-      period: 'por mes',
-      description: 'Perfecto para pequeñas empresas',
-      features: [
-        'Hasta 50 usuarios',
-        '500 incidentes/mes',
-        'Reportes básicos',
-        'Soporte por email'
-      ],
-      cta: 'Comenzar',
-      popular: false
-    },
-    {
-      name: 'Profesional',
-      price: '$99',
-      period: 'por mes',
-      description: 'Ideal para medianas empresas',
-      features: [
-        'Usuarios ilimitados',
-        '2000 incidentes/mes',
-        'Reportes avanzados',
-        'Integraciones',
-        'Soporte prioritario'
-      ],
-      cta: 'Comenzar',
-      popular: true
-    },
-    {
-      name: 'Empresarial',
-      price: 'Personalizado',
-      period: '',
-      description: 'Para grandes organizaciones',
-      features: [
-        'Usuarios ilimitados',
-        'Incidentes ilimitados',
-        'Reportes personalizados',
-        'API completa',
-        'Soporte 24/7',
-        'Consultoría dedicada'
-      ],
-      cta: 'Contactar ventas',
-      popular: false
+      content: 'La última auditoría ISO fue un éxito rotundo. Toda la documentación estaba lista, trazable y completa. Los auditores quedaron impresionados.',
+      rating: 5,
+      avatar: 'AM',
+      result: 'Auditoría perfecta'
     }
   ]
 
   const faqs = [
     {
-      question: '¿Cuánto tiempo tarda en implementarse la plataforma?',
-      answer: 'La implementación básica toma menos de 24 horas. Nuestro proceso incluye configuración inicial, capacitación del equipo y migración de datos si es necesario.'
+      question: '¿Qué tan rápido puedo empezar a usar la plataforma?',
+      answer: 'La implementación es inmediata. En menos de 24 horas tendrás tu organización configurada, usuarios creados y estarás listo para registrar tu primer incidente. Nuestro equipo te acompaña en todo el proceso de onboarding.'
+    },
+    {
+      question: '¿Necesito conocimientos técnicos para usar el sistema?',
+      answer: 'No. La plataforma está diseñada para ser intuitiva y fácil de usar. Cualquier persona de tu equipo puede registrar incidentes, generar reportes y hacer seguimiento sin capacitación técnica previa. Además, ofrecemos entrenamiento personalizado.'
+    },
+    {
+      question: '¿Cómo me ayuda con el cumplimiento ISO 45001?',
+      answer: 'La plataforma está diseñada siguiendo los requisitos de ISO 45001. Cada incidente, investigación y acción correctiva queda documentada con trazabilidad completa. Cuando llegue la auditoría, tendrás toda la evidencia lista en segundos.'
+    },
+    {
+      question: '¿Puedo ver una demostración antes de decidir?',
+      answer: 'Por supuesto. Agenda una demo personalizada con nuestro equipo. Te mostraremos cómo la plataforma puede adaptarse a las necesidades específicas de tu organización y responderemos todas tus preguntas.'
     },
     {
       question: '¿Qué tipo de soporte ofrecen?',
-      answer: 'Ofrecemos soporte técnico 24/7 por chat, email y teléfono para planes Profesional y Empresarial. Los planes Básicos reciben soporte por email durante horario laboral.'
-    },
-    {
-      question: '¿Puedo integrar con mis sistemas existentes?',
-      answer: 'Sí, ofrecemos integraciones con sistemas populares como SAP, Microsoft 365, Salesforce y más. También disponemos de API REST completa para integraciones personalizadas.'
-    },
-    {
-      question: '¿Cómo manejan la seguridad de los datos?',
-      answer: 'Utilizamos cifrado AES-256 para datos en reposo, TLS 1.3 para transmisión, autenticación multifactor y cumplimiento con estándares ISO 27001 y SOC 2.'
+      answer: 'Ofrecemos soporte dedicado con tiempos de respuesta garantizados. Además de soporte técnico, incluimos consultoría en gestión de seguridad para ayudarte a sacar el máximo provecho de la plataforma.'
     }
   ]
 
-  const handleGetStarted = (): void => {
-    router.push('/register')
+  const handleContactSales = (): void => {
+    window.location.href = 'mailto:ventas@stegmaier.com?subject=Solicitud de información - Plataforma de Seguridad'
+  }
+
+  const handleDemo = (): void => {
+    window.location.href = 'mailto:ventas@stegmaier.com?subject=Solicitud de Demo - Plataforma de Seguridad'
+  }
+
+  const handleLogin = (): void => {
+    router.push('/login')
   }
 
   const scrollToSection = (sectionId: string) => {
@@ -202,84 +208,109 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-transparent'}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100'
+          : 'bg-transparent'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-16 md:h-20">
             <div className="flex items-center">
               <Logo size="sm" />
             </div>
-            
-            <nav className="hidden md:flex space-x-10">
-              <button onClick={() => scrollToSection('features')} className="text-slate-700 hover:text-stegmaier-blue transition-colors font-medium">
+
+            <nav className="hidden md:flex items-center space-x-8">
+              <button
+                onClick={() => scrollToSection('features')}
+                className={`${scrolled ? 'text-slate-600 hover:text-stegmaier-blue' : 'text-white/90 hover:text-white'} transition-colors text-sm font-medium`}
+              >
                 Funcionalidades
               </button>
-              <button onClick={() => scrollToSection('testimonials')} className="text-slate-700 hover:text-stegmaier-blue transition-colors font-medium">
-                Testimonios
+              <button
+                onClick={() => scrollToSection('benefits')}
+                className={`${scrolled ? 'text-slate-600 hover:text-stegmaier-blue' : 'text-white/90 hover:text-white'} transition-colors text-sm font-medium`}
+              >
+                Beneficios
               </button>
-              <button onClick={() => scrollToSection('stats')} className="text-slate-700 hover:text-stegmaier-blue transition-colors font-medium">
-                Estadísticas
+              <button
+                onClick={() => scrollToSection('testimonials')}
+                className={`${scrolled ? 'text-slate-600 hover:text-stegmaier-blue' : 'text-white/90 hover:text-white'} transition-colors text-sm font-medium`}
+              >
+                Casos de Éxito
               </button>
-              <button onClick={() => scrollToSection('integrations')} className="text-slate-700 hover:text-stegmaier-blue transition-colors font-medium">
-                Integraciones
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-slate-700 hover:text-stegmaier-blue transition-colors font-medium">
-                Precios
+              <button
+                onClick={() => scrollToSection('faq')}
+                className={`${scrolled ? 'text-slate-600 hover:text-stegmaier-blue' : 'text-white/90 hover:text-white'} transition-colors text-sm font-medium`}
+              >
+                FAQ
               </button>
             </nav>
-            
-            <div className="hidden md:flex items-center space-x-4">
-              <Link href="/login">
-                <Button variant="ghost" className="text-slate-700 hover:text-stegmaier-blue">
-                  Iniciar Sesión
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button className="bg-gradient-to-r from-stegmaier-blue to-stegmaier-blue-dark hover:from-stegmaier-blue-dark hover:to-stegmaier-blue-dark shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
-                  Crear Cuenta
-                </Button>
-              </Link>
+
+            <div className="hidden md:flex items-center space-x-3">
+              <Button
+                variant="ghost"
+                onClick={handleLogin}
+                className={`${scrolled ? 'text-slate-600 hover:text-stegmaier-blue hover:bg-stegmaier-blue/5' : 'text-white hover:bg-white/10'}`}
+              >
+                Iniciar Sesión
+              </Button>
+              <Button
+                onClick={handleContactSales}
+                className="!bg-stegmaier-blue hover:!bg-stegmaier-blue-dark !text-white shadow-md hover:shadow-lg transition-all border-0"
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                Contactar Ventas
+              </Button>
             </div>
-            
+
             <div className="md:hidden">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-md text-slate-700 hover:bg-slate-100"
+                className={`p-2 rounded-lg transition-colors ${scrolled ? 'text-slate-600 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
               >
                 {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
             </div>
           </div>
-          
+
           {/* Mobile menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-slate-200 bg-white/95 backdrop-blur-sm">
-              <div className="flex flex-col space-y-4">
-                <button onClick={() => scrollToSection('features')} className="text-slate-700 hover:text-stegmaier-blue font-medium">
+            <div className="md:hidden py-4 border-t border-slate-100 bg-white">
+              <div className="flex flex-col space-y-3">
+                <button
+                  onClick={() => scrollToSection('features')}
+                  className="text-slate-600 hover:text-stegmaier-blue font-medium py-2 text-left"
+                >
                   Funcionalidades
                 </button>
-                <button onClick={() => scrollToSection('testimonials')} className="text-slate-700 hover:text-stegmaier-blue font-medium">
-                  Testimonios
+                <button
+                  onClick={() => scrollToSection('benefits')}
+                  className="text-slate-600 hover:text-stegmaier-blue font-medium py-2 text-left"
+                >
+                  Beneficios
                 </button>
-                <button onClick={() => scrollToSection('stats')} className="text-slate-700 hover:text-stegmaier-blue font-medium">
-                  Estadísticas
+                <button
+                  onClick={() => scrollToSection('testimonials')}
+                  className="text-slate-600 hover:text-stegmaier-blue font-medium py-2 text-left"
+                >
+                  Casos de Éxito
                 </button>
-                <button onClick={() => scrollToSection('integrations')} className="text-slate-700 hover:text-stegmaier-blue font-medium">
-                  Integraciones
+                <button
+                  onClick={() => scrollToSection('faq')}
+                  className="text-slate-600 hover:text-stegmaier-blue font-medium py-2 text-left"
+                >
+                  FAQ
                 </button>
-                <button onClick={() => scrollToSection('pricing')} className="text-slate-700 hover:text-stegmaier-blue font-medium">
-                  Precios
-                </button>
-                <div className="pt-4 flex flex-col space-y-3 border-t border-slate-200 pt-4">
-                  <Link href="/login">
-                    <Button variant="outline" className="w-full">Iniciar Sesión</Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button className="w-full bg-gradient-to-r from-stegmaier-blue to-stegmaier-blue-dark hover:from-stegmaier-blue-dark hover:to-stegmaier-blue-dark">
-                      Crear Cuenta
-                    </Button>
-                  </Link>
+                <div className="pt-4 flex flex-col space-y-2 border-t border-slate-100">
+                  <Button variant="outline" onClick={handleLogin} className="w-full justify-center">
+                    Iniciar Sesión
+                  </Button>
+                  <Button onClick={handleContactSales} className="w-full justify-center bg-stegmaier-blue hover:bg-stegmaier-blue-dark">
+                    <Phone className="h-4 w-4 mr-2" />
+                    Contactar Ventas
+                  </Button>
                 </div>
               </div>
             </div>
@@ -287,292 +318,305 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-stegmaier-blue/5 via-transparent to-emerald-50/5"></div>
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-stegmaier-blue/10 to-transparent"></div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <div className="inline-flex items-center px-4 py-2 bg-stegmaier-blue/10 text-stegmaier-blue rounded-full text-sm font-medium">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Gestión de indicadores predictivos
-                </div>
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-slate-900 leading-tight">
-                  Transforma tu
-                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-stegmaier-blue to-emerald-600">
-                    Gestión de Seguridad
-                  </span>
-                </h1>
-                <p className="text-xl text-slate-600 max-w-2xl leading-relaxed">
-                  La plataforma más avanzada para la gestión de incidentes, análisis de causas raíz, 
-                  documentos de seguridad y flujos de trabajo. Cumple con estándares ISO y
-                  mejora la efectividad en tu organización.
-                </p>
+      {/* Hero Section - Impactante y emocional */}
+      <section className="relative pt-28 md:pt-32 pb-20 md:pb-28 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-stegmaier-blue-dark" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-sm font-medium mb-8 border border-white/20">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              <span>Plataforma líder en indicadores predictivos y seguridad industrial</span>
+            </div>
+
+            {/* Headline principal */}
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight tracking-tight mb-6">
+              Protege a tu equipo.
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-stegmaier-blue-light to-emerald-400 pb-2">
+                Transforma tu gestión.
+              </span>
+            </h1>
+
+            {/* Subheadline emocional */}
+            <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto mb-8 leading-relaxed">
+              Cada incidente cuenta una historia. Nuestra plataforma te ayuda a entenderla,
+              aprender de ella y <span className="text-white font-semibold">prevenir que vuelva a ocurrir</span>.
+            </p>
+
+            {/* Value proposition */}
+            <div className="flex flex-wrap justify-center gap-6 mb-10 text-sm">
+              <div className="flex items-center gap-2 text-slate-300">
+                <CheckCircle className="h-5 w-5 text-emerald-400" />
+                <span>Registro de incidentes inteligente</span>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-stegmaier-blue to-emerald-600 hover:from-stegmaier-blue-dark hover:to-emerald-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 h-14 text-lg"
-                  onClick={handleGetStarted}
-                >
-                  Comenzar Gratis
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Link href="/login">
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="border-2 border-slate-200 hover:border-stegmaier-blue h-14 text-lg"
-                  >
-                    Iniciar Sesión
-                  </Button>
-                </Link>
+              <div className="flex items-center gap-2 text-slate-300">
+                <CheckCircle className="h-5 w-5 text-emerald-400" />
+                <span>Análisis de causa raíz avanzado</span>
               </div>
-              
-              <div className="flex items-center space-x-6 pt-2">
-                <div className="flex items-center space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-amber-400 fill-current" />
-                  ))}
-                </div>
-                <span className="text-slate-600 font-medium">4.9/5 de satisfacción</span>
+              <div className="flex items-center gap-2 text-slate-300">
+                <CheckCircle className="h-5 w-5 text-emerald-400" />
+                <span>Cumplimiento ISO 45001</span>
               </div>
             </div>
-            
-            <div className="relative">
-              <div className="absolute -top-6 -right-6 w-full h-full bg-gradient-to-r from-stegmaier-blue/20 to-emerald-500/20 rounded-2xl rotate-1 transform origin-center"></div>
-              <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">12</div>
-                      <div className="text-sm text-red-700">Incidentes Altos</div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                onClick={handleDemo}
+                className="!bg-white !text-slate-900 hover:!bg-slate-100 shadow-xl hover:shadow-2xl transition-all h-14 px-8 text-lg font-semibold group"
+              >
+                <Rocket className="h-5 w-5 mr-2 group-hover:animate-bounce" />
+                Solicitar Demo Gratis
+              </Button>
+              <Button
+                size="lg"
+                onClick={handleContactSales}
+                className="!bg-transparent !border-2 !border-white/30 !text-white hover:!bg-white/10 h-14 px-8 text-lg"
+              >
+                <Phone className="h-5 w-5 mr-2" />
+                Hablar con Ventas
+              </Button>
+            </div>
+
+            {/* Social proof */}
+            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-8">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {['MG', 'CR', 'AM', 'JP'].map((initials, i) => (
+                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-stegmaier-blue to-emerald-500 flex items-center justify-center text-white text-xs font-bold border-2 border-slate-800">
+                      {initials}
                     </div>
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-orange-600">34</div>
-                      <div className="text-sm text-orange-700">Medios</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">156</div>
-                      <div className="text-sm text-green-700">Resueltos</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">96%</div>
-                      <div className="text-sm text-blue-700">Cumplimiento</div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-stegmaier-blue to-emerald-500 w-3/4"></div>
-                    </div>
-                    <div className="text-sm text-slate-600 flex justify-between">
-                      <span>Progreso</span>
-                      <span>78%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4 border-t border-slate-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Tareas Pendientes</span>
-                      <span className="text-sm font-medium text-slate-900">24</span>
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Personalizados de gestión</span>
-                        <span className="text-red-500 font-medium">Vence hoy</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Formación y entrenamiento</span>
-                        <span className="text-amber-500 font-medium">Mañana</span>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
+                <span className="text-slate-300 text-sm ml-2">+500 empresas confían en nosotros</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-5 w-5 text-amber-400 fill-amber-400" />
+                ))}
+                <span className="text-slate-300 text-sm ml-2">4.9/5 valoración</span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Wave decoration */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
+          </svg>
+        </div>
       </section>
 
-      {/* Stats Section */}
-      <section id="stats" className="py-16 bg-white">
+      {/* Problem-Solution Section */}
+      <section className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center group">
-                <div className="mx-auto w-12 h-12 bg-gradient-to-r from-stegmaier-blue to-emerald-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <stat.icon className="h-6 w-6 text-white" />
-                </div>
-                <div className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">{stat.value}</div>
-                <div className="text-slate-600">{stat.label}</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                El problema
               </div>
-            ))}
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
+                ¿Sigues gestionando la seguridad con hojas de cálculo y papeles?
+              </h2>
+              <div className="space-y-4 text-lg text-slate-600">
+                <p className="flex items-start gap-3">
+                  <X className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  Información dispersa en múltiples archivos y formatos
+                </p>
+                <p className="flex items-start gap-3">
+                  <X className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  Horas perdidas buscando datos para auditorías
+                </p>
+                <p className="flex items-start gap-3">
+                  <X className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  Incidentes que se repiten porque no se analiza la causa raíz
+                </p>
+                <p className="flex items-start gap-3">
+                  <X className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+                  Falta de visibilidad sobre el estado real de la seguridad
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-stegmaier-blue/5 to-emerald-50 rounded-3xl p-8 border border-stegmaier-blue/10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium mb-4">
+                <Zap className="h-4 w-4" />
+                La solución
+              </div>
+              <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6">
+                Una plataforma que centraliza todo y te da el control
+              </h3>
+              <div className="space-y-4 text-lg text-slate-600">
+                <p className="flex items-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  Todo en un solo lugar, accesible desde cualquier dispositivo
+                </p>
+                <p className="flex items-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  Reportes generados automáticamente en segundos
+                </p>
+                <p className="flex items-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  Herramientas de análisis para prevenir recurrencia
+                </p>
+                <p className="flex items-start gap-3">
+                  <CheckCircle className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  Dashboard en tiempo real con métricas clave
+                </p>
+              </div>
+              <Button
+                onClick={handleDemo}
+                className="mt-6 bg-stegmaier-blue hover:bg-stegmaier-blue-dark text-white"
+              >
+                Ver cómo funciona
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 bg-gradient-to-b from-white to-slate-50">
+      <section id="features" className="py-20 md:py-28 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900">
-              Funcionalidades que Transforman
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-stegmaier-blue/10 text-stegmaier-blue rounded-full text-sm font-medium mb-4">
+              <Target className="h-4 w-4" />
+              <span>Funcionalidades Poderosas</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
+              Todo lo que necesitas para una
+              <span className="text-stegmaier-blue"> gestión de seguridad excepcional</span>
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Herramientas poderosas diseñadas para mejorar la seguridad, la eficiencia y el cumplimiento normativo
+              Herramientas diseñadas por expertos en seguridad industrial para resolver los desafíos reales del día a día.
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div 
-                key={index} 
-                className="group bg-white rounded-2xl p-6 border border-slate-200 hover:shadow-xl hover:border-stegmaier-blue/20 transition-all duration-300 hover:-translate-y-2"
+            {coreFeatures.map((feature, index) => (
+              <div
+                key={index}
+                className="group bg-white rounded-2xl p-8 border border-slate-200 hover:border-stegmaier-blue/30 hover:shadow-xl transition-all duration-300 relative overflow-hidden"
               >
-                <div className={`w-12 h-12 bg-gradient-to-r ${feature.gradient} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="h-6 w-6 text-white" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-slate-50 to-transparent rounded-bl-full" />
+
+                <div className={`w-14 h-14 ${feature.bgColor} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform relative`}>
+                  <feature.icon className={`h-7 w-7 ${feature.color}`} />
                 </div>
+
                 <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-stegmaier-blue transition-colors">
                   {feature.title}
                 </h3>
-                <p className="text-slate-600 leading-relaxed">
+
+                <p className="text-slate-600 mb-4 leading-relaxed">
                   {feature.description}
                 </p>
+
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 ${feature.bgColor} rounded-full text-sm font-medium ${feature.color}`}>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {feature.highlight}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Demo Video Section */}
-      <section className="py-24 bg-gradient-to-r from-stegmaier-blue to-emerald-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold text-white">
-              Descubre Nuestra Plataforma
-            </h2>
-            <p className="text-xl text-stegmaier-blue/80 max-w-3xl mx-auto">
-              Una vista rápida de cómo nuestra solución puede transformar tu gestión de seguridad
-            </p>
-          </div>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="relative bg-black/20 rounded-2xl overflow-hidden aspect-video">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors">
-                  <Play className="h-8 w-8 text-white ml-1" />
-                </div>
-              </div>
-              <div className="absolute bottom-4 left-4 right-4">
-                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-white w-1/3"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Benefits/Results Section */}
+      <section id="benefits" className="py-20 md:py-28 bg-gradient-to-br from-stegmaier-blue via-stegmaier-blue-dark to-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
 
-      {/* Integrations Section */}
-      <section id="integrations" className="py-24 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold">
-              Integraciones Perfectas
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Resultados que hablan por sí solos
             </h2>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              Conecta nuestra plataforma con tus sistemas existentes para una experiencia sin interrupciones
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">
+              Empresas como la tuya ya están transformando su gestión de seguridad
             </p>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
-            {integrations.map((integration, index) => (
-              <div 
-                key={index} 
-                className="flex flex-col items-center space-y-3 group hover:scale-110 transition-transform duration-300"
-              >
-                <div className="w-16 h-16 bg-gradient-to-r from-stegmaier-blue to-emerald-500 rounded-xl flex items-center justify-center group-hover:from-emerald-500 group-hover:to-stegmaier-blue transition-colors duration-300">
-                  <integration.icon className="h-8 w-8 text-white" />
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="text-center group">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 group-hover:bg-white/20 transition-colors">
+                  <benefit.icon className="h-8 w-8 text-emerald-400" />
                 </div>
-                <span className="font-medium text-slate-200 group-hover:text-white transition-colors">
-                  {integration.name}
-                </span>
+                <div className="text-5xl md:text-6xl font-bold mb-2">{benefit.stat}</div>
+                <div className="text-lg font-semibold text-white mb-1">{benefit.label}</div>
+                <div className="text-sm text-white/60">{benefit.description}</div>
               </div>
             ))}
           </div>
+
+          <div className="mt-16 text-center">
+            <p className="text-white/80 mb-6 text-lg">¿Listo para obtener estos resultados en tu organización?</p>
+            <Button
+              size="lg"
+              onClick={handleDemo}
+              className="bg-white text-stegmaier-blue hover:bg-slate-100 shadow-xl h-14 px-8 text-lg font-semibold"
+            >
+              <Rocket className="h-5 w-5 mr-2" />
+              Solicitar Demo Personalizada
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-white">
+      {/* How it Works */}
+      <section className="py-20 md:py-28 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900">
-              Planes que Crecen Contigo
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
+              Empieza en minutos, no en semanas
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Elige el plan perfecto para las necesidades de tu organización
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Implementación rápida y acompañamiento experto en cada paso
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <div 
-                key={index} 
-                className={`relative rounded-2xl border-2 p-8 ${
-                  plan.popular 
-                    ? 'border-stegmaier-blue bg-gradient-to-b from-white to-stegmaier-blue/5 scale-105 z-10 shadow-xl' 
-                    : 'border-slate-200 bg-white'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-stegmaier-blue text-white px-4 py-1 rounded-full text-sm font-medium">
-                      Más Popular
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                step: '01',
+                title: 'Agenda tu demo',
+                description: 'Conversamos sobre tus necesidades y te mostramos cómo la plataforma puede ayudarte.',
+                icon: MousePointerClick
+              },
+              {
+                step: '02',
+                title: 'Configuración express',
+                description: 'En menos de 24 horas tendrás tu organización lista con usuarios y permisos configurados.',
+                icon: Zap
+              },
+              {
+                step: '03',
+                title: 'Comienza a transformar',
+                description: 'Registra incidentes, genera análisis y toma decisiones basadas en datos reales.',
+                icon: Rocket
+              }
+            ].map((item, index) => (
+              <div key={index} className="relative group">
+                <div className="bg-slate-50 rounded-2xl p-8 border border-slate-200 hover:border-stegmaier-blue/30 hover:shadow-lg transition-all h-full">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="text-6xl font-bold text-stegmaier-blue/20">{item.step}</div>
+                    <div className="w-12 h-12 bg-stegmaier-blue/10 rounded-xl flex items-center justify-center">
+                      <item.icon className="h-6 w-6 text-stegmaier-blue" />
                     </div>
                   </div>
-                )}
-                
-                <div className="text-center mb-8">
-                  <h3 className={`text-2xl font-bold mb-2 ${plan.popular ? 'text-stegmaier-blue' : 'text-slate-900'}`}>
-                    {plan.name}
-                  </h3>
-                  <div className="mb-2">
-                    <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
-                    {plan.period && <span className="text-slate-600">/{plan.period}</span>}
-                  </div>
-                  <p className="text-slate-600">{plan.description}</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                  <p className="text-slate-600">{item.description}</p>
                 </div>
-                
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-                      <span className="text-slate-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <Button 
-                  className={`w-full h-12 ${
-                    plan.popular 
-                      ? 'bg-stegmaier-blue hover:bg-stegmaier-blue-dark text-white' 
-                      : 'bg-slate-900 hover:bg-slate-800 text-white'
-                  }`}
-                  onClick={handleGetStarted}
-                >
-                  {plan.cta}
-                </Button>
+                {index < 2 && (
+                  <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-stegmaier-blue/30" />
+                )}
               </div>
             ))}
           </div>
@@ -580,45 +624,57 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-24 bg-gradient-to-b from-white to-slate-50">
+      <section id="testimonials" className="py-20 md:py-28 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900">
-              Confian en Nosotros
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-full text-sm font-medium mb-4">
+              <Star className="h-4 w-4 fill-amber-500" />
+              <span>Casos de Éxito</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4">
+              Empresas que ya transformaron su gestión
             </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Empresas líderes en seguridad industrial han transformado sus operaciones con nuestra plataforma
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+              Conoce las historias de organizaciones que eligieron dar el paso
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div 
-                key={index} 
-                className="bg-gradient-to-br from-slate-50 to-white p-8 rounded-2xl border border-slate-200 hover:shadow-lg transition-shadow duration-300"
+              <div
+                key={index}
+                className="bg-white p-8 rounded-2xl border border-slate-200 hover:shadow-xl transition-all relative"
               >
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-r from-stegmaier-blue to-emerald-500 flex items-center justify-center text-white font-bold mr-4">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-slate-900">{testimonial.name}</div>
-                    <div className="text-sm text-slate-600">{testimonial.role}, {testimonial.company}</div>
+                {/* Result badge */}
+                <div className="absolute -top-3 right-6">
+                  <div className="bg-emerald-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold shadow-lg">
+                    {testimonial.result}
                   </div>
                 </div>
-                
-                <div className="flex items-center mb-4">
+
+                <div className="flex items-center gap-1 mb-6 pt-2">
                   {[...Array(5)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`h-5 w-5 ${i < testimonial.rating ? 'text-amber-400 fill-current' : 'text-slate-300'}`} 
+                    <Star
+                      key={i}
+                      className={`h-5 w-5 ${i < testimonial.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`}
                     />
                   ))}
                 </div>
-                
-                <p className="text-slate-700 italic mb-6">
+
+                <p className="text-slate-600 mb-6 leading-relaxed text-lg italic">
                   &quot;{testimonial.content}&quot;
                 </p>
+
+                <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-stegmaier-blue to-stegmaier-blue-dark flex items-center justify-center text-white font-bold">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900">{testimonial.name}</div>
+                    <div className="text-sm text-slate-500">{testimonial.role}</div>
+                    <div className="text-sm text-stegmaier-blue font-medium">{testimonial.company}</div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -626,57 +682,98 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 space-y-4">
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900">
+      <section id="faq" className="py-20 md:py-28 bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
               Preguntas Frecuentes
             </h2>
-            <p className="text-xl text-slate-600">
-              Todo lo que necesitas saber sobre nuestra plataforma
+            <p className="text-lg text-slate-600">
+              Todo lo que necesitas saber antes de dar el siguiente paso
             </p>
           </div>
-          
-          <div className="space-y-4">
+
+          <Accordion type="single" collapsible className="space-y-4">
             {faqs.map((faq, index) => (
-              <div key={index} className="border border-slate-200 rounded-xl overflow-hidden">
-                <div className="p-6 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-slate-900">{faq.question}</h3>
-                    <ChevronDown className="h-5 w-5 text-slate-500" />
-                  </div>
-                </div>
-                <div className="p-6 border-t border-slate-200">
-                  <p className="text-slate-600">{faq.answer}</p>
-                </div>
-              </div>
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-6 overflow-hidden hover:border-stegmaier-blue/30 transition-colors"
+              >
+                <AccordionTrigger className="text-left font-semibold text-slate-900 hover:text-stegmaier-blue hover:no-underline py-5">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-slate-600 pb-5 leading-relaxed">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
             ))}
+          </Accordion>
+
+          <div className="mt-12 text-center">
+            <p className="text-slate-600 mb-4">¿Tienes más preguntas?</p>
+            <Button
+              onClick={handleContactSales}
+              variant="outline"
+              className="border-stegmaier-blue text-stegmaier-blue hover:bg-stegmaier-blue hover:text-white"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Escríbenos
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-stegmaier-blue to-emerald-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Final CTA Section */}
+      <section className="py-20 md:py-28 bg-gradient-to-br from-slate-900 via-stegmaier-blue-dark to-stegmaier-blue relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyek0zNiAyNHYySDI0di0yaDEyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm text-white rounded-full text-sm font-medium mb-6 border border-white/20">
+            <Sparkles className="h-4 w-4 text-amber-400" />
+            <span>Da el siguiente paso</span>
+          </div>
+
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            Comienza tu Transformación en Seguridad
+            Tu equipo merece la mejor protección
           </h2>
-          <p className="text-xl text-stegmaier-blue/80 mb-10 max-w-2xl mx-auto">
-            Úre tu cuenta gratuita hoy y descubre cómo nuestra plataforma puede transformar 
-            tu gestión de seguridad industrial en minutos.
+
+          <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto leading-relaxed">
+            No esperes al próximo incidente para actuar. Agenda una demo hoy y descubre cómo
+            podemos ayudarte a construir una cultura de seguridad más fuerte.
           </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Button 
-              size="lg" 
-              className="bg-white text-stegmaier-blue hover:bg-slate-100 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 h-14 text-lg px-8"
-              onClick={handleGetStarted}
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              size="lg"
+              onClick={handleDemo}
+              className="!bg-white !text-slate-900 hover:!bg-slate-100 shadow-xl hover:shadow-2xl h-14 px-8 text-lg font-semibold group"
             >
-              Comenzar Gratis
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <Rocket className="h-5 w-5 mr-2 group-hover:animate-bounce" />
+              Solicitar Demo Gratis
             </Button>
-            <div className="text-white/80 text-center">
-              <div className="text-2xl font-bold text-white">14 días gratis</div>
-              <div className="text-sm">Sin tarjeta de crédito</div>
+            <Button
+              size="lg"
+              onClick={handleContactSales}
+              className="!bg-transparent !border-2 !border-white/30 !text-white hover:!bg-white/10 h-14 px-8 text-lg"
+            >
+              <Phone className="h-5 w-5 mr-2" />
+              Contactar Ventas
+            </Button>
+          </div>
+
+          <div className="mt-10 flex flex-wrap justify-center gap-8 text-white/70 text-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-emerald-400" />
+              <span>Demo personalizada sin costo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-emerald-400" />
+              <span>Implementación en 24 horas</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-emerald-400" />
+              <span>Soporte dedicado</span>
             </div>
           </div>
         </div>
@@ -685,54 +782,90 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="bg-slate-900 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="md:col-span-2">
               <Logo variant="white" size="sm" className="mb-4" />
-              <p className="text-slate-400 mb-6">
-                La solución integral para la gestión de seguridad industrial y cumplimiento normativo.
+              <p className="text-slate-400 mb-6 leading-relaxed max-w-md">
+                La plataforma líder en gestión de seguridad industrial. Ayudamos a las organizaciones
+                a proteger a su gente y cumplir con los más altos estándares de seguridad.
               </p>
-              <div className="flex space-x-4">
-                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-stegmaier-blue transition-colors cursor-pointer">
-                  <span className="text-xs">f</span>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-stegmaier-blue transition-colors cursor-pointer">
-                  <span className="text-xs">in</span>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center hover:bg-stegmaier-blue transition-colors cursor-pointer">
-                  <span className="text-xs">t</span>
-                </div>
+              <div className="space-y-2">
+                <a href="mailto:ventas@stegmaier.com" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+                  <Mail className="h-4 w-4" />
+                  <span>ventas@stegmaier.com</span>
+                </a>
+                <a href="tel:+56912345678" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+                  <Phone className="h-4 w-4" />
+                  <span>+56 9 1234 5678</span>
+                </a>
               </div>
             </div>
+
             <div>
-              <h4 className="font-semibold mb-4 text-lg">Producto</h4>
-              <ul className="space-y-3 text-slate-400">
-                <li><button onClick={() => scrollToSection('features')} className="hover:text-white transition-colors">Funcionalidades</button></li>
-                <li><Link href="/pricing" className="hover:text-white transition-colors">Precios</Link></li>
-                <li><Link href="/docs" className="hover:text-white transition-colors">Documentación</Link></li>
-                <li><Link href="/api" className="hover:text-white transition-colors">API</Link></li>
+              <h4 className="font-semibold mb-4 text-white">Navegación</h4>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <button onClick={() => scrollToSection('features')} className="text-slate-400 hover:text-white transition-colors">
+                    Funcionalidades
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('benefits')} className="text-slate-400 hover:text-white transition-colors">
+                    Beneficios
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('testimonials')} className="text-slate-400 hover:text-white transition-colors">
+                    Casos de Éxito
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('faq')} className="text-slate-400 hover:text-white transition-colors">
+                    FAQ
+                  </button>
+                </li>
               </ul>
             </div>
+
             <div>
-              <h4 className="font-semibold mb-4 text-lg">Soporte</h4>
-              <ul className="space-y-3 text-slate-400">
-                <li><Link href="/help" className="hover:text-white transition-colors">Centro de Ayuda</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition-colors">Contacto</Link></li>
-                <li><Link href="/status" className="hover:text-white transition-colors">Estado del Servicio</Link></li>
-                <li><Link href="/training" className="hover:text-white transition-colors">Capacitación</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4 text-lg">Legal</h4>
-              <ul className="space-y-3 text-slate-400">
-                <li><Link href="/terms" className="hover:text-white transition-colors">Términos</Link></li>
-                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacidad</Link></li>
-                <li><Link href="/security" className="hover:text-white transition-colors">Seguridad</Link></li>
-                <li><Link href="/compliance" className="hover:text-white transition-colors">Cumplimiento</Link></li>
+              <h4 className="font-semibold mb-4 text-white">Legal</h4>
+              <ul className="space-y-3 text-sm">
+                <li>
+                  <Link href="/terms" className="text-slate-400 hover:text-white transition-colors">
+                    Términos de Servicio
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/privacy" className="text-slate-400 hover:text-white transition-colors">
+                    Política de Privacidad
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-slate-800 text-center text-slate-500">
-            <p>&copy; {new Date().getFullYear()} Stegmaier Safety Management. Todos los derechos reservados.</p>
+
+          <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-slate-500 text-sm">
+              © {new Date().getFullYear()} Stegmaier Safety Management. Todos los derechos reservados.
+            </p>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogin}
+                className="text-slate-400 hover:text-white hover:bg-slate-800"
+              >
+                Iniciar Sesión
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleContactSales}
+                className="bg-stegmaier-blue hover:bg-stegmaier-blue-dark"
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                Contactar
+              </Button>
+            </div>
           </div>
         </div>
       </footer>

@@ -5,12 +5,13 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFlashReports, useDeleteFlashReport } from '@/shared/hooks/report-hooks'
+import { useIncidents } from '@/shared/hooks/incident-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
-import { api } from '@/lib/api'
-import type { FlashReport } from '@/shared/types/api'
+import type { FlashReport, Incident } from '@/shared/types/api'
+import { exportFlashReportToWord, exportFlashReportToPDF } from '@/shared/utils/flash-report-export'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -36,7 +37,8 @@ import {
   CheckCircle2,
   Clock,
   MoreHorizontal,
-  FileText
+  FileText,
+  Hash
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -63,37 +65,45 @@ import {
 export default function FlashReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useFlashReports()
+  const { data: incidentsData } = useIncidents()
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteFlashReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
   const [reportToDelete, setReportToDelete] = useState<string | null>(null)
 
-  /**
-   * Generate filename for export
-   * Format: [Empresa] Reporte [Tipo] [Tipo Incidente] [Fecha] [Correlativo].[Extension]
-   * Example: "Origix Reporte Flash Incidente Laboral 17-11-2025 00042.pdf"
-   */
-  const generateExportFilename = (report: FlashReport, exportFormat: 'pdf' | 'docx'): string => {
-    const empresa = report.empresa || 'Origix'
-    const tipoReporte = 'Flash'
-    const tipoIncidente = report.tipo || 'Incidente'
-    const fecha = report.fecha
-      ? format(new Date(report.fecha), 'dd-MM-yyyy')
-      : format(new Date(), 'dd-MM-yyyy')
-    const correlativo = report.numero_prodity || report.id.substring(0, 5).toUpperCase()
+  // Create incident lookup map for correlativo
+  const incidentMap = useMemo(() => {
+    const map = new Map<string, Incident>()
+    const incidents = incidentsData?.data || []
+    incidents.forEach((inc: Incident) => map.set(inc.id, inc))
+    return map
+  }, [incidentsData])
 
-    return `${empresa} Reporte ${tipoReporte} ${tipoIncidente} ${fecha} ${correlativo}.${exportFormat}`
+  // Get correlativo for a report
+  const getCorrelativo = (report: FlashReport): string => {
+    const incident = incidentMap.get(report.incident_id)
+    return incident?.incidentNumber || incident?.correlativo || ''
   }
 
   const handleExport = async (report: FlashReport, exportFormat: 'pdf' | 'docx') => {
     try {
-      toast.info(`Descargando reporte en formato ${exportFormat.toUpperCase()}...`)
-      const filename = generateExportFilename(report, exportFormat)
-      await api.flashReport.export(report.id, exportFormat, filename)
-      toast.success(`Reporte descargado: ${filename}`)
+      toast.info(`Generando reporte en formato ${exportFormat.toUpperCase()}...`)
+      const correlativo = getCorrelativo(report)
+      const metadata = {
+        empresa: report.empresa,
+        fecha: report.fecha,
+        correlativo: correlativo || report.numero_prodity,
+      }
+
+      if (exportFormat === 'docx') {
+        await exportFlashReportToWord(report, metadata)
+      } else {
+        await exportFlashReportToPDF(report, metadata)
+      }
+      toast.success('Reporte generado exitosamente')
     } catch (error) {
-      console.error('Error al descargar el reporte:', error)
-      toast.error('Error al descargar el reporte')
+      console.error('Error al generar el reporte:', error)
+      toast.error('Error al generar el reporte')
     }
   }
 
@@ -114,12 +124,14 @@ export default function FlashReportsPage() {
     const suceso = report.suceso?.toLowerCase() || ''
     const lugar = report.lugar?.toLowerCase() || ''
     const numeroProdity = report.numero_prodity?.toLowerCase() || ''
+    const correlativo = getCorrelativo(report).toLowerCase()
     const searchLower = searchTerm.toLowerCase()
 
     const matchesSearch =
       suceso.includes(searchLower) ||
       lugar.includes(searchLower) ||
       numeroProdity.includes(searchLower) ||
+      correlativo.includes(searchLower) ||
       report.id.toLowerCase().includes(searchLower)
     const matchesStatus = statusFilter === 'all' || report.report_status === statusFilter
     return matchesSearch && matchesStatus
@@ -240,9 +252,9 @@ export default function FlashReportsPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por suceso, lugar o número Prodity..."
+                  placeholder="Buscar por correlativo (ej: 00042), suceso o lugar..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -302,11 +314,19 @@ export default function FlashReportsPage() {
                   onClick={() => router.push(`/reports/flash/${report.id}`)}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    {/* Left: Title and info */}
+                    {/* Left: Correlativo + Title and info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                          <Zap className="h-5 w-5 text-amber-600" />
+                        {/* Icon and Correlativo Badge */}
+                        <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                            <Zap className="h-5 w-5 text-amber-600" />
+                          </div>
+                          {getCorrelativo(report) && (
+                            <Badge variant="secondary" className="font-mono text-xs font-bold bg-slate-800 text-white hover:bg-slate-700">
+                              #{getCorrelativo(report)}
+                            </Badge>
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="font-semibold text-gray-900 truncate">
@@ -316,11 +336,6 @@ export default function FlashReportsPage() {
                             {report.tipo && (
                               <Badge variant="outline" className="text-xs">
                                 {report.tipo}
-                              </Badge>
-                            )}
-                            {report.numero_prodity && (
-                              <Badge variant="secondary" className="text-xs">
-                                Prodity: {report.numero_prodity}
                               </Badge>
                             )}
                             <ReportStatusBadge status={report.report_status} />

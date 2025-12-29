@@ -52,7 +52,34 @@ import {
 import { useCausalTreeAnalysis, useCausalTreeNodes } from '@/shared/hooks/causal-tree-hooks'
 
 // Types
-import type { SourceReportsInfo } from '@/shared/types/api'
+import type { SourceReportsInfo, FishboneCause } from '@/shared/types/api'
+
+// Translation map for Ishikawa 6M categories (English to Spanish)
+const CATEGORY_TRANSLATIONS: Record<string, string> = {
+  // Standard 6M categories
+  'man': 'Mano de Obra',
+  'people': 'Mano de Obra',
+  'machine': 'Máquina',
+  'material': 'Material',
+  'method': 'Método',
+  'measurement': 'Medición',
+  'environment': 'Medio Ambiente',
+  'mother nature': 'Medio Ambiente',
+  // Already in Spanish (pass through)
+  'mano de obra': 'Mano de Obra',
+  'máquina': 'Máquina',
+  'maquina': 'Máquina',
+  'método': 'Método',
+  'metodo': 'Método',
+  'medición': 'Medición',
+  'medicion': 'Medición',
+  'medio ambiente': 'Medio Ambiente',
+}
+
+function translateCategory(category: string): string {
+  const normalized = category.toLowerCase().trim()
+  return CATEGORY_TRANSLATIONS[normalized] || category
+}
 
 interface LinkedReportsDataProps {
   sourceReports: SourceReportsInfo | null | undefined
@@ -256,7 +283,7 @@ function FiveWhysSection({ analysisId }: { analysisId: string }) {
             {analysis.status === 'approved' ? 'Aprobado' : analysis.status === 'in_review' ? 'En revisión' : 'Borrador'}
           </Badge>
         </div>
-        <Link href={`/analysis/five-whys/${analysisId}`} className="text-sm text-primary hover:underline flex items-center gap-1">
+        <Link href={`/root-cause-analysis/five-whys/${analysisId}`} className="text-sm text-primary hover:underline flex items-center gap-1">
           Ver análisis <ExternalLink className="h-3 w-3" />
         </Link>
       </div>
@@ -337,6 +364,31 @@ function FiveWhysSection({ analysisId }: { analysisId: string }) {
 function FishboneSection({ analysisId }: { analysisId: string }) {
   const { data: analysis, isLoading } = useFishboneAnalysis(analysisId)
 
+  // Group causes by category from the flat causes array
+  // Must be before any early returns to comply with Rules of Hooks
+  const causesByCategory = useMemo(() => {
+    const emptyMap = new Map<string, FishboneCause[]>()
+    if (!analysis?.causes || analysis.causes.length === 0) {
+      return emptyMap
+    }
+
+    const grouped = new Map<string, FishboneCause[]>()
+    analysis.causes.forEach((cause) => {
+      const category = cause.category || 'General'
+      if (!grouped.has(category)) {
+        grouped.set(category, [])
+      }
+      grouped.get(category)!.push(cause)
+    })
+    return grouped
+  }, [analysis?.causes])
+
+  // Get high impact causes
+  const highImpactCauses = useMemo(() => {
+    if (!analysis?.causes) return []
+    return analysis.causes.filter((c) => c.impact === 'high')
+  }, [analysis?.causes])
+
   if (isLoading) {
     return <Skeleton className="h-32 w-full" />
   }
@@ -346,10 +398,10 @@ function FishboneSection({ analysisId }: { analysisId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-          {analysis.status === 'approved' ? 'Aprobado' : analysis.status === 'in_review' ? 'En revisión' : 'Borrador'}
-        </Badge>
-        <Link href={`/analysis/fishbone/${analysisId}`} className="text-sm text-primary hover:underline flex items-center gap-1">
+        <div>
+          {analysis.title && <h4 className="font-medium text-gray-900">{analysis.title}</h4>}
+        </div>
+        <Link href={`/root-cause-analysis/fishbone/${analysisId}`} className="text-sm text-primary hover:underline flex items-center gap-1">
           Ver diagrama <ExternalLink className="h-3 w-3" />
         </Link>
       </div>
@@ -361,7 +413,54 @@ function FishboneSection({ analysisId }: { analysisId: string }) {
         </div>
       )}
 
-      {analysis.categories && analysis.categories.length > 0 && (
+      {/* Show causes grouped by category from the flat causes array */}
+      {causesByCategory.size > 0 && (
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <GitBranch className="h-4 w-4" /> Categorías de Causas ({causesByCategory.size})
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {Array.from(causesByCategory.entries()).map(([categoryName, causes], idx) => (
+              <div key={idx} className="bg-green-50 p-3 rounded-md border-l-4 border-green-400">
+                <p className="font-medium text-gray-800">{translateCategory(categoryName)}</p>
+                {causes.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {causes
+                      .filter((c) => c.level === 1) // Only show main causes (level 1)
+                      .map((cause, cidx) => (
+                        <li key={cidx} className="text-sm text-gray-600 flex items-start gap-2">
+                          <ChevronRight className="h-3 w-3 mt-1 flex-shrink-0" />
+                          <div className="flex-1">
+                            <span>{cause.description}</span>
+                            {cause.impact === 'high' && (
+                              <Badge variant="destructive" className="ml-2 text-xs">Alto impacto</Badge>
+                            )}
+                            {/* Show subcauses if any */}
+                            {causes.filter((sc) => sc.parentId === cause.id && sc.level === 2).length > 0 && (
+                              <ul className="mt-1 ml-2 space-y-1">
+                                {causes
+                                  .filter((sc) => sc.parentId === cause.id && sc.level === 2)
+                                  .map((subCause, scidx) => (
+                                    <li key={scidx} className="text-xs text-gray-500 flex items-start gap-1">
+                                      <span className="text-gray-400">-</span>
+                                      <span>{subCause.description}</span>
+                                    </li>
+                                  ))}
+                              </ul>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback: Show categories if causes array is empty but categories exist */}
+      {causesByCategory.size === 0 && analysis.categories && analysis.categories.length > 0 && (
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <GitBranch className="h-4 w-4" /> Categorías de Causas ({analysis.categories.length})
@@ -386,12 +485,22 @@ function FishboneSection({ analysisId }: { analysisId: string }) {
         </div>
       )}
 
-      {analysis.rootCause && (
+      {/* Show high impact causes summary */}
+      {highImpactCauses.length > 0 && (
         <div>
           <p className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-            <Target className="h-4 w-4" /> Causa Raíz Identificada
+            <Target className="h-4 w-4" /> Causas de Alto Impacto ({highImpactCauses.length})
           </p>
-          <p className="text-sm text-gray-600 bg-red-50 p-3 rounded-md border-l-4 border-red-400 font-medium">{analysis.rootCause}</p>
+          <div className="space-y-2">
+            {highImpactCauses.slice(0, 3).map((cause, idx) => (
+              <p key={idx} className="text-sm text-gray-600 bg-red-50 p-3 rounded-md border-l-4 border-red-400">
+                <span className="font-medium">[{translateCategory(cause.category)}]</span> {cause.description}
+              </p>
+            ))}
+            {highImpactCauses.length > 3 && (
+              <p className="text-xs text-gray-500">... y {highImpactCauses.length - 3} más</p>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -418,10 +527,10 @@ function CausalTreeSection({ analysisId }: { analysisId: string }) {
         <div>
           <h4 className="font-medium text-gray-900">{analysis.title}</h4>
           <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 mt-1">
-            {analysis.status === 'approved' ? 'Aprobado' : analysis.status === 'in_review' ? 'En revisión' : 'Borrador'}
+            {analysis.status === 'completed' ? 'Completado' : analysis.status === 'reviewed' ? 'Revisado' : analysis.status === 'in_progress' ? 'En progreso' : 'Borrador'}
           </Badge>
         </div>
-        <Link href={`/causal-tree/${analysisId}`} className="text-sm text-primary hover:underline flex items-center gap-1">
+        <Link href={`/root-cause-analysis/causal-tree/${analysisId}`} className="text-sm text-primary hover:underline flex items-center gap-1">
           Ver árbol <ExternalLink className="h-3 w-3" />
         </Link>
       </div>

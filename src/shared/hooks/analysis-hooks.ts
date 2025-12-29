@@ -187,11 +187,14 @@ export function useAddFishboneCause(analysisId: string) {
   const { mutate: mutateAnalysis } = useSWR<FishboneAnalysis>(`/analysis/fishbone/${analysisId}`)
 
   return useSWRMutation(`/analysis/fishbone/${analysisId}/causes`,
-    async (key, { arg }: { arg: { category: string; description: string; subCauses?: string[] } }) => {
+    async (key, { arg }: { arg: { category: string; description: string; impact?: string; likelihood?: string; priority?: number; subCauses?: string[] } }) => {
       // Add the main cause
       const response = await api.analysis.addFishboneCause(analysisId, {
         category: arg.category,
         description: arg.description,
+        impact: arg.impact || 'medium',
+        likelihood: arg.likelihood || 'medium',
+        priority: arg.priority || 5,
         level: 1,
       })
 
@@ -212,6 +215,41 @@ export function useAddFishboneCause(analysisId: string) {
       // Revalidate the analysis to get all causes
       await mutateAnalysis()
       return response
+    }
+  )
+}
+
+/**
+ * Update a cause in Fishbone analysis
+ */
+export function useUpdateFishboneCause(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FishboneAnalysis>(`/analysis/fishbone/${analysisId}`)
+
+  return useSWRMutation(`/analysis/fishbone/${analysisId}/causes/update`,
+    async (key, { arg }: { arg: { causeId: string; description?: string; impact?: string; likelihood?: string; priority?: number; notes?: string } }) => {
+      const response = await api.analysis.updateFishboneCause(analysisId, arg.causeId, {
+        description: arg.description,
+        impact: arg.impact,
+        likelihood: arg.likelihood,
+        priority: arg.priority,
+        notes: arg.notes,
+      })
+      await mutateAnalysis()
+      return response
+    }
+  )
+}
+
+/**
+ * Delete a cause from Fishbone analysis
+ */
+export function useDeleteFishboneCause(analysisId: string) {
+  const { mutate: mutateAnalysis } = useSWR<FishboneAnalysis>(`/analysis/fishbone/${analysisId}`)
+
+  return useSWRMutation(`/analysis/fishbone/${analysisId}/causes/delete`,
+    async (key, { arg }: { arg: string }) => {
+      await api.analysis.deleteFishboneCause(analysisId, arg)
+      await mutateAnalysis()
     }
   )
 }

@@ -15,14 +15,16 @@ import {
   extractFromZeroTolerance,
   consolidarPersonas,
   consolidarEvidencias,
+  generateConclusions as generateConclusionsEnhanced,
   type PersonaConsolidada,
   type EvidenciaConsolidada,
+  type ConclusionsGeneratorInput,
 } from '@/shared/utils/finalReportExtractors'
 import {
-  generateConclusions,
   generateLessonsLearned,
   generateActionsResume,
 } from '@/shared/utils/reportGenerators'
+import { useMultipleFishboneAnalyses } from './useMultipleAnalyses'
 import type { Fotografia } from '@/shared/types/api'
 
 export type ReportMode = 'express' | 'complete'
@@ -161,6 +163,10 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
   // Fetch causal tree diagram images
   const { data: causalTreeImages, isLoading: isLoadingCausalImages } = useCausalTreeImages(incidentId)
 
+  // Fetch fishbone analyses for enhanced conclusions generation
+  const fishboneIds = prefillData?.source_reports?.fishbone_ids || []
+  const { analyses: fishboneAnalyses, isLoading: isLoadingFishbone } = useMultipleFishboneAnalyses(fishboneIds)
+
   // Calculate consolidated data
   const expressData = useMemo<ExpressModeData | null>(() => {
     if (!prefillData) return null
@@ -282,14 +288,14 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       sourceReportsCount >= 2 && // At least 2 source reports
       (causasRaiz.length > 0 || personas.length > 0) // And some extracted data
 
-    // Generate conclusions if not extracted
-    const conclusiones = extractedConclusiones || generateConclusions({
-      causasRaiz,
-      tipoIncidente: prefillData.tipo || 'incidente',
+    // Generate conclusions if not extracted - use enhanced version with fishbone analyses
+    const conclusiones = extractedConclusiones || generateConclusionsEnhanced({
+      causas: causasRaiz,
+      problemContext: fishboneAnalyses[0]?.problem || prefillData.descripcion,
+      fishboneAnalyses: fishboneAnalyses,
       personasAfectadas: personas.length,
       equiposDanados: prefillData.equipos_danados?.length || 0,
       severidad: ztData?.severidad,
-      accionesTomadas: ztData?.acciones_tomadas,
       planAccionProgreso: actionPlanData?.porcentaje_avance_plan,
     })
 
@@ -360,7 +366,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
       sourceReportsCount,
       hasEnoughData,
     }
-  }, [prefillData, causasRaiz, extractedConclusiones, analysisCount, zeroToleranceReport, actionPlanData, costosCalculados, totalCostosEstimado, incidentPhotos, causalTreeImages])
+  }, [prefillData, causasRaiz, extractedConclusiones, analysisCount, zeroToleranceReport, actionPlanData, costosCalculados, totalCostosEstimado, incidentPhotos, causalTreeImages, fishboneAnalyses])
 
   // Calculate data completeness percentage
   const dataCompleteness = useMemo(() => {
@@ -399,7 +405,7 @@ export function useExpressMode(incidentId: string | null): UseExpressModeResult 
     setMode,
     toggleMode,
     expressData,
-    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT || isLoadingAP || isLoadingPhotos || isLoadingCausalImages,
+    isLoading: isLoadingPrefill || isLoadingAnalysis || isLoadingZT || isLoadingAP || isLoadingPhotos || isLoadingCausalImages || isLoadingFishbone,
     canUseExpressMode,
     dataCompleteness,
   }

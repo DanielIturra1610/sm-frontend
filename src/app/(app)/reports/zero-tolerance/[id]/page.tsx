@@ -12,6 +12,7 @@ import {
   useApproveZeroToleranceReport,
   useDeleteZeroToleranceReport,
 } from '@/shared/hooks/report-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { ExportButtons } from '@/shared/components/reports/ExportButtons'
@@ -32,7 +33,7 @@ import {
   AlertDialogTrigger,
 } from '@/shared/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import { Edit, Send, CheckCircle, Trash2, AlertCircle, ShieldAlert, User, AlertTriangle } from 'lucide-react'
+import { Edit, Send, CheckCircle, Trash2, AlertCircle, ShieldAlert, User, AlertTriangle, Hash } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -52,6 +53,10 @@ export default function ZeroToleranceReportDetailPage() {
   const { trigger: submitReport, isMutating: isSubmitting } = useSubmitZeroToleranceReport(id)
   const { trigger: approveReport, isMutating: isApproving } = useApproveZeroToleranceReport(id)
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteZeroToleranceReport()
+
+  // Get incident data for correlativo
+  const { data: incident } = useIncident(report?.incident_id || '')
+  const correlativo = incident?.incidentNumber || incident?.correlativo || ''
 
   const handleSubmit = async () => {
     try {
@@ -174,7 +179,7 @@ export default function ZeroToleranceReportDetailPage() {
               empresa: report.empresa,
               tipoIncidente: report.tipo,
               fecha: report.fecha_hora ? new Date(report.fecha_hora).toISOString().split('T')[0] : undefined,
-              correlativo: report.numero_documento,
+              correlativo: correlativo || report.numero_documento,
             }}
           />
         </div>
@@ -189,17 +194,29 @@ export default function ZeroToleranceReportDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {report.numero_documento && (
-              <div>
-                <p className="text-sm text-gray-500">Número de Documento</p>
-                <p className="font-mono font-semibold text-lg">{report.numero_documento}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Correlativo - Prominente */}
+            {correlativo && (
+              <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
+                <p className="text-sm text-gray-500 mb-2">Suceso Asociado</p>
+                <div className="flex items-center gap-2">
+                  <Hash className="h-5 w-5 text-slate-600" />
+                  <span className="font-mono font-bold text-2xl text-slate-800">{correlativo}</span>
+                </div>
               </div>
             )}
+            {/* Número de Documento - Secundario */}
+            {report.numero_documento && (
+              <div className="flex flex-col justify-center">
+                <p className="text-sm text-gray-500">Nº Documento</p>
+                <p className="font-mono text-sm text-gray-600">{report.numero_documento}</p>
+              </div>
+            )}
+            {/* Número Prodity */}
             {report.numero_prodity && (
-              <div>
+              <div className="flex flex-col justify-center">
                 <p className="text-sm text-gray-500">Número Prodity</p>
-                <p className="font-mono font-medium">{report.numero_prodity}</p>
+                <p className="font-mono text-sm text-gray-600">{report.numero_prodity}</p>
               </div>
             )}
           </div>

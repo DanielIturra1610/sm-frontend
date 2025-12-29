@@ -5,12 +5,13 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useZeroToleranceReports, useDeleteZeroToleranceReport } from '@/shared/hooks/report-hooks'
+import { useIncidents } from '@/shared/hooks/incident-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { api } from '@/lib/api'
-import type { ZeroToleranceReport } from '@/shared/types/api'
+import type { ZeroToleranceReport, Incident } from '@/shared/types/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -36,7 +37,8 @@ import {
   CheckCircle2,
   Clock,
   MoreHorizontal,
-  FileText
+  FileText,
+  Hash,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -70,10 +72,28 @@ const SEVERIDAD_LABELS: Record<string, { label: string; className: string }> = {
 export default function ZeroToleranceReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useZeroToleranceReports()
+  const { data: incidentsData } = useIncidents()
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteZeroToleranceReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
   const [reportToDelete, setReportToDelete] = useState<string | null>(null)
+
+  // Create incident lookup map for correlativo
+  const incidentMap = useMemo(() => {
+    const map = new Map<string, Incident>()
+    const incidents = incidentsData?.data || []
+    incidents.forEach((inc: Incident) => map.set(inc.id, inc))
+    return map
+  }, [incidentsData])
+
+  // Get correlativo for a report
+  const getCorrelativo = (report: ZeroToleranceReport): string => {
+    if (report.incident_id) {
+      const incident = incidentMap.get(report.incident_id)
+      return incident?.incidentNumber || incident?.correlativo || ''
+    }
+    return ''
+  }
 
   /**
    * Generate filename for export
@@ -120,14 +140,14 @@ export default function ZeroToleranceReportsPage() {
     const suceso = report.suceso?.toLowerCase() || ''
     const lugar = report.lugar?.toLowerCase() || ''
     const empresa = report.empresa?.toLowerCase() || ''
-    const numeroProdity = report.numero_prodity?.toLowerCase() || ''
+    const correlativo = getCorrelativo(report).toLowerCase()
     const searchLower = searchTerm.toLowerCase()
 
     const matchesSearch =
       suceso.includes(searchLower) ||
       lugar.includes(searchLower) ||
       empresa.includes(searchLower) ||
-      numeroProdity.includes(searchLower) ||
+      correlativo.includes(searchLower) ||
       report.id.toLowerCase().includes(searchLower)
     const matchesStatus = statusFilter === 'all' || report.report_status === statusFilter
     return matchesSearch && matchesStatus
@@ -248,9 +268,9 @@ export default function ZeroToleranceReportsPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por suceso, lugar, empresa o número Prodity..."
+                  placeholder="Buscar por correlativo (ej: 00042), suceso o empresa..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -310,11 +330,19 @@ export default function ZeroToleranceReportsPage() {
                   onClick={() => router.push(`/reports/zero-tolerance/${report.id}`)}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    {/* Left: Title and info */}
+                    {/* Left: Correlativo + Title and info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                        {/* Icon and Correlativo Badge */}
+                        <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                          <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                            <AlertTriangle className="h-5 w-5 text-red-600" />
+                          </div>
+                          {getCorrelativo(report) && (
+                            <Badge variant="secondary" className="font-mono text-xs font-bold bg-slate-800 text-white hover:bg-slate-700">
+                              #{getCorrelativo(report)}
+                            </Badge>
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <h3 className="font-semibold text-gray-900 truncate">
@@ -329,11 +357,6 @@ export default function ZeroToleranceReportsPage() {
                             {report.severidad && SEVERIDAD_LABELS[report.severidad] && (
                               <Badge className={`text-xs ${SEVERIDAD_LABELS[report.severidad].className}`}>
                                 {SEVERIDAD_LABELS[report.severidad].label}
-                              </Badge>
-                            )}
-                            {report.numero_prodity && (
-                              <Badge variant="secondary" className="text-xs">
-                                Prodity: {report.numero_prodity}
                               </Badge>
                             )}
                             <ReportStatusBadge status={report.report_status} />

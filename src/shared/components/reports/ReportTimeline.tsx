@@ -95,7 +95,7 @@ const REPORT_CONFIG: Record<string, {
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
-    basePath: '/analysis/five-whys',
+    basePath: '/root-cause-analysis/five-whys',
     order: 4,
   },
   fishbone: {
@@ -104,7 +104,7 @@ const REPORT_CONFIG: Record<string, {
     color: 'text-green-600',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200',
-    basePath: '/analysis/fishbone',
+    basePath: '/root-cause-analysis/fishbone',
     order: 5,
   },
   causal_tree: {
@@ -113,7 +113,7 @@ const REPORT_CONFIG: Record<string, {
     color: 'text-teal-600',
     bgColor: 'bg-teal-50',
     borderColor: 'border-teal-200',
-    basePath: '/analysis/causal-tree',
+    basePath: '/root-cause-analysis/causal-tree',
     order: 6,
   },
   action_plan: {

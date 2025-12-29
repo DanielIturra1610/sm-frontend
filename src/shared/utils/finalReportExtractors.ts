@@ -95,45 +95,80 @@ export function extractAllFiveWhysCauses(analyses: FiveWhysAnalysis[]): Extracte
 
 /**
  * Extract root causes from ALL Fishbone analyses
- * Now also extracts action items (fixed limitation)
+ * Updated to use the correct FishboneAnalysis structure with flat causes array
  */
 export function extractAllFishboneCauses(analyses: FishboneAnalysis[]): ExtractedCause[] {
   const causes: ExtractedCause[] = []
 
   analyses.forEach((analysis) => {
-    if (analysis.rootCause) {
-      // Find related action - prioritize corrective and high priority
-      const relatedAction = analysis.actionItems?.find(
-        (a) => a.priority === 'high' || a.status === 'pending'
-      )
+    const problem = analysis.problem || 'Problema identificado en diagrama Ishikawa'
 
-      causes.push({
-        problema: analysis.problem || 'Problema identificado en diagrama Ishikawa',
-        causa_raiz: analysis.rootCause,
-        accion_plan: relatedAction?.description || '',
-        metodologia: 'Ishikawa',
+    // Extract from the flat causes array (correct structure)
+    if (analysis.causes && analysis.causes.length > 0) {
+      // Get level 1 causes (main causes) sorted by impact and priority
+      const mainCauses = analysis.causes
+        .filter((cause) => cause.level === 1)
+        .sort((a, b) => {
+          // Prioritize by high impact first
+          const impactOrder: Record<string, number> = { high: 3, medium: 2, low: 1 }
+          const impactA = impactOrder[a.impact] || 1
+          const impactB = impactOrder[b.impact] || 1
+          if (impactA !== impactB) return impactB - impactA
+          // Then by priority number (lower is more important)
+          return a.priority - b.priority
+        })
+
+      mainCauses.forEach((cause) => {
+        // Get subcauses for this main cause
+        const subCauses = analysis.causes.filter(
+          (c) => c.parentId === cause.id && c.level === 2
+        )
+
+        // Add the main cause
+        causes.push({
+          problema: `[${cause.category}] ${problem}`,
+          causa_raiz: cause.description,
+          accion_plan: cause.notes || '',
+          metodologia: 'Ishikawa',
+        })
+
+        // Add high-impact subcauses as separate entries
+        subCauses
+          .filter((sc) => sc.impact === 'high' || sc.priority <= 3)
+          .forEach((subCause) => {
+            causes.push({
+              problema: `[${cause.category}] ${cause.description}`,
+              causa_raiz: subCause.description,
+              accion_plan: subCause.notes || '',
+              metodologia: 'Ishikawa',
+            })
+          })
       })
     }
 
-    // Also extract significant causes from categories if marked
-    analysis.categories?.forEach((category) => {
-      category.causes?.forEach((cause) => {
-        // Only add if it has sub-causes (indicating deeper analysis)
-        if (cause.subCauses && cause.subCauses.length > 0) {
-          cause.subCauses.forEach((subCause) => {
-            // Avoid duplicating the main root cause
-            if (subCause !== analysis.rootCause) {
-              causes.push({
-                problema: `${category.name}: ${cause.description}`,
-                causa_raiz: subCause,
-                accion_plan: '',
-                metodologia: 'Ishikawa',
-              })
-            }
+    // Fallback: Also check categories structure (alternative frontend format)
+    if ((!analysis.causes || analysis.causes.length === 0) && analysis.categories) {
+      analysis.categories.forEach((category) => {
+        category.causes?.forEach((cause) => {
+          causes.push({
+            problema: `[${category.name}] ${problem}`,
+            causa_raiz: cause.description,
+            accion_plan: '',
+            metodologia: 'Ishikawa',
           })
-        }
+
+          // Subcauses from the nested structure
+          cause.subCauses?.forEach((subCause) => {
+            causes.push({
+              problema: `[${category.name}] ${cause.description}`,
+              causa_raiz: subCause,
+              accion_plan: '',
+              metodologia: 'Ishikawa',
+            })
+          })
+        })
       })
-    })
+    }
   })
 
   return causes
@@ -358,24 +393,57 @@ export function consolidarPersonas(
 // ============================================================================
 
 /**
- * Generate conclusions text from extracted causes
+ * Enhanced input for conclusions generation with full analysis context
+ */
+export interface ConclusionsGeneratorInput {
+  causas: ExtractedCause[]
+  problemContext?: string
+  fishboneAnalyses?: FishboneAnalysis[]
+  personasAfectadas?: number
+  equiposDanados?: number
+  severidad?: string
+  planAccionProgreso?: number
+}
+
+/**
+ * Generate detailed conclusions text from extracted causes and analyses
+ * Enhanced to include category breakdown and impact analysis for Ishikawa
  */
 export function generateConclusions(
-  causas: ExtractedCause[],
+  causasOrInput: ExtractedCause[] | ConclusionsGeneratorInput,
   problemContext?: string
 ): string {
+  // Support both old signature (array) and new signature (object)
+  let causas: ExtractedCause[]
+  let fishboneAnalyses: FishboneAnalysis[] | undefined
+  let personasAfectadas: number | undefined
+  let equiposDanados: number | undefined
+  let severidad: string | undefined
+  let planAccionProgreso: number | undefined
+
+  if (Array.isArray(causasOrInput)) {
+    causas = causasOrInput
+  } else {
+    causas = causasOrInput.causas
+    problemContext = causasOrInput.problemContext
+    fishboneAnalyses = causasOrInput.fishboneAnalyses
+    personasAfectadas = causasOrInput.personasAfectadas
+    equiposDanados = causasOrInput.equiposDanados
+    severidad = causasOrInput.severidad
+    planAccionProgreso = causasOrInput.planAccionProgreso
+  }
+
   if (causas.length === 0) return ''
 
   const parts: string[] = []
 
-  // Add intro based on number of causes
-  if (causas.length === 1) {
-    parts.push('Del analisis realizado se identifico una causa raiz principal:')
-  } else {
-    parts.push(`Del analisis realizado se identificaron ${causas.length} causas raiz:`)
+  // 1. Opening with problem context
+  if (problemContext) {
+    parts.push(`La investigacion se enfoco en analizar: "${problemContext}".`)
+    parts.push('')
   }
 
-  // Group causes by methodology
+  // 2. Group causes by methodology
   const byMethodology: Record<string, ExtractedCause[]> = {}
   causas.forEach((causa) => {
     const key = causa.metodologia || 'Otro'
@@ -383,30 +451,103 @@ export function generateConclusions(
     byMethodology[key].push(causa)
   })
 
-  // Add summary for each methodology
+  // 3. Summary of methodologies used
+  const metodologias = Object.keys(byMethodology)
+  if (metodologias.length > 0) {
+    const metodologiasTexto = metodologias.length === 1
+      ? metodologias[0]
+      : metodologias.slice(0, -1).join(', ') + ' y ' + metodologias[metodologias.length - 1]
+    parts.push(`Se utilizaron las siguientes metodologias de analisis: ${metodologiasTexto}.`)
+  }
+
+  // 4. If we have Fishbone analyses, show category breakdown
+  if (fishboneAnalyses && fishboneAnalyses.length > 0) {
+    const categoryStats = new Map<string, { total: number; highImpact: number }>()
+
+    fishboneAnalyses.forEach((analysis) => {
+      analysis.causes?.forEach((cause) => {
+        const cat = cause.category || 'General'
+        const stats = categoryStats.get(cat) || { total: 0, highImpact: 0 }
+        stats.total++
+        if (cause.impact === 'high') stats.highImpact++
+        categoryStats.set(cat, stats)
+      })
+    })
+
+    if (categoryStats.size > 0) {
+      parts.push('')
+      parts.push('Distribucion de causas por categoria (Ishikawa):')
+      categoryStats.forEach((stats, category) => {
+        const highImpactText = stats.highImpact > 0 ? ` (${stats.highImpact} de alto impacto)` : ''
+        parts.push(`- ${category}: ${stats.total} causa${stats.total > 1 ? 's' : ''}${highImpactText}`)
+      })
+    }
+  }
+
+  // 5. Main causes identified
+  parts.push('')
+  if (causas.length === 1) {
+    parts.push('Se identifico una causa raiz principal:')
+  } else {
+    parts.push(`Se identificaron ${causas.length} causas raiz:`)
+  }
+
+  // Show causes grouped by methodology (max 5 per methodology)
   Object.entries(byMethodology).forEach(([metodologia, causes]) => {
     parts.push('')
     parts.push(`${metodologia}:`)
-    causes.forEach((cause, idx) => {
-      parts.push(`${idx + 1}. ${cause.causa_raiz}`)
+    causes.slice(0, 5).forEach((cause, idx) => {
+      // Extract category from problema if present [Category]
+      const categoryMatch = cause.problema.match(/\[([^\]]+)\]/)
+      const prefix = categoryMatch ? `[${categoryMatch[1]}] ` : ''
+      parts.push(`${idx + 1}. ${prefix}${cause.causa_raiz}`)
     })
+    if (causes.length > 5) {
+      parts.push(`   ... y ${causes.length - 5} causa${causes.length - 5 > 1 ? 's' : ''} adicional${causes.length - 5 > 1 ? 'es' : ''}`)
+    }
   })
 
-  // Add problem context if available
-  if (problemContext) {
+  // 6. Impact summary
+  const impacts: string[] = []
+  if (personasAfectadas && personasAfectadas > 0) {
+    impacts.push(`${personasAfectadas} persona${personasAfectadas > 1 ? 's' : ''} involucrada${personasAfectadas > 1 ? 's' : ''}`)
+  }
+  if (equiposDanados && equiposDanados > 0) {
+    impacts.push(`${equiposDanados} equipo${equiposDanados > 1 ? 's' : ''} afectado${equiposDanados > 1 ? 's' : ''}`)
+  }
+  if (impacts.length > 0) {
     parts.push('')
-    parts.push(`El problema analizado fue: "${problemContext}"`)
+    parts.push(`Impacto del incidente: ${impacts.join(', ')}.`)
   }
 
-  // Add actions summary if any
-  const causesWithActions = causas.filter((c) => c.accion_plan)
+  if (severidad) {
+    parts.push(`Severidad clasificada como: ${severidad}.`)
+  }
+
+  // 7. Actions summary
+  const causesWithActions = causas.filter((c) => c.accion_plan && c.accion_plan.trim())
   if (causesWithActions.length > 0) {
     parts.push('')
-    parts.push('Se han propuesto las siguientes acciones correctivas:')
-    causesWithActions.forEach((cause, idx) => {
+    parts.push('Acciones correctivas propuestas:')
+    causesWithActions.slice(0, 5).forEach((cause, idx) => {
       parts.push(`${idx + 1}. ${cause.accion_plan}`)
     })
   }
+
+  // 8. Action plan progress
+  if (planAccionProgreso !== undefined && planAccionProgreso >= 0) {
+    parts.push('')
+    const estadoPlan = planAccionProgreso === 100
+      ? 'completado al 100%'
+      : planAccionProgreso > 50
+        ? `con un avance del ${planAccionProgreso}%`
+        : `iniciado con ${planAccionProgreso}% de avance`
+    parts.push(`El plan de accion se encuentra actualmente ${estadoPlan}.`)
+  }
+
+  // 9. Closing recommendation
+  parts.push('')
+  parts.push('Se recomienda implementar las acciones correctivas identificadas y realizar seguimiento para prevenir la recurrencia de eventos similares.')
 
   return parts.join('\n')
 }

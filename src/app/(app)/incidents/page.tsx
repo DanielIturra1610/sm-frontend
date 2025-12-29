@@ -340,19 +340,22 @@ export default function IncidentsPage() {
                       {/* Left: Icon and Title */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${severityInfo.bg}`}>
-                            <SeverityIcon className={`h-6 w-6 ${severityInfo.color}`} />
+                          {/* Correlativo Badge - Prominente */}
+                          <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${severityInfo.bg}`}>
+                              <SeverityIcon className={`h-6 w-6 ${severityInfo.color}`} />
+                            </div>
+                            {incident.incidentNumber && (
+                              <Badge variant="secondary" className="font-mono text-xs font-bold bg-slate-800 text-white hover:bg-slate-700">
+                                #{incident.incidentNumber}
+                              </Badge>
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="font-semibold text-gray-900 truncate">
                               {incident.title}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {incident.incidentNumber && (
-                                <Badge variant="outline" className="text-xs font-mono">
-                                  #{incident.incidentNumber}
-                                </Badge>
-                              )}
                               <IncidentTypeBadge type={incident.type} />
                               <IncidentSeverityBadge severity={incident.severity} />
                               <IncidentStatusBadge status={incident.status} />

@@ -21,6 +21,9 @@ type ApiIncident = Record<string, any>;
 
 // Transform API response to frontend Incident type
 function transformIncident(apiData: ApiIncident): Incident {
+  // Map incident_number from backend to incidentNumber/correlativo in frontend
+  const incidentNumber = (apiData.incident_number as string) || '';
+
   return {
     id: apiData.id as string,
     title: apiData.title as string,
@@ -43,6 +46,9 @@ function transformIncident(apiData: ApiIncident): Incident {
     },
     createdAt: apiData.created_at as string,
     updatedAt: apiData.updated_at as string,
+    // Correlativo - maps incident_number from backend
+    incidentNumber: incidentNumber,
+    correlativo: incidentNumber,
   };
 }
 

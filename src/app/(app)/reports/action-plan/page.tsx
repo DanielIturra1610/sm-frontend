@@ -7,10 +7,11 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useActionPlanReports, useDeleteActionPlanReport } from '@/shared/hooks/report-hooks'
+import { useActionPlanReports, useDeleteActionPlanReport, useFlashReports } from '@/shared/hooks/report-hooks'
 import { useIncidents } from '@/shared/hooks/incident-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
-import type { ActionPlanReport, Incident } from '@/shared/types/api'
+import type { ActionPlanReport, Incident, FlashReport } from '@/shared/types/api'
+import { exportActionPlanToWord, exportActionPlanToPDF } from '@/shared/utils/action-plan-export'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -38,6 +39,7 @@ import {
   Clock,
   CheckCircle2,
   TrendingUp,
+  Hash,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -65,6 +67,7 @@ export default function ActionPlanReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useActionPlanReports()
   const { data: incidentsData, isLoading: isLoadingIncidents } = useIncidents({ limit: 1000 })
+  const { data: flashReports, isLoading: isLoadingFlash } = useFlashReports()
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteActionPlanReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
@@ -79,17 +82,50 @@ export default function ActionPlanReportsPage() {
     return map
   }, [incidentsData])
 
+  // Create a map of flash reports by incident_id for empresa lookup
+  const flashReportsMap = useMemo(() => {
+    const map = new Map<string, FlashReport>()
+    flashReports?.forEach((report) => {
+      map.set(report.incident_id, report)
+    })
+    return map
+  }, [flashReports])
+
   // Helper to get incident details
   const getIncident = (incidentId: string) => {
     return incidentsMap.get(incidentId)
   }
 
-  const handleExport = async (reportId: string, exportFormat: 'pdf' | 'docx') => {
+  // Helper to get empresa from flash report
+  const getEmpresa = (incidentId: string): string | undefined => {
+    return flashReportsMap.get(incidentId)?.empresa
+  }
+
+  // Get correlativo number for display and search
+  const getCorrelativo = (incident: Incident | undefined): string => {
+    return incident?.incidentNumber || incident?.correlativo || ''
+  }
+
+  const handleExport = async (report: ActionPlanReport, exportFormat: 'pdf' | 'docx') => {
     try {
-      toast.info(`Descargando reporte en formato ${exportFormat.toUpperCase()}...`)
-      toast.success(`Reporte descargado exitosamente`)
-    } catch {
-      toast.error('Error al descargar el reporte')
+      toast.info(`Generando reporte en formato ${exportFormat.toUpperCase()}...`)
+      const incident = getIncident(report.incident_id)
+      const correlativo = getCorrelativo(incident)
+      const metadata = {
+        empresa: getEmpresa(report.incident_id),
+        fecha: report.fecha_inicio,
+        correlativo: correlativo,
+      }
+
+      if (exportFormat === 'docx') {
+        await exportActionPlanToWord(report, metadata)
+      } else {
+        await exportActionPlanToPDF(report, metadata)
+      }
+      toast.success('Reporte generado exitosamente')
+    } catch (error) {
+      console.error('Error generating report:', error)
+      toast.error('Error al generar el reporte')
     }
   }
 
@@ -109,13 +145,13 @@ export default function ActionPlanReportsPage() {
   const filteredReports = reports?.filter((report) => {
     const incident = getIncident(report.incident_id)
     const incidentTitle = incident?.descripcion_breve?.toLowerCase() || ''
-    const incidentCorrelativo = incident?.correlativo?.toLowerCase() || ''
+    const correlativo = getCorrelativo(incident).toLowerCase()
     const incidentTipo = incident?.tipo?.toLowerCase() || ''
     const searchLower = searchTerm.toLowerCase()
 
     const matchesSearch =
       incidentTitle.includes(searchLower) ||
-      incidentCorrelativo.includes(searchLower) ||
+      correlativo.includes(searchLower) ||
       incidentTipo.includes(searchLower) ||
       report.incident_id.toLowerCase().includes(searchLower) ||
       report.id.toLowerCase().includes(searchLower)
@@ -148,7 +184,7 @@ export default function ActionPlanReportsPage() {
     ? Math.round(reports.reduce((sum, r) => sum + getReportProgress(r), 0) / reports.length)
     : 0
 
-  if (isLoading || isLoadingIncidents) {
+  if (isLoading || isLoadingIncidents || isLoadingFlash) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -255,9 +291,9 @@ export default function ActionPlanReportsPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por incidente, correlativo o ID..."
+                  placeholder="Buscar por correlativo (ej: 00042), título o tipo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -336,22 +372,25 @@ export default function ActionPlanReportsPage() {
                     onClick={() => router.push(`/reports/action-plan/${report.id}`)}
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      {/* Left: Title and info */}
+                      {/* Left: Correlativo + Title and info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                            <ClipboardList className="h-5 w-5 text-blue-600" />
+                          {/* Icon and Correlativo Badge */}
+                          <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                              <ClipboardList className="h-5 w-5 text-blue-600" />
+                            </div>
+                            {getCorrelativo(incident) && (
+                              <Badge variant="secondary" className="font-mono text-xs font-bold bg-slate-800 text-white hover:bg-slate-700">
+                                #{getCorrelativo(incident)}
+                              </Badge>
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="font-semibold text-gray-900 truncate">
                               {incident?.descripcion_breve || incident?.title || 'Plan de Acción'}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {incident?.correlativo && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {incident.correlativo}
-                                </Badge>
-                              )}
                               {incident?.tipo && (
                                 <Badge variant="outline" className="text-xs">
                                   {incident.tipo}
@@ -438,11 +477,11 @@ export default function ActionPlanReportsPage() {
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleExport(report.id, 'pdf')}>
+                              <DropdownMenuItem onClick={() => handleExport(report, 'pdf')}>
                                 <Download className="h-4 w-4 mr-2" />
                                 Descargar PDF
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleExport(report.id, 'docx')}>
+                              <DropdownMenuItem onClick={() => handleExport(report, 'docx')}>
                                 <Download className="h-4 w-4 mr-2" />
                                 Descargar Word
                               </DropdownMenuItem>

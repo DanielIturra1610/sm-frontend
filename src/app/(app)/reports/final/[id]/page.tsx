@@ -39,7 +39,7 @@ import {
 } from '@/shared/components/ui/alert-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { toast } from 'sonner'
-import { Edit, Send, CheckCircle, Trash2, AlertCircle, Building2, Users, Wrench, DollarSign, FileCheck, Camera, Calendar, MapPin, Search, Loader2, Link2 } from 'lucide-react'
+import { Edit, Send, CheckCircle, Trash2, AlertCircle, Building2, Users, Wrench, DollarSign, FileCheck, Camera, Calendar, MapPin, Search, Loader2, Link2, Hash } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -56,6 +56,7 @@ export default function FinalReportDetailPage() {
 
   // Get incident details
   const { data: incident } = useIncident(report?.incident_id || '')
+  const correlativo = incident?.incidentNumber || incident?.correlativo || ''
 
   // Get prefill data for timeline
   const { data: prefillData, isLoading: isLoadingPrefill } = usePrefillData(
@@ -178,6 +179,44 @@ export default function FinalReportDetailPage() {
           />
         </div>
       </div>
+
+      {/* Document Information */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileCheck className="h-5 w-5" />
+            Información del Documento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Correlativo - Prominente */}
+            {correlativo && (
+              <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
+                <p className="text-sm text-gray-500 mb-2">Suceso Asociado</p>
+                <div className="flex items-center gap-2">
+                  <Hash className="h-5 w-5 text-slate-600" />
+                  <span className="font-mono font-bold text-2xl text-slate-800">{correlativo}</span>
+                </div>
+              </div>
+            )}
+            {/* Tipo de Incidente */}
+            {incident?.tipo && (
+              <div className="flex flex-col justify-center">
+                <p className="text-sm text-gray-500">Tipo de Incidente</p>
+                <p className="font-medium text-gray-700">{incident.tipo}</p>
+              </div>
+            )}
+            {/* Empresa */}
+            {report.company_data?.nombre && (
+              <div className="flex flex-col justify-center">
+                <p className="text-sm text-gray-500">Empresa</p>
+                <p className="font-medium text-gray-700">{report.company_data.nombre}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Incident Info and Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -377,13 +416,8 @@ export default function FinalReportDetailPage() {
               <CardTitle>Tipo de Accidente</CardTitle>
             </CardHeader>
             <CardContent>
-              {report.tipo_accidente_tabla ? (
-                <div className="flex flex-wrap gap-2">
-                  {report.tipo_accidente_tabla.con_baja_il && <Badge>Con Baja - IL</Badge>}
-                  {report.tipo_accidente_tabla.sin_baja_il && <Badge variant="secondary">Sin Baja - IL</Badge>}
-                  {report.tipo_accidente_tabla.incidente_industrial && <Badge>Incidente Industrial</Badge>}
-                  {report.tipo_accidente_tabla.incidente_laboral && <Badge>Incidente Laboral</Badge>}
-                </div>
+              {prefillData?.tipo ? (
+                <p className="font-medium text-lg text-gray-900">{prefillData.tipo}</p>
               ) : (
                 <p className="text-gray-500">No clasificado</p>
               )}

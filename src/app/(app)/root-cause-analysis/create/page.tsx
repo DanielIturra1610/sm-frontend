@@ -85,6 +85,7 @@ const causalTreeSchema = z.object({
 
 const fishboneSchema = z.object({
   incidentId: z.string().min(1, 'Selecciona un suceso'),
+  title: z.string().min(5, 'El título debe tener al menos 5 caracteres').max(100, 'El título no puede exceder 100 caracteres'),
   problem: z.string().min(10, 'La declaración del problema debe tener al menos 10 caracteres'),
 })
 
@@ -126,6 +127,7 @@ function CreateAnalysisContent() {
     resolver: zodResolver(fishboneSchema),
     defaultValues: {
       incidentId: preselectedIncidentId,
+      title: '',
       problem: '',
     },
   })
@@ -162,21 +164,23 @@ function CreateAnalysisContent() {
   const handleSubmitFishbone = async (data: z.infer<typeof fishboneSchema>) => {
     try {
       setIsSubmitting(true)
+      // Backend expects category names as strings (enum values)
       const defaultCategories = [
-        { name: 'Personas', causes: [{ description: '' }] },
-        { name: 'Métodos', causes: [{ description: '' }] },
-        { name: 'Máquinas', causes: [{ description: '' }] },
-        { name: 'Materiales', causes: [{ description: '' }] },
-        { name: 'Mediciones', causes: [{ description: '' }] },
-        { name: 'Entorno', causes: [{ description: '' }] },
+        'people',
+        'method',
+        'machine',
+        'material',
+        'measurement',
+        'environment',
       ]
       const analysis = await createFishbone({
         ...data,
-        categories: defaultCategories,
+        categories: defaultCategories as any,
       })
       sonnerToast.success('Análisis de espina de pescado creado exitosamente')
       router.push(`/root-cause-analysis/fishbone/${analysis.id}`)
     } catch (error) {
+      console.error('Error creating fishbone:', error)
       sonnerToast.error('Error al crear el análisis')
     } finally {
       setIsSubmitting(false)
@@ -214,6 +218,9 @@ function CreateAnalysisContent() {
       }
 
       // Auto-fill Fishbone form
+      if (!fishboneForm.getValues('title')) {
+        fishboneForm.setValue('title', `Análisis Ishikawa - ${incident.title}`)
+      }
       if (!fishboneForm.getValues('problem')) {
         fishboneForm.setValue('problem', incident.description)
       }
@@ -462,6 +469,20 @@ function CreateAnalysisContent() {
                             ))}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={fishboneForm.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Título del Análisis *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ej: Análisis Ishikawa - Derrame de ácido en planta" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

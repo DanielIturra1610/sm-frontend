@@ -5,10 +5,12 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRootCauseReports, useDeleteRootCauseReport } from '@/shared/hooks/report-hooks'
+import { useIncidents } from '@/shared/hooks/incident-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
+import type { Incident } from '@/shared/types/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -29,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { Plus, Search, Eye, AlertCircle, GitBranch, Download, Edit, Trash2, MoreHorizontal } from 'lucide-react'
+import { Plus, Search, Eye, AlertCircle, GitBranch, Download, Edit, Trash2, MoreHorizontal, Hash } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { ReportStatus } from '@/shared/types/api'
@@ -63,10 +65,25 @@ const METODOLOGIA_LABELS: Record<string, string> = {
 export default function RootCauseReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useRootCauseReports()
+  const { data: incidentsData } = useIncidents()
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteRootCauseReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
   const [reportToDelete, setReportToDelete] = useState<string | null>(null)
+
+  // Create incident lookup map for correlativo
+  const incidentMap = useMemo(() => {
+    const map = new Map<string, Incident>()
+    const incidents = incidentsData?.data || []
+    incidents.forEach((inc: Incident) => map.set(inc.id, inc))
+    return map
+  }, [incidentsData])
+
+  // Get correlativo for a report
+  const getCorrelativo = (incidentId: string): string => {
+    const incident = incidentMap.get(incidentId)
+    return incident?.incidentNumber || incident?.correlativo || ''
+  }
 
   const handleExport = async (reportId: string, format: 'pdf' | 'docx') => {
     try {
@@ -93,10 +110,13 @@ export default function RootCauseReportsPage() {
   }
 
   const filteredReports = reports?.filter((report) => {
+    const correlativo = getCorrelativo(report.incident_id).toLowerCase()
+    const searchLower = searchTerm.toLowerCase()
     const matchesSearch =
-      report.incident_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.metodologia?.toLowerCase().includes(searchTerm.toLowerCase())
+      correlativo.includes(searchLower) ||
+      report.incident_id?.toLowerCase().includes(searchLower) ||
+      report.id.toLowerCase().includes(searchLower) ||
+      report.metodologia?.toLowerCase().includes(searchLower)
     const matchesStatus = statusFilter === 'all' || report.report_status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -148,9 +168,9 @@ export default function RootCauseReportsPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por ID de incidente, reporte o metodología..."
+                  placeholder="Buscar por correlativo (ej: 00042), metodología o ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -206,7 +226,7 @@ export default function RootCauseReportsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID Reporte</TableHead>
-                    <TableHead>Incidente</TableHead>
+                    <TableHead>Correlativo</TableHead>
                     <TableHead>Metodología</TableHead>
                     <TableHead>Tablas</TableHead>
                     <TableHead>Estado</TableHead>
@@ -220,8 +240,16 @@ export default function RootCauseReportsPage() {
                       <TableCell className="font-mono text-sm">
                         {report.id.substring(0, 8)}...
                       </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {report.incident_id.substring(0, 8)}...
+                      <TableCell>
+                        {getCorrelativo(report.incident_id) ? (
+                          <Badge variant="secondary" className="font-mono text-xs font-bold bg-slate-800 text-white hover:bg-slate-700">
+                            #{getCorrelativo(report.incident_id)}
+                          </Badge>
+                        ) : (
+                          <span className="font-mono text-sm text-gray-500">
+                            {report.incident_id.substring(0, 8)}...
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-normal">

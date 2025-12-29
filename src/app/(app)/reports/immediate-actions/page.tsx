@@ -8,7 +8,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useImmediateActionsReports, useDeleteImmediateActionsReport } from '@/shared/hooks/report-hooks'
+import { useImmediateActionsReports, useDeleteImmediateActionsReport, useFlashReports } from '@/shared/hooks/report-hooks'
 import { useIncidents } from '@/shared/hooks/incident-hooks'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -36,12 +36,13 @@ import {
   CheckCircle2,
   Clock,
   MoreHorizontal,
-  MapPin
+  MapPin,
+  Hash
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import type { ReportStatus, ImmediateActionsReport, Incident } from '@/shared/types/api'
-import { api } from '@/lib/api'
+import type { ReportStatus, ImmediateActionsReport, Incident, FlashReport } from '@/shared/types/api'
+import { exportImmediateActionsToWord, exportImmediateActionsToPDF } from '@/shared/utils/immediate-actions-export'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,25 +97,12 @@ const getIncidentTitle = (incident: Incident | undefined, report: ImmediateActio
   return 'Reporte de Acciones Inmediatas'
 }
 
-// Generate filename for export
-// Format: [Empresa] Reporte [Tipo] [Tipo Incidente] [Fecha] [Correlativo].[Extension]
-// Example: "Origix Reporte Acciones Inmediatas Incidente Laboral 17-11-2025 00042.pdf"
-const generateExportFilename = (report: ImmediateActionsReport, incident: Incident | undefined, extension: 'pdf' | 'docx'): string => {
-  const empresa = 'Origix' // TODO: Get from tenant/company settings
-  const tipoReporte = 'Acciones Inmediatas'
-  const tipoIncidente = incident?.tipo || 'Incidente'
-  const fecha = report.fecha_inicio
-    ? format(new Date(report.fecha_inicio), 'dd-MM-yyyy')
-    : format(new Date(report.created_at), 'dd-MM-yyyy')
-  const correlativo = incident?.correlativo || report.id.substring(0, 8)
-
-  return `${empresa} Reporte ${tipoReporte} ${tipoIncidente} ${fecha} ${correlativo}.${extension}`
-}
 
 export default function ImmediateActionsReportsPage() {
   const router = useRouter()
   const { data: reports, error, isLoading } = useImmediateActionsReports()
   const { data: incidentsData, isLoading: isLoadingIncidents } = useIncidents({ limit: 1000 })
+  const { data: flashReports, isLoading: isLoadingFlash } = useFlashReports()
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteImmediateActionsReport()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all')
@@ -129,23 +117,46 @@ export default function ImmediateActionsReportsPage() {
     return map
   }, [incidentsData])
 
+  // Create a map of flash reports by incident_id for empresa lookup
+  const flashReportsMap = useMemo(() => {
+    const map = new Map<string, FlashReport>()
+    flashReports?.forEach((report) => {
+      map.set(report.incident_id, report)
+    })
+    return map
+  }, [flashReports])
+
   // Helper to get incident details
   const getIncident = (incidentId: string) => {
     return incidentsMap.get(incidentId)
   }
 
+  // Helper to get empresa from flash report
+  const getEmpresa = (incidentId: string): string | undefined => {
+    return flashReportsMap.get(incidentId)?.empresa
+  }
+
   const handleExport = async (report: ImmediateActionsReport, exportFormat: 'pdf' | 'docx') => {
     try {
-      toast.info(`Descargando reporte en formato ${exportFormat.toUpperCase()}...`)
+      toast.info(`Generando reporte en formato ${exportFormat.toUpperCase()}...`)
 
       const incident = getIncident(report.incident_id)
-      const filename = generateExportFilename(report, incident, exportFormat)
-      await api.immediateActions.export(report.id, exportFormat, filename)
+      const correlativo = getCorrelativo(incident)
+      const metadata = {
+        empresa: getEmpresa(report.incident_id),
+        fecha: report.fecha_inicio,
+        correlativo: correlativo,
+      }
 
-      toast.success(`Reporte descargado: ${filename}`)
+      if (exportFormat === 'docx') {
+        await exportImmediateActionsToWord(report, metadata)
+      } else {
+        await exportImmediateActionsToPDF(report, metadata)
+      }
+      toast.success('Reporte generado exitosamente')
     } catch (error) {
-      console.error('Error exporting report:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Error al descargar el reporte'
+      console.error('Error generating report:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Error al generar el reporte'
       toast.error(errorMessage)
     }
   }
@@ -163,10 +174,15 @@ export default function ImmediateActionsReportsPage() {
     }
   }
 
+  // Get correlativo number for display and search
+  const getCorrelativo = (incident: Incident | undefined): string => {
+    return incident?.incidentNumber || incident?.correlativo || ''
+  }
+
   const filteredReports = reports?.filter((report) => {
     const incident = getIncident(report.incident_id)
     const title = getIncidentTitle(incident, report).toLowerCase()
-    const correlativo = incident?.correlativo?.toLowerCase() || ''
+    const correlativo = getCorrelativo(incident).toLowerCase()
     const tipo = incident?.tipo?.toLowerCase() || ''
     const searchLower = searchTerm.toLowerCase()
 
@@ -190,7 +206,7 @@ export default function ImmediateActionsReportsPage() {
     pending: reports?.filter(r => calculateProgress(r) === 0).length || 0,
   }
 
-  if (isLoading || isLoadingIncidents) {
+  if (isLoading || isLoadingIncidents || isLoadingFlash) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -297,9 +313,9 @@ export default function ImmediateActionsReportsPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Buscar por correlativo, título o ID..."
+                  placeholder="Buscar por correlativo (ej: 00042), título o tipo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -369,16 +385,24 @@ export default function ImmediateActionsReportsPage() {
                     onClick={() => router.push(`/reports/immediate-actions/${report.id}`)}
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      {/* Left: Title and info */}
+                      {/* Left: Correlativo + Title and info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-3">
-                          <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                            progress >= 100 ? 'bg-green-100' : progress > 0 ? 'bg-blue-100' : 'bg-orange-100'
-                          }`}>
-                            {progress >= 100 ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <ClipboardList className="h-5 w-5 text-orange-600" />
+                          {/* Icon and Correlativo Badge */}
+                          <div className="flex-shrink-0 flex flex-col items-center gap-1">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                              progress >= 100 ? 'bg-green-100' : progress > 0 ? 'bg-blue-100' : 'bg-orange-100'
+                            }`}>
+                              {progress >= 100 ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                              ) : (
+                                <ClipboardList className="h-5 w-5 text-orange-600" />
+                              )}
+                            </div>
+                            {getCorrelativo(incident) && (
+                              <Badge variant="secondary" className="font-mono text-xs font-bold bg-slate-800 text-white hover:bg-slate-700">
+                                #{getCorrelativo(incident)}
+                              </Badge>
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -386,11 +410,6 @@ export default function ImmediateActionsReportsPage() {
                               {incidentTitle}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              {incident?.correlativo && (
-                                <Badge variant="outline" className="text-xs font-medium">
-                                  {incident.correlativo}
-                                </Badge>
-                              )}
                               {incident?.tipo && (
                                 <Badge variant="secondary" className="text-xs">
                                   {incident.tipo}

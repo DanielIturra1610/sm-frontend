@@ -12,6 +12,7 @@ import {
   useApproveFlashReport,
   useDeleteFlashReport,
 } from '@/shared/hooks/report-hooks'
+import { useIncident } from '@/shared/hooks/incident-hooks'
 import { useIncidentPhotos } from '@/shared/hooks/attachment-hooks'
 import { ReportFormHeader } from '@/shared/components/reports/ReportFormHeader'
 import { ReportStatusBadge } from '@/shared/components/reports/ReportStatusBadge'
@@ -50,6 +51,7 @@ import {
   Camera,
   Briefcase,
   HeartPulse,
+  Hash,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -64,6 +66,10 @@ export default function FlashReportDetailPage() {
   const { trigger: approveReport, isMutating: isApproving } = useApproveFlashReport(id)
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteFlashReport()
   const { data: incidentPhotos, isLoading: photosLoading } = useIncidentPhotos(report?.incident_id || null)
+
+  // Get incident data for correlativo
+  const { data: incident } = useIncident(report?.incident_id || '')
+  const correlativo = incident?.incidentNumber || incident?.correlativo || ''
 
   const handleSubmit = async () => {
     try {
@@ -186,10 +192,49 @@ export default function FlashReportDetailPage() {
               empresa: report.empresa,
               tipoIncidente: report.tipo,
               fecha: report.fecha ? new Date(report.fecha).toISOString().split('T')[0] : undefined,
+              correlativo: correlativo || report.numero_prodity,
             }}
           />
         </div>
       </div>
+
+      {/* Document Information */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Información del Documento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Correlativo - Prominente */}
+            {correlativo && (
+              <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
+                <p className="text-sm text-gray-500 mb-2">Suceso Asociado</p>
+                <div className="flex items-center gap-2">
+                  <Hash className="h-5 w-5 text-slate-600" />
+                  <span className="font-mono font-bold text-2xl text-slate-800">{correlativo}</span>
+                </div>
+              </div>
+            )}
+            {/* Número Prodity */}
+            {report.numero_prodity && (
+              <div className="flex flex-col justify-center">
+                <p className="text-sm text-gray-500">Número Prodity</p>
+                <p className="font-mono text-sm text-gray-600">{report.numero_prodity}</p>
+              </div>
+            )}
+            {/* Zonal */}
+            {report.zonal && (
+              <div className="flex flex-col justify-center">
+                <p className="text-sm text-gray-500">Zonal</p>
+                <p className="font-mono text-sm text-gray-600">{report.zonal}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Basic Information */}
       <Card className="mb-6">
@@ -302,31 +347,6 @@ export default function FlashReportDetailPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Identifiers */}
-      {(report.numero_prodity || report.zonal) && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Identificadores</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {report.numero_prodity && (
-                <div>
-                  <p className="text-sm text-gray-500">Número Prodity</p>
-                  <p className="font-medium">{report.numero_prodity}</p>
-                </div>
-              )}
-              {report.zonal && (
-                <div>
-                  <p className="text-sm text-gray-500">Zonal</p>
-                  <p className="font-medium">{report.zonal}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Personas Involucradas */}
       {report.personas_involucradas && report.personas_involucradas.length > 0 && (

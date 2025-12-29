@@ -31,6 +31,7 @@ import { toast } from 'sonner'
 import { Loader2, Save, Plus, Trash2, FileCheck, CheckCircle2, FileText, Image, Users, Truck, Building2, DollarSign, ClipboardCheck, Info, Link2, Sparkles } from 'lucide-react'
 import { ReportTimeline } from '@/shared/components/reports/ReportTimeline'
 import { LinkedReportsData } from '@/shared/components/reports/LinkedReportsData'
+import { getSucesoTypeLabel } from '@/shared/constants/suceso-options'
 
 export default function CreateFinalReportPage() {
   const router = useRouter()
@@ -129,6 +130,18 @@ export default function CreateFinalReportPage() {
         setValue('tipo_accidente_tabla.sin_baja_il', tat.sin_baja_il || false)
         setValue('tipo_accidente_tabla.incidente_industrial', tat.incidente_industrial || false)
         setValue('tipo_accidente_tabla.incidente_laboral', tat.incidente_laboral || false)
+      } else if (prefillData.tipo) {
+        // Map tipo from Flash Report to checkboxes
+        const tipo = prefillData.tipo.toLowerCase()
+        const conBaja = tipo.includes('con_baja') || tipo.includes('con baja')
+        const sinBaja = tipo.includes('sin_baja') || tipo.includes('sin baja')
+        const incIndustrial = tipo.includes('industrial') || tipo.includes('inc_industrial')
+        const incLaboral = tipo.includes('laboral') || tipo.includes('inc_laboral')
+
+        setValue('tipo_accidente_tabla.con_baja_il', conBaja)
+        setValue('tipo_accidente_tabla.sin_baja_il', sinBaja)
+        setValue('tipo_accidente_tabla.incidente_industrial', incIndustrial)
+        setValue('tipo_accidente_tabla.incidente_laboral', incLaboral)
       } else {
         setValue('tipo_accidente_tabla.con_baja_il', prefillData.con_baja_il || false)
         setValue('tipo_accidente_tabla.sin_baja_il', prefillData.sin_baja_il || false)
@@ -644,6 +657,12 @@ export default function CreateFinalReportPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Tipo de Accidente</CardTitle>
+                {prefillData?.tipo && (
+                  <CardDescription className="flex items-center gap-2 mt-1">
+                    <Info className="h-4 w-4" />
+                    Tipo desde Flash Report: <Badge variant="secondary">{getSucesoTypeLabel(prefillData.tipo)}</Badge>
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-col gap-3">

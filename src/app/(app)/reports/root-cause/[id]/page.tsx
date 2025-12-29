@@ -41,6 +41,7 @@ import {
   AlertCircle,
   GitBranch,
   Lightbulb,
+  Hash,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -63,6 +64,7 @@ export default function RootCauseReportDetailPage() {
   const { trigger: approveReport, isMutating: isApproving } = useApproveRootCauseReport(id)
   const { trigger: deleteReport, isMutating: isDeleting } = useDeleteRootCauseReport()
   const { data: incident } = useIncident(report?.incident_id || '')
+  const correlativo = incident?.incidentNumber || incident?.correlativo || ''
 
   const handleSubmit = async () => {
     try {
@@ -194,6 +196,44 @@ export default function RootCauseReportDetailPage() {
           />
         </div>
       </div>
+
+      {/* Document Information */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GitBranch className="h-5 w-5" />
+            Información del Documento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Correlativo - Prominente */}
+            {correlativo && (
+              <div className="flex flex-col items-center justify-center p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
+                <p className="text-sm text-gray-500 mb-2">Suceso Asociado</p>
+                <div className="flex items-center gap-2">
+                  <Hash className="h-5 w-5 text-slate-600" />
+                  <span className="font-mono font-bold text-2xl text-slate-800">{correlativo}</span>
+                </div>
+              </div>
+            )}
+            {/* Tipo de Incidente */}
+            {incident?.tipo && (
+              <div className="flex flex-col justify-center">
+                <p className="text-sm text-gray-500">Tipo de Incidente</p>
+                <p className="font-medium text-gray-700">{incident.tipo}</p>
+              </div>
+            )}
+            {/* Metodología */}
+            {report.metodologia && (
+              <div className="flex flex-col justify-center">
+                <p className="text-sm text-gray-500">Metodología</p>
+                <p className="font-medium text-gray-700">{METODOLOGIA_LABELS[report.metodologia] || report.metodologia}</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Analysis Tables */}
       {!report.analysis_tables || report.analysis_tables.length === 0 ? (

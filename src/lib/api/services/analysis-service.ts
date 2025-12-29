@@ -40,7 +40,12 @@ export class AnalysisService extends BaseService {
    */
   async listFishbone(params?: { status?: string; search?: string }): Promise<FishboneAnalysis[]> {
     const query = this.toQueryString(params);
-    return this.request<FishboneAnalysis[]>(`/analysis/fishbone${query}`);
+    const response = await this.request<{ analyses?: FishboneAnalysis[]; Analyses?: FishboneAnalysis[] } | FishboneAnalysis[]>(`/analysis/fishbone${query}`);
+    // Backend returns { analyses, total, limit, offset } - extract the array
+    if (Array.isArray(response)) {
+      return response;
+    }
+    return response.analyses || response.Analyses || [];
   }
 
   /**
@@ -48,7 +53,12 @@ export class AnalysisService extends BaseService {
    */
   async listFiveWhys(params?: { status?: string; search?: string }): Promise<FiveWhysAnalysis[]> {
     const query = this.toQueryString(params);
-    return this.request<FiveWhysAnalysis[]>(`/analysis/five-whys${query}`);
+    const response = await this.request<{ analyses?: FiveWhysAnalysis[]; Analyses?: FiveWhysAnalysis[] } | FiveWhysAnalysis[]>(`/analysis/five-whys${query}`);
+    // Backend returns { analyses, total, limit, offset } - extract the array
+    if (Array.isArray(response)) {
+      return response;
+    }
+    return response.analyses || response.Analyses || [];
   }
 
   /**
@@ -244,6 +254,31 @@ export class AnalysisService extends BaseService {
   }
 
   /**
+   * Update a cause in Fishbone analysis
+   */
+  async updateFishboneCause(analysisId: string, causeId: string, data: {
+    description?: string;
+    impact?: string;
+    likelihood?: string;
+    priority?: number;
+    notes?: string;
+  }): Promise<FishboneCause> {
+    return this.request<FishboneCause>(`/analysis/fishbone/${analysisId}/causes/${causeId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a cause from Fishbone analysis
+   */
+  async deleteFishboneCause(analysisId: string, causeId: string): Promise<void> {
+    return this.request<void>(`/analysis/fishbone/${analysisId}/causes/${causeId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
    * Create analysis template
    */
   async createTemplate(data: AnalysisTemplate): Promise<AnalysisTemplate> {
@@ -416,5 +451,42 @@ export class AnalysisService extends BaseService {
    */
   async getCausalTreeMetrics(): Promise<CausalTreeMetrics> {
     return this.request<CausalTreeMetrics>('/analysis/causal-tree/metrics');
+  }
+
+  // ============================================================================
+  // Export Methods
+  // ============================================================================
+
+  /**
+   * Export Fishbone analysis to PDF or DOCX format
+   * Downloads the file with the specified filename
+   */
+  async exportFishbone(id: string, format: 'pdf' | 'docx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/analysis/fishbone/${id}/${format}`,
+      filename
+    );
+  }
+
+  /**
+   * Export Causal Tree analysis to PDF or DOCX format
+   * Downloads the file with the specified filename
+   */
+  async exportCausalTree(id: string, format: 'pdf' | 'docx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/analysis/causal-tree/${id}/${format}`,
+      filename
+    );
+  }
+
+  /**
+   * Export Five Whys analysis to PDF or DOCX format
+   * Downloads the file with the specified filename
+   */
+  async exportFiveWhys(id: string, format: 'pdf' | 'docx', filename: string): Promise<void> {
+    return this.downloadRequest(
+      `/exports/analysis/five-whys/${id}/${format}`,
+      filename
+    );
   }
 }
