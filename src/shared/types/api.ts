@@ -363,14 +363,33 @@ export interface FiveWhysActionItem {
 
 export interface FishboneAnalysis extends BaseEntity {
   incidentId: string
+  title: string
   problem: string
   categories: FishboneCategory[]
-  rootCause: string
-  actionItems: ActionItem[]
-  status: AnalysisStatus
+  causes: FishboneCause[]
+  summary?: string
+  conclusions?: string
+  leadAnalyst: string
+  analysisTeam: string[]
   createdBy: string
-  reviewedBy?: string
-  reviewedAt?: string
+  updatedBy: string
+}
+
+export interface FishboneCause {
+  id: string
+  analysisId: string
+  category: string
+  description: string
+  level: number
+  parentId?: string
+  evidence: string[]
+  impact: string
+  likelihood: string
+  priority: number
+  notes?: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface FishboneCategory {
@@ -438,6 +457,7 @@ export interface UpdateActionItemData {
 
 export interface CreateFishboneData {
   incidentId: string
+  title: string
   problem: string
   categories: FishboneCategory[]
 }
@@ -540,14 +560,8 @@ export interface IncidentExportRequest {
 }
 
 // ============================================================================
-// FISHBONE ANALYSIS TYPES
+// ANALYSIS TEMPLATES & REPORTS
 // ============================================================================
-
-export interface FishboneCause {
-  category: string
-  description: string
-  evidence?: string[]
-}
 
 export interface AnalysisTemplate {
   id: string

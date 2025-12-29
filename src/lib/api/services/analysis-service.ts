@@ -171,9 +171,16 @@ export class AnalysisService extends BaseService {
    * Create Fishbone analysis
    */
   async createFishbone(data: CreateFishboneData): Promise<FishboneAnalysis> {
+    // Fishbone module uses camelCase for JSON
+    const payload = {
+      incidentId: data.incidentId,
+      title: data.title,
+      problem: data.problem,
+      categories: data.categories,
+    };
     return this.request<FishboneAnalysis>('/analysis/fishbone', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -204,12 +211,35 @@ export class AnalysisService extends BaseService {
   }
 
   /**
-   * Add causes to Fishbone analysis
+   * Add a single cause to Fishbone analysis
    */
-  async addFishboneCauses(id: string, causes: FishboneCause[]): Promise<FishboneAnalysis> {
-    return this.request<FishboneAnalysis>(`/analysis/fishbone/${id}/causes`, {
+  async addFishboneCause(id: string, cause: {
+    category: string;
+    description: string;
+    level?: number;
+    parentId?: string;
+    evidence?: string[];
+    impact?: string;
+    likelihood?: string;
+    priority?: number;
+    notes?: string;
+  }): Promise<FishboneCause> {
+    // Build the cause object with required fields and sensible defaults
+    const payload = {
+      analysisId: id,
+      category: cause.category,
+      description: cause.description,
+      level: cause.level || 1,
+      parentId: cause.parentId || null,
+      evidence: cause.evidence || [],
+      impact: cause.impact || 'medium',
+      likelihood: cause.likelihood || 'medium',
+      priority: cause.priority || 5,
+      notes: cause.notes || null,
+    };
+    return this.request<FishboneCause>(`/analysis/fishbone/${id}/causes`, {
       method: 'POST',
-      body: JSON.stringify(causes),
+      body: JSON.stringify(payload),
     });
   }
 

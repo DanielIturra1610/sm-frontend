@@ -181,21 +181,39 @@ export function useDeleteFiveWhysAnalysis() {
 }
 
 /**
- * Add causes to Fishbone analysis
+ * Add a single cause to Fishbone analysis
  */
-export function useAddFishboneCauses(analysisId: string) {
+export function useAddFishboneCause(analysisId: string) {
   const { mutate: mutateAnalysis } = useSWR<FishboneAnalysis>(`/analysis/fishbone/${analysisId}`)
 
-  return {
-    addCauses: async (causes: FishboneCause[]) => {
-      const response = await api.analysis.addFishboneCauses(analysisId, causes)
-      
-      // Update the cached analysis data
-      await mutateAnalysis(response, false)
-      
+  return useSWRMutation(`/analysis/fishbone/${analysisId}/causes`,
+    async (key, { arg }: { arg: { category: string; description: string; subCauses?: string[] } }) => {
+      // Add the main cause
+      const response = await api.analysis.addFishboneCause(analysisId, {
+        category: arg.category,
+        description: arg.description,
+        level: 1,
+      })
+
+      // If there are sub-causes, add them as level 2 causes with parent reference
+      if (arg.subCauses && arg.subCauses.length > 0) {
+        for (const subCause of arg.subCauses) {
+          if (subCause.trim()) {
+            await api.analysis.addFishboneCause(analysisId, {
+              category: arg.category,
+              description: subCause.trim(),
+              level: 2,
+              parentId: response.id,
+            })
+          }
+        }
+      }
+
+      // Revalidate the analysis to get all causes
+      await mutateAnalysis()
       return response
     }
-  }
+  )
 }
 
 // ============================================================================
