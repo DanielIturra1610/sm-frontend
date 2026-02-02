@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, Suspense } from 'react'
+import React, { useState, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -103,6 +103,19 @@ function CreateAnalysisContent() {
 
   const [selectedMethodology, setSelectedMethodology] = useState<MethodologyType>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const step2Ref = useRef<HTMLDivElement>(null)
+
+  // Handle methodology selection with auto-scroll to step 2
+  const handleMethodologySelect = (methodId: MethodologyType) => {
+    setSelectedMethodology(methodId)
+    // Scroll to step 2 after a small delay for render
+    setTimeout(() => {
+      step2Ref.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, 100)
+  }
 
   // Fetch incidents (all statuses for analysis)
   const { data: incidentsData } = useIncidents({ limit: 100 })
@@ -276,7 +289,7 @@ function CreateAnalysisContent() {
                 <button
                   key={method.id}
                   type="button"
-                  onClick={() => setSelectedMethodology(method.id)}
+                  onClick={() => handleMethodologySelect(method.id)}
                   className={`
                     relative p-4 rounded-lg border-2 text-left transition-all
                     ${isSelected ? method.selectedColor : method.color}
@@ -311,7 +324,7 @@ function CreateAnalysisContent() {
 
       {/* Step 2: Fill Form (conditional based on methodology) */}
       {selectedMethodology && (
-        <Card>
+        <Card ref={step2Ref}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-bold">

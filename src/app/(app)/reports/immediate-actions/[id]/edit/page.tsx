@@ -124,7 +124,11 @@ export default function EditImmediateActionsReportPage() {
       return
     }
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.responsable`, responsable)
+      setValue(`items.${idx}.responsable`, responsable, {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true
+      })
     })
     toast.success(`Responsable "${responsable}" copiado a todas las acciones`)
   }
@@ -138,7 +142,11 @@ export default function EditImmediateActionsReportPage() {
       return
     }
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.cliente`, cliente)
+      setValue(`items.${idx}.cliente`, cliente, {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true
+      })
     })
     toast.success(`Cliente "${cliente}" copiado a todas las acciones`)
   }
@@ -147,8 +155,8 @@ export default function EditImmediateActionsReportPage() {
   const fillAllWith100Percent = () => {
     if (!items || items.length === 0) return
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.avance_real`, 100)
-      setValue(`items.${idx}.avance_programado`, 100)
+      setValue(`items.${idx}.avance_real`, 100, { shouldDirty: true })
+      setValue(`items.${idx}.avance_programado`, 100, { shouldDirty: true })
     })
     toast.success('Todos los avances establecidos en 100%')
   }
@@ -158,22 +166,31 @@ export default function EditImmediateActionsReportPage() {
     if (!items || items.length === 0) return
     const today = new Date().toISOString().split('T')[0]
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.inicio`, today)
-      setValue(`items.${idx}.fin`, today)
+      setValue(`items.${idx}.inicio`, today, { shouldDirty: true })
+      setValue(`items.${idx}.fin`, today, { shouldDirty: true })
     })
     toast.success('Todas las fechas establecidas con la fecha de hoy')
+  }
+
+  // Helper to convert date string to ISO format for backend
+  const toISODate = (dateStr: string | undefined): string | undefined => {
+    if (!dateStr) return undefined
+    // If already in ISO format, return as-is
+    if (dateStr.includes('T')) return dateStr
+    // Convert YYYY-MM-DD to ISO format
+    return `${dateStr}T00:00:00Z`
   }
 
   const onSubmit = async (data: ImmediateActionsReportFormData) => {
     try {
       setIsSubmitting(true)
 
-      // Transform and clean data for API
+      // Transform and clean data for API with proper ISO date format
       const cleanedItems = (data.items || []).map((item, index) => ({
         numero: index + 1,
         tarea: item.tarea || '',
-        inicio: item.inicio || undefined,
-        fin: item.fin || undefined,
+        inicio: toISODate(item.inicio),
+        fin: toISODate(item.fin),
         responsable: item.responsable || undefined,
         cliente: item.cliente || undefined,
         avance_real: item.avance_real ?? 0,
@@ -184,10 +201,12 @@ export default function EditImmediateActionsReportPage() {
 
       const payload = {
         incident_id: data.incident_id,
-        fecha_inicio: data.fecha_inicio || undefined,
-        fecha_termino: data.fecha_termino || undefined,
-        items: cleanedItems.length > 0 ? cleanedItems : undefined,
+        fecha_inicio: toISODate(data.fecha_inicio),
+        fecha_termino: toISODate(data.fecha_termino),
+        items: cleanedItems, // Always send the array, even if empty
       }
+
+      console.log('Enviando payload:', JSON.stringify(payload, null, 2))
 
       // @ts-expect-error - useSWRMutation type signature issue
       await updateReport(payload)

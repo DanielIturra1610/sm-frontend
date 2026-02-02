@@ -58,6 +58,7 @@ export default function EditActionPlanReportPage() {
     reset,
     watch,
     setValue,
+    getValues,
   } = useForm<ActionPlanReportFormData>({
     resolver: zodResolver(actionPlanReportSchema),
   })
@@ -139,6 +140,22 @@ export default function EditActionPlanReportPage() {
     dateChangeSource.current = null
   }, [fecha_fin_estimada, setValue])
 
+  // Propagate plan dates to all tasks (adjusts proportionally)
+  // Copy plan dates to all tasks
+  const propagateDatesToAllTasks = () => {
+    if (!items || items.length === 0 || !fecha_inicio || !fecha_fin_estimada) {
+      toast.error('Primero define las fechas del período de planificación')
+      return
+    }
+
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.inicio`, fecha_inicio, { shouldDirty: true })
+      setValue(`items.${idx}.fin`, fecha_fin_estimada, { shouldDirty: true })
+    })
+
+    toast.success(`Fechas del plan copiadas a ${items.length} tareas`)
+  }
+
   const onSubmit = async (data: ActionPlanReportFormData) => {
     try {
       setIsSubmitting(true)
@@ -155,13 +172,18 @@ export default function EditActionPlanReportPage() {
         })),
       }
 
+      console.log('Enviando payload:', JSON.stringify(formattedData, null, 2))
+
       // @ts-expect-error - useSWRMutation type signature issue
-      await updateReport(formattedData)
+      const result = await updateReport(formattedData)
+      console.log('Respuesta del servidor:', result)
+
       toast.success('Plan de Acción actualizado exitosamente')
       router.push(`/reports/action-plan/${id}`)
     } catch (error) {
+      console.error('Error completo:', error)
       const errorMessage = error instanceof Error ? error.message : 'Error al actualizar el plan'
-      toast.error(errorMessage)
+      toast.error(`Error al guardar: ${errorMessage}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -175,28 +197,38 @@ export default function EditActionPlanReportPage() {
 
   // Copy responsable to all items
   const copyResponsableToAll = (sourceIndex: number) => {
-    if (!items || items.length === 0) return
-    const responsable = items[sourceIndex]?.responsable
+    const currentItems = getValues('items')
+    if (!currentItems || currentItems.length === 0) return
+    const responsable = currentItems[sourceIndex]?.responsable
     if (!responsable) {
       toast.error('El responsable está vacío')
       return
     }
-    items.forEach((_, idx) => {
-      setValue(`items.${idx}.responsable`, responsable)
+    currentItems.forEach((_, idx) => {
+      setValue(`items.${idx}.responsable`, responsable, {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true
+      })
     })
     toast.success(`Responsable "${responsable}" copiado a todas las tareas`)
   }
 
   // Copy cliente to all items
   const copyClienteToAll = (sourceIndex: number) => {
-    if (!items || items.length === 0) return
-    const cliente = items[sourceIndex]?.cliente
+    const currentItems = getValues('items')
+    if (!currentItems || currentItems.length === 0) return
+    const cliente = currentItems[sourceIndex]?.cliente
     if (!cliente) {
       toast.error('El cliente está vacío')
       return
     }
-    items.forEach((_, idx) => {
-      setValue(`items.${idx}.cliente`, cliente)
+    currentItems.forEach((_, idx) => {
+      setValue(`items.${idx}.cliente`, cliente, {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true
+      })
     })
     toast.success(`Cliente "${cliente}" copiado a todas las tareas`)
   }
@@ -205,9 +237,9 @@ export default function EditActionPlanReportPage() {
   const fillAllWith100Percent = () => {
     if (!items || items.length === 0) return
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.avance_real`, 100)
-      setValue(`items.${idx}.avance_programado`, 100)
-      setValue(`items.${idx}.estado`, 'completed')
+      setValue(`items.${idx}.avance_real`, 100, { shouldDirty: true })
+      setValue(`items.${idx}.avance_programado`, 100, { shouldDirty: true })
+      setValue(`items.${idx}.estado`, 'completed', { shouldDirty: true })
     })
     toast.success('Todos los avances establecidos en 100% y estado completado')
   }
@@ -217,8 +249,8 @@ export default function EditActionPlanReportPage() {
     if (!items || items.length === 0) return
     const today = new Date().toISOString().split('T')[0]
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.inicio`, today)
-      setValue(`items.${idx}.fin`, today)
+      setValue(`items.${idx}.inicio`, today, { shouldDirty: true })
+      setValue(`items.${idx}.fin`, today, { shouldDirty: true })
     })
     toast.success('Todas las fechas establecidas con la fecha de hoy')
   }
@@ -332,6 +364,17 @@ export default function EditActionPlanReportPage() {
             {/* Productivity Toolbar */}
             <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={propagateDatesToAllTasks}
+                  disabled={!items || items.length === 0 || !fecha_inicio || !fecha_fin_estimada}
+                  className="text-xs"
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Copiar Fechas del Plan
+                </Button>
                 <Button
                   type="button"
                   variant="outline"
@@ -486,6 +529,7 @@ export default function EditActionPlanReportPage() {
                             <SuggestionInput
                               suggestionType="responsables"
                               {...register(`items.${index}.responsable`)}
+                              value={items?.[index]?.responsable || ''}
                               placeholder="Nombre del responsable"
                               className="w-full"
                             />
@@ -508,6 +552,7 @@ export default function EditActionPlanReportPage() {
                             <SuggestionInput
                               suggestionType="clientes"
                               {...register(`items.${index}.cliente`)}
+                              value={items?.[index]?.cliente || ''}
                               placeholder="Nombre del cliente"
                               className="w-full"
                             />
@@ -615,6 +660,25 @@ export default function EditActionPlanReportPage() {
           </CardContent>
         </Card>
 
+        {/* Validation Errors Banner */}
+        {Object.keys(errors).length > 0 && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-4">
+              <p className="text-red-800 font-medium mb-2">
+                Por favor completa todos los campos obligatorios antes de guardar:
+              </p>
+              <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
+                {errors.fecha_inicio && <li>Fecha de inicio es requerida</li>}
+                {errors.fecha_fin_estimada && <li>Fecha fin estimada es requerida</li>}
+                {errors.duracion_dias && <li>Duración en días es requerida</li>}
+                {errors.items && Array.isArray(errors.items) && errors.items.map((itemError, idx) => (
+                  itemError?.tarea && <li key={idx}>Tarea {idx + 1}: descripción de tarea requerida</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Form Actions */}
         <div className="flex justify-between">
           <Button
@@ -627,7 +691,7 @@ export default function EditActionPlanReportPage() {
           </Button>
           <Button
             type="submit"
-            disabled={isSubmitting || isMutating}
+            disabled={isSubmitting || isMutating || Object.keys(errors).length > 0}
           >
             {(isSubmitting || isMutating) && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

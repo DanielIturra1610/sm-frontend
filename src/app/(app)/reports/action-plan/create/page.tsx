@@ -83,6 +83,7 @@ export default function CreateActionPlanReportPage() {
     control,
     formState: { errors },
     setValue,
+    getValues,
     watch,
     reset,
   } = useForm<ActionPlanReportFormData>({
@@ -317,41 +318,66 @@ export default function CreateActionPlanReportPage() {
     return Math.round(totalProgress / items.length)
   }
 
+  // Copy plan dates to all tasks
+  const propagateDatesToAllTasks = () => {
+    if (!items || items.length === 0 || !fecha_inicio || !fecha_fin_estimada) {
+      toast.error('Primero define las fechas del período de planificación')
+      return
+    }
+
+    items.forEach((_, idx) => {
+      setValue(`items.${idx}.inicio`, fecha_inicio, { shouldDirty: true })
+      setValue(`items.${idx}.fin`, fecha_fin_estimada, { shouldDirty: true })
+    })
+
+    toast.success(`Fechas del plan copiadas a ${items.length} tareas`)
+  }
+
   // Fill all dates with today
   const fillAllDatesWithToday = () => {
     if (!items || items.length === 0) return
     const today = new Date().toISOString().split('T')[0]
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.inicio`, today)
-      setValue(`items.${idx}.fin`, today)
+      setValue(`items.${idx}.inicio`, today, { shouldDirty: true })
+      setValue(`items.${idx}.fin`, today, { shouldDirty: true })
     })
     toast.success('Todas las fechas establecidas con la fecha de hoy')
   }
 
   // Copy responsable to all items
   const copyResponsableToAll = (sourceIndex: number) => {
-    if (!items || items.length === 0) return
-    const responsable = items[sourceIndex]?.responsable
+    const currentItems = getValues('items')
+    if (!currentItems || currentItems.length === 0) return
+    const responsable = currentItems[sourceIndex]?.responsable
     if (!responsable) {
       toast.error('El responsable está vacío')
       return
     }
-    items.forEach((_, idx) => {
-      setValue(`items.${idx}.responsable`, responsable)
+    currentItems.forEach((_, idx) => {
+      setValue(`items.${idx}.responsable`, responsable, {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true
+      })
     })
     toast.success(`Responsable "${responsable}" copiado a todas las tareas`)
   }
 
   // Copy cliente to all items
   const copyClienteToAll = (sourceIndex: number) => {
-    if (!items || items.length === 0) return
-    const cliente = items[sourceIndex]?.cliente
+    const currentItems = getValues('items')
+    if (!currentItems || currentItems.length === 0) return
+    const cliente = currentItems[sourceIndex]?.cliente
     if (!cliente) {
       toast.error('El cliente está vacío')
       return
     }
-    items.forEach((_, idx) => {
-      setValue(`items.${idx}.cliente`, cliente)
+    currentItems.forEach((_, idx) => {
+      setValue(`items.${idx}.cliente`, cliente, {
+        shouldDirty: true,
+        shouldValidate: true,
+        shouldTouch: true
+      })
     })
     toast.success(`Cliente "${cliente}" copiado a todas las tareas`)
   }
@@ -360,9 +386,9 @@ export default function CreateActionPlanReportPage() {
   const fillAllWith100Percent = () => {
     if (!items || items.length === 0) return
     items.forEach((_, idx) => {
-      setValue(`items.${idx}.avance_real`, 100)
-      setValue(`items.${idx}.avance_programado`, 100)
-      setValue(`items.${idx}.estado`, 'completed')
+      setValue(`items.${idx}.avance_real`, 100, { shouldDirty: true })
+      setValue(`items.${idx}.avance_programado`, 100, { shouldDirty: true })
+      setValue(`items.${idx}.estado`, 'completed', { shouldDirty: true })
     })
     toast.success('Todos los avances establecidos en 100% y estado completado')
   }
@@ -848,6 +874,17 @@ export default function CreateActionPlanReportPage() {
                   type="button"
                   variant="outline"
                   size="sm"
+                  onClick={propagateDatesToAllTasks}
+                  disabled={!items || items.length === 0 || !fecha_inicio || !fecha_fin_estimada}
+                  className="text-xs"
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Copiar Fechas del Plan
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={fillAllDatesWithToday}
                   disabled={!items || items.length === 0}
                   className="text-xs"
@@ -993,6 +1030,7 @@ export default function CreateActionPlanReportPage() {
                             <SuggestionInput
                               suggestionType="responsables"
                               {...register(`items.${index}.responsable`)}
+                              value={items?.[index]?.responsable || ''}
                               placeholder="Nombre del responsable"
                               className="w-full"
                             />
@@ -1015,6 +1053,7 @@ export default function CreateActionPlanReportPage() {
                             <SuggestionInput
                               suggestionType="clientes"
                               {...register(`items.${index}.cliente`)}
+                              value={items?.[index]?.cliente || ''}
                               placeholder="Nombre del cliente"
                               className="w-full"
                             />
