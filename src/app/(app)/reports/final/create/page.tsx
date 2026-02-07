@@ -20,6 +20,7 @@ import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { InputWithSuggestions } from '@/shared/components/ui/input-with-suggestions'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Separator } from '@/shared/components/ui/separator'
@@ -70,6 +71,35 @@ export default function CreateFinalReportPage() {
   const { fields: responsables, append: appendResponsable, remove: removeResponsable, replace: replaceResponsables } = useFieldArray({ control, name: 'responsables_investigacion' })
 
   const incident_id = watch('incident_id')
+  const watchPersonas = watch('personas_involucradas')
+  const watchEmpresa = watch('company_data.nombre')
+
+  // Obtener sugerencias de empresas únicas de personas involucradas
+  const empresaSuggestions = [...new Set(
+    watchPersonas
+      ?.map(p => p.empresa)
+      .filter((e): e is string => Boolean(e && e.trim()))
+  )]
+  if (watchEmpresa && !empresaSuggestions.includes(watchEmpresa)) {
+    empresaSuggestions.unshift(watchEmpresa)
+  }
+
+  // Obtener sugerencias de cargos únicos
+  const cargoSuggestions = [...new Set(
+    watchPersonas
+      ?.map(p => p.cargo)
+      .filter((c): c is string => Boolean(c && c.trim()))
+  )]
+
+  // Función para agregar persona con empresa pre-llenada
+  const handleAddPersona = () => {
+    appendPersona({
+      nombre: '',
+      cargo: '',
+      empresa: watchEmpresa || '',
+      tipo_lesion: '',
+    })
+  }
 
   // Express Mode hook
   const {
@@ -719,7 +749,7 @@ export default function CreateFinalReportPage() {
                         Personal afectado o involucrado en el incidente
                       </CardDescription>
                     </div>
-                    <Button type="button" variant="outline" size="sm" onClick={() => appendPersona({ nombre: '', cargo: '', empresa: '', tipo_lesion: '' })}>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddPersona}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar
                     </Button>
@@ -738,8 +768,8 @@ export default function CreateFinalReportPage() {
                             <div className="flex gap-4">
                               <div className="flex-1 grid grid-cols-2 gap-3">
                                 <Input {...register(`personas_involucradas.${index}.nombre`)} placeholder="Nombre" />
-                                <Input {...register(`personas_involucradas.${index}.cargo`)} placeholder="Cargo" />
-                                <Input {...register(`personas_involucradas.${index}.empresa`)} placeholder="Empresa" />
+                                <InputWithSuggestions {...register(`personas_involucradas.${index}.cargo`)} suggestions={cargoSuggestions} placeholder="Cargo" />
+                                <InputWithSuggestions {...register(`personas_involucradas.${index}.empresa`)} suggestions={empresaSuggestions} placeholder="Empresa" />
                                 <Input {...register(`personas_involucradas.${index}.tipo_lesion`)} placeholder="Tipo de lesión" />
                               </div>
                               <Button type="button" variant="ghost" size="sm" onClick={() => removePersona(index)}>

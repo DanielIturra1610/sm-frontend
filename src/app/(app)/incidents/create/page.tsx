@@ -20,6 +20,7 @@ import {
   FormMessage,
 } from '@/shared/components/forms/form'
 import { Input } from '@/shared/components/ui/input'
+import { InputWithSuggestions } from '@/shared/components/ui/input-with-suggestions'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Label } from '@/shared/components/ui/label'
@@ -127,6 +128,39 @@ export default function CreateIncidentPage() {
     control: form.control,
     name: 'personas_involucradas',
   })
+
+  // Obtener valores únicos de empresa y cargo para autocompletado
+  const watchEmpresa = form.watch('empresa')
+  const watchPersonas = form.watch('personas_involucradas')
+
+  // Función para agregar persona con empresa pre-llenada
+  const handleAddPersona = () => {
+    appendPersona({
+      nombre: '',
+      cargo: '',
+      empresa: watchEmpresa || '', // Pre-llenar con la empresa del suceso
+      tipo_lesion: '',
+    })
+  }
+
+  // Obtener sugerencias de empresas únicas de las personas ya agregadas
+  const empresaSuggestions = [...new Set(
+    watchPersonas
+      ?.map(p => p.empresa)
+      .filter((e): e is string => Boolean(e && e.trim()))
+  )]
+
+  // Agregar la empresa del suceso si existe y no está en la lista
+  if (watchEmpresa && !empresaSuggestions.includes(watchEmpresa)) {
+    empresaSuggestions.unshift(watchEmpresa)
+  }
+
+  // Obtener sugerencias de cargos únicos
+  const cargoSuggestions = [...new Set(
+    watchPersonas
+      ?.map(p => p.cargo)
+      .filter((c): c is string => Boolean(c && c.trim()))
+  )]
 
   const watchTipoSuceso = form.watch('tipoSuceso')
   const watchEsPlgf = form.watch('es_plgf')
@@ -715,7 +749,7 @@ export default function CreateIncidentPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => appendPersona({ nombre: '', cargo: '', empresa: '', tipo_lesion: '' })}
+                  onClick={handleAddPersona}
                   disabled={isSubmitting}
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -774,9 +808,12 @@ export default function CreateIncidentPage() {
                             <FormItem>
                               <FormLabel>Cargo</FormLabel>
                               <FormControl>
-                                <Input
+                                <InputWithSuggestions
                                   placeholder="Cargo o posición"
-                                  {...field}
+                                  suggestions={cargoSuggestions}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  onBlur={field.onBlur}
                                   disabled={isSubmitting}
                                 />
                               </FormControl>
@@ -791,9 +828,12 @@ export default function CreateIncidentPage() {
                             <FormItem>
                               <FormLabel>Empresa</FormLabel>
                               <FormControl>
-                                <Input
+                                <InputWithSuggestions
                                   placeholder="Empresa o contratista"
-                                  {...field}
+                                  suggestions={empresaSuggestions}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  onBlur={field.onBlur}
                                   disabled={isSubmitting}
                                 />
                               </FormControl>

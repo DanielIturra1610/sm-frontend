@@ -16,6 +16,7 @@ import { IncidentSelector } from '@/shared/components/reports/IncidentSelector'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/shared/components/ui/card'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { InputWithSuggestions } from '@/shared/components/ui/input-with-suggestions'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { Separator } from '@/shared/components/ui/separator'
@@ -69,6 +70,34 @@ export default function CreateZeroToleranceReportPage() {
 
   const incident_id = watch('incident_id')
   const severidad = watch('severidad')
+  const watchEmpresa = watch('empresa')
+  const watchPersonas = watch('personas_involucradas')
+
+  // Función para agregar persona con empresa pre-llenada
+  const handleAddPersona = () => {
+    appendPersona({
+      nombre: '',
+      cargo: '',
+      empresa: watchEmpresa || '',
+    })
+  }
+
+  // Obtener sugerencias de empresas únicas
+  const empresaSuggestions = [...new Set(
+    watchPersonas
+      ?.map(p => p.empresa)
+      .filter((e): e is string => Boolean(e && e.trim()))
+  )]
+  if (watchEmpresa && !empresaSuggestions.includes(watchEmpresa)) {
+    empresaSuggestions.unshift(watchEmpresa)
+  }
+
+  // Obtener sugerencias de cargos únicos
+  const cargoSuggestions = [...new Set(
+    watchPersonas
+      ?.map(p => p.cargo)
+      .filter((c): c is string => Boolean(c && c.trim()))
+  )]
 
   const onSubmit = async (data: ZeroToleranceReportFormData) => {
     try {
@@ -309,7 +338,7 @@ export default function CreateZeroToleranceReportPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => appendPersona({ nombre: '', cargo: '', empresa: '' })}
+                onClick={handleAddPersona}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Persona
@@ -337,15 +366,17 @@ export default function CreateZeroToleranceReportPage() {
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor={`personas_involucradas.${index}.cargo`}>Cargo</Label>
-                            <Input
+                            <InputWithSuggestions
                               {...register(`personas_involucradas.${index}.cargo`)}
+                              suggestions={cargoSuggestions}
                               placeholder="Cargo"
                             />
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor={`personas_involucradas.${index}.empresa`}>Empresa</Label>
-                            <Input
+                            <InputWithSuggestions
                               {...register(`personas_involucradas.${index}.empresa`)}
+                              suggestions={empresaSuggestions}
                               placeholder="Empresa"
                             />
                           </div>
