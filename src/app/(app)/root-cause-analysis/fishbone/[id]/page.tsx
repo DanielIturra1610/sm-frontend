@@ -905,10 +905,14 @@ export default function FishboneDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar esta causa?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. La causa será eliminada permanentemente del análisis.
-              <div className="mt-3 p-3 bg-gray-100 rounded-md">
-                <p className="text-sm font-medium text-gray-800">{deleteDialog.cause?.description}</p>
+            <AlertDialogDescription asChild>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Esta acción no se puede deshacer. La causa será eliminada permanentemente del análisis.
+                </p>
+                <div className="mt-3 p-3 bg-gray-100 rounded-md">
+                  <p className="text-sm font-medium text-gray-800">{deleteDialog.cause?.description}</p>
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
