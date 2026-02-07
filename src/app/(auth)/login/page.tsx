@@ -126,7 +126,7 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Inicia sesión en tu cuenta</h2>
             <p className="text-gray-600">
-              Accede a tu panel de gestión de seguridad
+              Accede a tu panel de gestión predictiva
             </p>
           </div>
 
